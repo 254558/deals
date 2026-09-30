@@ -559,6 +559,13 @@ button {
   background: var(--white);
 }
 [data-site="uniqlo"] .card__img--none { background: var(--surface); }
+/* 名称行现在显示「还剩什么尺码」。字号跟着名称走（15px），
+   「剩余：」这个前缀压暗一档，真正要看的是后面那几档尺码 */
+[data-site="uniqlo"] .cardsizes__lead { color: var(--ink-4); }
+[data-site="uniqlo"] .cardsizes__list { color: var(--ink); letter-spacing: 0.02em; }
+/* all（该款码全）是个「没什么可说的」状态，压暗，别抢注意力 */
+[data-site="uniqlo"] .cardsizes__list--full { color: var(--ink-4); }
+
 [data-site="uniqlo"] .card__name {
   display: -webkit-box;
   -webkit-line-clamp: 2;

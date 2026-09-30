@@ -27,7 +27,25 @@ import { CardActions } from './CardActions.jsx';
  * 划线只在真降了的时候才画（`cut`），没降的原价等于现价，划它没意义。
  */
 export function ProductCard({ deal, index, onPick, onHide }) {
-  const { url, image, name, brand, tags, tracked, rate } = deal;
+  const { url, image, name, brand, tags, tracked, rate, sizes } = deal;
+
+  /**
+   * 「还剩什么尺码」那一行。
+   *
+   * 尺码是适配器算好的（见 src/sites/uniqlo.mjs 的 sizeInfo）：接口给的是**有货的
+   * 内部码**，翻译成人话才到这儿。三种情况：
+   *   sizes=null        → 这件商品的尺码翻译不出来（袜子、内衣、腰围码那些家族），
+   *                       回退显示商品名——至少不能空着
+   *   sizes.full=true   → 该款所有档位都有货，只写一个 all
+   *   sizes.labels=[]   → 翻译不出来的多档商品：只报个数（宁可不说是哪几档，也不瞎猜）
+   */
+  const sizeLine = !sizes
+    ? null
+    : sizes.full
+      ? 'all'
+      : sizes.labels.length
+        ? `剩余：${sizes.labels.join(' · ')}`
+        : `剩 ${sizes.count} 码`;
   // 动效错开只给前几行，否则滚到下面时动画早跑完了
   const delay = Math.min(index, 11) * 40;
   const now = priceParts(deal.price);
@@ -85,9 +103,27 @@ export function ProductCard({ deal, index, onPick, onHide }) {
           </a>
         </p>
       ) : (
-        /* 优衣库：名称自己就是链接（整行可点），两行截断由 CSS 兜住 */
-        <a className="card__name" href={url} target="_blank" rel="noreferrer">
-          {name}
+        /* 优衣库：整行是链接。**这一行显示的不是商品名，而是「还剩什么尺码」**——
+           用户说图片已经看得够清楚，他关心的是自己的码还在不在（2026-09-30 改）。
+           商品名没丢：留在 aria-label 里（无障碍、悬停也能看到），
+           搜索框也仍然按名字搜——那是数据层的事，跟这一行显示什么无关。 */
+        <a
+          className="card__name"
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          aria-label={sizeLine ? `${name}　${sizeLine}` : name}
+        >
+          {sizeLine ? (
+            <>
+              {!sizes.full && sizes.labels.length > 0 && <span className="cardsizes__lead">剩余：</span>}
+              <span className={`cardsizes__list${sizes.full ? ' cardsizes__list--full' : ''}`}>
+                {sizeLine.replace('剩余：', '')}
+              </span>
+            </>
+          ) : (
+            name
+          )}
         </a>
       )}
 

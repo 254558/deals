@@ -12,7 +12,7 @@
 import { writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { listDeals, listTracked, listBlocked, stats, discountRate } from './db.mjs';
+import { listDeals, listTracked, listBlocked, loadSizeVocab, stats, discountRate } from './db.mjs';
 
 const rateOf = discountRate;
 
@@ -33,7 +33,7 @@ const rateOf = discountRate;
  *   报告里显示的是本地缓存的 `image`，`remoteImages` 那条链（主图 410 了退副图）
  *   是给 `ensureImages` 用的。
  */
-function toDeal(row, images, remote) {
+function toDeal(row, images, remote, site, vocab) {
   const launchPrice = row.launch_price || row.origin_price || 0;
   const price = row.last_price ?? row.min_price_ever ?? 0;
   const deal = {
@@ -44,6 +44,10 @@ function toDeal(row, images, remote) {
     sports: row.sports || '',
     season: row.season || '',
     sizeRange: row.size_range || '',
+    // 「还剩什么尺码」。这是**站点自己的知识**（内部码怎么翻译成 S / 110cm），
+    // 所以问适配器；它答不出来（袜子/内衣那些推不出显示名的家族）就是 null，
+    // 卡片回退显示商品名。
+    sizes: site?.sizeInfo?.(row, vocab) ?? null,
     url: row.url,
     // `image` 是本地缓存好的相对路径。理论上不会为 null —— 没图的商品在 buildPayload
     // 里就被剔掉了（见那里的注释），页面那个灰占位框只是兜底
@@ -108,6 +112,8 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
    *      第一趟（remote，给 ensureImages 用）也没必要再去下它的图；
    *   ② 没图的不上榜（只在 images 传进来那一趟判断，理由见上）。
    */
+  // 尺码词表读一次，整趟共用（「还剩什么尺码」靠它把内部码翻成人话）
+  const sizeVocab = loadSizeVocab(db, site.id);
   const blocked = new Set(listBlocked(db, site.id).map((b) => b.code));
   const shown = rows.filter((r) => !blocked.has(r.code) && (!images || images.get(r.product_code)));
 
@@ -119,7 +125,7 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
     generatedAt: new Date().toISOString(),
     recorded: stats(db, site.id).total,
     meta,
-    deals: shown.map((r) => toDeal(r, images, remote)),
+    deals: shown.map((r) => toDeal(r, images, remote, site, sizeVocab)),
   };
 }
 

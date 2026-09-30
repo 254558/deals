@@ -78,6 +78,11 @@ function normalize(p) {
     image: p.mainPic ? IMAGE_BASE + p.mainPic : '',
     colors: (p.styleText4zhCN || []).map((s) => s.trim()),
     sizeRange: [p.minSize4zhCN, p.maxSize4zhCN].filter(Boolean).join(' ~ '),
+    // 在售尺码的**内部码**（SMA003 这种）。接口给的 `size` 数组是「有货的码」，
+    // 已核对：在售[XS] 全部[XS,S,M,L] 这类样本确实是有货的子集。
+    // 显示名（S / 110cm）在这里不翻译，原样存进库，翻译放在 sizeInfo 里——
+    // 这样以后映射表改了不用重新抓一遍。
+    sizeCodes: (p.size || []).slice(),
     identities: p.identity || [],
     originPrice: num(p.originPrice), // 官方原价。优衣库原价不会上调，所以历史最高原价 ≈ 上市价
     minPrice: num(p.minPrice), // 现价（多色/多码中的最低价）
@@ -169,6 +174,7 @@ function toCanonical(p) {
     sports: '',
     season: p.season,
     sizeRange: p.sizeRange,
+    sizeCodes: p.sizeCodes,
     url: p.url,
     image: p.image,
     images: p.image ? [p.image] : [],
@@ -236,6 +242,91 @@ const tableColumns = [
   },
 ];
 
+/**
+ * 「还剩什么尺码」——把接口给的在售**内部码**翻译成人看得懂的尺码。
+ *
+ * 两件事分开：
+ *   ① 词表从接口拿（`withSideBar: 'Y'` 时侧边栏的「尺码」分组，实测 69 档 12 个家族）：
+ *      SMA002=XS、CMA080=80cm、CMD070=W28/28英寸/28码、SHC225=36/225mm/22.5cm、SIZ999=均码…
+ *      不写死在代码里：这是接口给的数据，新家族出现时不用改代码。
+ *   ② 「还剩哪些」看商品的 `size` 数组（接口给的是**有货的码**，已核对：在售 [XS] /
+ *      该款全部 [XS,S,M,L] 这种样本确实是有货的子集），`minSize4zhCN ~ maxSize4zhCN`
+ *      是这个款一共几档。
+ *
+ * **「是不是都有」用「连续」判**：同一家族里，在售的码如果是一段连续的档位（中途不缺），
+ * 就写 all；缺了档就把剩下的列出来。不拿 min~max 去比——那个范围串的写法跟词表并不一致
+ * （裤子写 `160/70A ~ 190/120C`，词表里却是 `W28/28英寸/28码`），比不出可靠结果；
+ * 而「连续＝不缺码」不依赖那个串，且不会误报（真缺了档就一定不连续）。
+ */
+
+/** 词表里的显示名取第一段：'W28/28英寸/28码' → 'W28'、'36/225mm/22.5cm' → '36' */
+const shortLabel = (label) => String(label || '').split('/')[0].trim();
+
+/** 抓尺码词表。侧边栏跟搜索条件无关（是整站的尺码体系），随便带一个条件就行。 */
+async function fetchSizeVocab() {
+  const json = await post({
+    url: '/search.html?searchType=1',
+    pageInfo: { page: 1, pageSize: 1, withSideBar: 'Y' },
+    belongTo: 'pc',
+    rank: 'overall',
+    priceRange: { low: 0, high: 0 },
+    color: [], size: [], season: [], material: [], sex: [],
+    categoryFilter: {}, identity: [], insiteDescription: '', exist: [],
+    searchFlag: true, description: '',
+  });
+  const seg = (json.resp?.[0] || []).find((s) => s?.name === '尺码');
+  const groups = (seg?.item || []).filter((g) => Array.isArray(g) && g.every((x) => x?.sizeCode));
+  const out = [];
+  groups.forEach((g, grp) => {
+    g.forEach((x, ord) => out.push({ code: x.sizeCode, label: x.sizeValue, grp, ord }));
+  });
+  return out;
+}
+
+/** 取在售尺码码。库里存的是 JSON 文本，db.mjs 的 hydrate 会顺手解成数组（sizeCodes），
+    两条路都认——适配器不该关心调用方有没有 hydrate 过 */
+function codesOf(row) {
+  if (Array.isArray(row.sizeCodes)) return row.sizeCodes;
+  if (Array.isArray(row.size_codes)) return row.size_codes;
+  try {
+    const v = JSON.parse(row.size_codes || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 这件商品还剩哪些尺码。
+ * @param {object} row    库里的一行（或已经 hydrate 过的）
+ * @param {Map}    vocab  code → {label, grp, ord}
+ * @returns {{full:boolean, labels:string[], count:number}|null} 翻译不出来就 null（卡片回退显示商品名）
+ */
+function sizeInfo(row, vocab) {
+  const codes = codesOf(row);
+  if (!codes.length || !vocab?.size) return null;
+
+  const entries = codes.map((c) => vocab.get(c));
+  // 词表里查不到的码：不猜（新家族出现而词表还没刷新时会走到这儿）
+  if (entries.some((e) => !e)) return null;
+
+  const grp = entries[0].grp;
+  const labels = entries
+    .slice()
+    .sort((a, b) => a.ord - b.ord)
+    .map((e) => shortLabel(e.label));
+
+  // 「都有」＝同家族里在售的码连成一段（中途不缺档）
+  const ords = entries.map((e) => e.ord).sort((a, b) => a - b);
+  const sameFamily = entries.every((e) => e.grp === grp);
+  const contiguous = sameFamily && ords[ords.length - 1] - ords[0] === ords.length - 1;
+
+  return { full: contiguous, labels, count: codes.length };
+}
+
+export { sizeInfo, fetchSizeVocab };
+
+
 export default {
   id: 'uniqlo',
   label: '优衣库',
@@ -243,6 +334,8 @@ export default {
   vercelProject: 'uniql',
   imageSize: 561,
   sizeVariant,
+  /** 这件商品还剩哪些尺码（见上面 sizeInfo 那段）。答不出来返回 null */
+  sizeInfo,
   fonts: FONTS,
   tags: TAGS,
   tableColumns,
@@ -259,7 +352,13 @@ export default {
       onTagDone?.({ label: TAGS[tag], count: items.length });
       all.push(...items);
     }
-    return { fetched: all.length, products: dedupe(all).filter((p) => p.minPrice > 0).map(toCanonical) };
+    // 顺带刷一次尺码词表（一次请求，与搜索条件无关）
+    const sizeVocab = await fetchSizeVocab().catch(() => []);
+    return {
+      fetched: all.length,
+      products: dedupe(all).filter((p) => p.minPrice > 0).map(toCanonical),
+      sizeVocab,
+    };
   },
 
   /** 按吊牌编号精确查一件商品（编号在优衣库吊牌/商品页价格下方） */

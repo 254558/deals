@@ -33,6 +33,7 @@ import { homedir } from 'node:os';
 import { C, pad, printTable, truncate } from './core/terminal.mjs';
 import {
   openDb,
+  saveSizeVocab,
   saveSnapshot,
   listDeals,
   listTracked,
@@ -265,7 +266,7 @@ async function cmdSync(site) {
 
   const clearLine = () => process.stdout.write('\r' + ' '.repeat(60) + '\r');
 
-  const { fetched, products } = await site.sync({
+  const { fetched, products, sizeVocab } = await site.sync({
     onPage: ({ label, page, have, total }) =>
       process.stdout.write(`\r  ${label ? `${label}：` : ''}${have}/${total}（第 ${page} 页）        `),
     onTagDone: ({ label, count }) => {
@@ -274,6 +275,9 @@ async function cmdSync(site) {
     },
   });
   clearLine();
+
+  // 尺码词表（优衣库才有）：存起来，供生成报告时把在售内部码翻成人话
+  if (sizeVocab?.length) saveSizeVocab(db, site.id, sizeVocab);
 
   const diff = saveSnapshot(db, site.id, products, { full: true });
   finishRun(db, runId, { fetched, discounted: products.length });

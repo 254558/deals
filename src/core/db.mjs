@@ -41,6 +41,7 @@ CREATE TABLE IF NOT EXISTS products (
   sports            TEXT,               -- 迪卡侬的「运动」；优衣库空
   season            TEXT,               -- 优衣库有；迪卡侬空
   size_range        TEXT,
+  size_codes        TEXT,   -- 在售尺码的内部码（JSON 数组）——「还剩什么尺码」靠它
   image             TEXT,               -- 主图（远程 CDN 地址）
   images            TEXT,               -- JSON 数组：候选图链（主图挂了退副图）
   url               TEXT,
@@ -92,6 +93,20 @@ CREATE INDEX IF NOT EXISTS idx_products_discount ON products(site, max_discount)
 -- 为什么是吊牌号而不是 product_code：优衣库一个款有多个颜色（各一个 productCode），
 -- 实测 84 组吊牌号下挂着 2~3 件、名字一模一样——按颜色屏蔽时用户分不清
 -- 「怎么删了还在」。
+-- 优衣库的尺码词表：内部码（SMA004）→ 显示名（M）。
+-- 来源是搜索接口带着 withSideBar: 'Y' 时返回的那一段（「尺码」分组，实测 69 档 12 个家族：
+-- SMA 字母码、CMA/CMB/CMC 厘米码、CMD 腰围、INS 脚长、SHC 鞋码、SIZ999 均码…）。
+-- 存进库而不是写死在代码里：这是接口给的数据，新家族出现时不用改代码；
+-- grp/ord 保留它自己的分组与顺序，「是不是所有码都有货」靠这两个判（见适配器的 sizeInfo）。
+CREATE TABLE IF NOT EXISTS size_vocab (
+  site   TEXT NOT NULL,
+  code   TEXT NOT NULL,          -- 内部码，如 SMA004
+  label  TEXT,                   -- 接口给的显示名，如 'M' 或 'W28/28英寸/28码'
+  grp    INTEGER,                -- 第几个尺码家族（同一家族的码排一队）
+  ord    INTEGER,                -- 家族内的次序
+  PRIMARY KEY (site, code)
+);
+
 CREATE TABLE IF NOT EXISTS blocked (
   site        TEXT NOT NULL,
   code        TEXT NOT NULL,          -- 吊牌号
@@ -125,6 +140,9 @@ function migrate(db) {
     // 连续几次成功抓取没再见到它。老库补齐时一律给 0：历史数据无从判断，
     // 从下一次 sync 开始正常累计。
     ['missed', 'ALTER TABLE products ADD COLUMN missed INTEGER DEFAULT 0'],
+    // 在售尺码的内部码。老库补齐时为空——下一次 sync 就有值了（映射表将来改了
+    // 也不用重抓：存的是码，翻译在适配器里做）。
+    ['size_codes', 'ALTER TABLE products ADD COLUMN size_codes TEXT'],
   ];
   for (const [col, sql] of added) if (!have.has(col)) db.exec(sql);
 }
@@ -158,6 +176,7 @@ function hydrate(row) {
     ...row,
     tags: jsonArray(row.tags),
     images: jsonArray(row.images),
+    sizeCodes: jsonArray(row.size_codes),
     extra: jsonObject(row.extra),
     is_lowest: row.min_price_ever != null && row.last_price <= row.min_price_ever,
   };
@@ -217,11 +236,11 @@ export function saveSnapshot(db, site, products, { tracked = false, full = false
 
   const upsert = db.prepare(`
     INSERT INTO products (
-      site, product_code, code, name, brand, sports, season, size_range,
+      site, product_code, code, name, brand, sports, season, size_range, size_codes,
       image, images, url, tags, extra,
       launch_price, origin_price, min_price_ever, min_price_at, last_price, prev_price,
       max_discount, monthly_sales, in_stock, first_seen_at, last_seen_at, tracked
-    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     ON CONFLICT(site, product_code) DO UPDATE SET
       code = excluded.code,
       name = excluded.name,
@@ -229,6 +248,7 @@ export function saveSnapshot(db, site, products, { tracked = false, full = false
       sports = excluded.sports,
       season = excluded.season,
       size_range = excluded.size_range,
+      size_codes = excluded.size_codes,
       image = excluded.image,
       images = excluded.images,
       url = excluded.url,
@@ -276,6 +296,7 @@ export function saveSnapshot(db, site, products, { tracked = false, full = false
 
       upsert.run(
         site, p.productCode, p.code, p.name, p.brand || '', p.sports || '', p.season || '', p.sizeRange || '',
+        JSON.stringify(p.sizeCodes || []),
         p.image || '', JSON.stringify(p.images || (p.image ? [p.image] : [])), p.url || '',
         JSON.stringify(p.tags || []), JSON.stringify(p.extra || {}),
         p.originPrice, p.originPrice, p.price, on, p.price, null,
@@ -311,6 +332,27 @@ export function saveSnapshot(db, site, products, { tracked = false, full = false
   }
 
   return { added, dropped, raised, permanent, missedOne, gone, bulkDrop };
+}
+
+/** 覆盖写一站点的尺码词表（每次 sync 刷新一遍） */
+export function saveSizeVocab(db, site, entries) {
+  const ins = db.prepare('INSERT OR REPLACE INTO size_vocab (site, code, label, grp, ord) VALUES (?,?,?,?,?)');
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM size_vocab WHERE site = ?').run(site);
+    for (const e of entries) ins.run(site, e.code, e.label, e.grp, e.ord);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  return entries.length;
+}
+
+/** 读一站的尺码词表 → Map(code → {label, grp, ord}) */
+export function loadSizeVocab(db, site) {
+  const rows = db.prepare('SELECT code, label, grp, ord FROM size_vocab WHERE site = ?').all(site);
+  return new Map(rows.map((r) => [r.code, r]));
 }
 
 /** 把一个款加进谢绝名单（幂等） */

@@ -111,7 +111,17 @@
   "brand": "",              // deca 有；uniqlo 空串
   "sports": "",             // deca 有；uniqlo 空串
   "season": "2025 秋冬",     // 报顶榜单的小灰字（可能为空）
-  "sizeRange": "S ~ XL",    // 同上
+  "sizeRange": "S ~ XL",    // 同上（该款一共有哪些档，接口给的范围串）
+  // 「还剩什么尺码」。**优衣库卡片显示的就是它，不再显示商品名**（2026-09-30 改）——
+  // 图片已经看得够清楚，用户关心的是自己的码还在不在。三种值：
+  //   null                     尺码翻译不出来（睡衣/帽子/手套那类接口连范围都没给），
+  //                            卡片回退显示商品名
+  //   { full: true,  labels }  该款所有档都有货 → 卡片只写一个 all
+  //   { full: false, labels }  有缺档 → 卡片写「剩余：W21 · W23」
+  // labels 是给人看的短名（取词表里的第一段：'W28/28英寸/28码' → 'W28'），count 是在售档数。
+  // 怎么算出来的见 src/sites/uniqlo.mjs 的 sizeInfo：词表存在库里（size_vocab 表），
+  // 「都有」用「同家族内在售的码是否连成一段」判。迪卡侬没有这个钩子，恒为 null。
+  "sizes": { "full": false, "labels": ["P21", "W23"], "count": 2 },
   "url": "https://www.uniqlo.cn/product-detail.html?productCode=…",
   "image": "img/u0000000072656@561.jpg",   // 本地缓存相对路径。不会为 null ——
                                             // 没图的商品在生成阶段就被剔掉了（见下）
