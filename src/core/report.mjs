@@ -226,8 +226,9 @@ function renderBoot() {
   );
 }
 
-export function renderHtml({ js, css, fontCss, payload, beacon = null }) {
+export function renderHtml({ js, css, fontCss, payload, beacon = null, origin = null }) {
   const when = new Date(payload.generatedAt ?? Date.now()).toLocaleString('zh-CN');
+  const top = payload.top || payload.deals || [];
 
   /**
    * 首屏那几张图的 preload。
@@ -243,16 +244,48 @@ export function renderHtml({ js, css, fontCss, payload, beacon = null }) {
     .map((d) => `<link rel="preload" as="image" href="${d.image}">`)
     .join('\n');
 
+  /**
+   * SEO 那一小块。
+   *
+   * - `description`：报告是给搜索结果的，得有一句人话说明这是什么。
+   * - `canonical` / OG：**只在知道站点绝对地址时输出**（部署那条路径传 origin）。
+   *   本地双击打开的那份不该出现指向 goodprices.online 的 canonical——那会变成
+   *   「本地文件声明线上页面是正本」，没有意义。
+   * - `<h1>`：React 那套里没有 h1（报头是 span），但爬虫要一个。用一个视觉隐藏的
+   *   h1 补上，不进版面。
+   *
+   * ⚠️ 最大的一条 SEO 短板**不在这里**：正文是 React 渲染的，静态 HTML 里
+   * `<div id="root">` 是空的。Google 会执行 JS，百度基本不会——也就是说这两份报告
+   * 对百度基本是隐形的。要真解决得在构建期预渲染一份首屏 HTML（见 README）。
+   */
+  const desc = `${payload.meta.pageTitle}：本期降得最狠的 ${top.length} 件，含上市价、现价与降幅。数据每天更新。`;
+  const canonical = origin ? `${origin}/${payload.site}/` : null;
+  const ogImage = origin && payload.deals?.[0]?.image ? `${origin}/${payload.site}/${payload.deals[0].image}` : null;
+  const seo = [
+    `<meta name="description" content="${desc.replace(/"/g, '&quot;')}">`,
+    canonical ? `<link rel="canonical" href="${canonical}">` : '',
+    canonical ? `<meta property="og:type" content="website">` : '',
+    canonical ? `<meta property="og:url" content="${canonical}">` : '',
+    canonical ? `<meta property="og:title" content="${payload.meta.pageTitle}">` : '',
+    canonical ? `<meta property="og:description" content="${desc.replace(/"/g, '&quot;')}">` : '',
+    ogImage ? `<meta property="og:image" content="${ogImage}">` : '',
+    '<meta name="twitter:card" content="summary_large_image">',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
   return `<!DOCTYPE html>
 <html lang="zh-CN" data-site="${payload.site}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${payload.meta.pageTitle} · ${when}</title>
+${seo}
 <style>${criticalCss(payload.site)}</style>
 ${preload}
 </head>
 <body>
+<h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0">${payload.meta.pageTitle}</h1>
 <div id="root"></div>
 ${renderBoot()}
 ${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
@@ -417,10 +450,41 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const redirects = join(dir, '_redirects');
   writeFileSync(redirects, `/  /${defaultSite}/  302\n`, 'utf8');
 
+  // robots.txt 与 sitemap.xml。
+  // 注意：线上那份 robots.txt 里 Cloudflare 会自己**前置**一段 content-signals 声明，
+  // 这里只写我们自己的部分（允许抓、别抓后台和接口、给出 sitemap）。
+  writeFileSync(
+    join(dir, 'robots.txt'),
+    [
+      'User-agent: *',
+      'Allow: /',
+      'Disallow: /api/',
+      'Disallow: /market/admin/',
+      '',
+      'Sitemap: https://goodprices.online/sitemap.xml',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+
+  const today = new Date().toISOString().slice(0, 10);
+  const urls = [...sites.map((x) => `https://goodprices.online/${x.id}/`), 'https://goodprices.online/market/'];
+  writeFileSync(
+    join(dir, 'sitemap.xml'),
+    [
+      '<?xml version="1.0" encoding="UTF-8"?>',
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+      ...urls.map((u) => `  <url><loc>${u}</loc><lastmod>${today}</lastmod></url>`),
+      '</urlset>',
+      '',
+    ].join('\n'),
+    'utf8'
+  );
+
   const notFound = join(dir, '404.html');
   writeFileSync(notFound, renderNotFound({ sites }), 'utf8');
 
-  return [index, redirects, notFound, join(dir, '_routes.json'), join(dir, '_headers')];
+  return [index, redirects, notFound, join(dir, '_routes.json'), join(dir, '_headers'), join(dir, 'robots.txt'), join(dir, 'sitemap.xml')];
 }
 
 /**

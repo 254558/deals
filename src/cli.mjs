@@ -399,7 +399,7 @@ ${tagLine}  ${diff.added.length ? C.green('已加入关注列表。') : C.dim('�
   console.log(C.dim(`  以后用 deals ${site.id} list --tracked 只看待拔草的商品，或 deals ${site.id} report 在网页里看。\n`));
 }
 
-async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, crossLinkHref = null, marketHref = null, beacon = null } = {}) {
+async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, crossLinkHref = null, marketHref = null, beacon = null, origin = null } = {}) {
   const db = openDb(DB_PATH);
 
   const build = ensureBuild(ROOT, { force: rebuild });
@@ -449,7 +449,7 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   }
 
   const payload = buildPayload(db, site, images, { crossLinkHref, marketHref });
-  writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, payload, beacon }), 'utf8');
+  writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, payload, beacon, origin }), 'utf8');
 
   // 报告目录里放一份三行的 vercel.json（framework / installCommand / buildCommand 全置空）：
   // 这个目录里没有 package.json，Vercel 只该原样收下这些文件。旧的优衣库那份报告就是靠它
@@ -692,7 +692,7 @@ async function cmdDeployCloudflare() {
   console.log(C.dim('  所以两份报告都会重新生成一遍，报头那个交叉入口改成同域的相对路径。\n'));
 
   for (const site of SITES)
-    await cmdReport(site, { open: false, crossLinkHref: cfCrossLink(site), marketHref: 'https://goodprices.online/market/', beacon: BEACON });
+    await cmdReport(site, { open: false, crossLinkHref: cfCrossLink(site), marketHref: 'https://goodprices.online/market/', beacon: BEACON, origin: 'https://goodprices.online' });
 
   // 第一次部署时项目还不存在，而 `pages deploy` 遇到不存在的项目会反过来问你一句
   // （非交互环境下就卡住了），所以先确保项目在。已经存在时这条会失败，属正常。
