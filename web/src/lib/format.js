@@ -64,14 +64,6 @@ export const num = (n) => (Number(n) || 0).toLocaleString('zh-CN');
 /** 降幅按整数百分比显示（排序仍然用精确值，见 App 的 compare） */
 export const pct = (r) => `${Math.round((Number(r) || 0) * 100)}%`;
 
-/** 抓取时间：`2026-09-26 15:49`，报头那行用 */
-export function stamp(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  const p = (n) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 /**
  * 「已不在特价 · 最后见到 9/25」——手动 track 的商品从抓取池里消失了才用得上。
  *

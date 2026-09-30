@@ -235,7 +235,7 @@ export default function App() {
   return (
     <>
       <div className="wrap">
-        <Masthead recorded={DATA.recorded ?? deals.length} generatedAt={DATA.generatedAt} />
+        <Masthead recorded={DATA.recorded ?? deals.length} />
       </div>
 
       {/* 榜单在整页最上面：报头之下、筛选页签之上，打开就先看见这一期哪儿在塌。

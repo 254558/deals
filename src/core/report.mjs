@@ -197,8 +197,7 @@ function criticalCss(site) {
   ].join('');
 }
 
-function renderBoot(iso) {
-  const d = new Date(iso ?? Date.now());
+function renderBoot() {
   const dots = [];
   for (let row = 0; row < 5; row += 1) {
     for (let col = 0; col < 5; col += 1) dots.push(`<i style="--i:${row + col}"></i>`);
@@ -206,7 +205,7 @@ function renderBoot(iso) {
   return (
     `<div id="boot">` +
     `<div class="boot__dots" aria-hidden="true">${dots.join('')}</div>` +
-    `<div class="boot__note">正在加载 ${d.getMonth() + 1} 月 ${d.getDate()} 日的榜单</div>` +
+    `<div class="boot__note">正在加载榜单</div>` +
     `</div>\n`
   );
 }
@@ -239,7 +238,7 @@ ${preload}
 </head>
 <body>
 <div id="root"></div>
-${renderBoot(payload.generatedAt)}
+${renderBoot()}
 ${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
 <style>${css}</style>
 <script>window.__DEALS_DATA__ = ${safeJson(payload)};</script>
