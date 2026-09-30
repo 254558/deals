@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>尾货市集 · 你家附近店里的漏</title>
+<title>尾货市集</title>
 <!--
   尾货市集。
 
@@ -72,14 +72,13 @@
   }
   @media (max-width: 760px) { .masthead { padding-top: 26px; } }
 
-  /* 报头下面那句说明。原来挤在报头里，报头要统一就只能请它下来单独一行 */
-  .lead { margin: 16px 0 22px; font-size: 13px; color: var(--ink-2); }
+
 
   /* ---------- 通用 ---------- */
   /* 分区小标题：照报告里的 .label（10px + 0.12em 字距 + 灰） */
   h2 { margin: 0 0 14px; font-size: 10px; font-weight: 400; letter-spacing: 0.12em; color: var(--ink-4); }
   /* 表单卡自己限宽：外壳并到 1560 之后，一个横跨 1500px 的输入框没法看 */
-  .card { border: 1px solid var(--rule); margin-bottom: 30px; max-width: 940px; }
+  .card { border: 1px solid var(--rule); margin: 22px 0 30px; max-width: 940px; }
 
   /* 「我要出一件」平时就是一行字，点一下（整行都能点）才展开表单。
      箭头用两条边框旋转出来，不引图标字体/SVG。 */
@@ -230,7 +229,6 @@
 </header>
 
 <div class="wrap">
-  <p class="lead">你家附近店里的漏，拍照发上来，有人要就寄给他</p>
 
   <div class="card">
     <button class="card__head" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">
