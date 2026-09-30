@@ -9,7 +9,7 @@
  * 输出的 payload 结构是 `docs/REPORT-CONTRACT.md` 里那份契约，改这里必须同时改那份文档。
  */
 
-import { writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, statSync, readdirSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { listDeals, listTracked, listBlocked, loadSizeVocab, stats, discountRate } from './db.mjs';
@@ -80,11 +80,12 @@ function toDeal(row, images, remote, site, vocab) {
  * @param {object} [opts]
  * @param {boolean} [opts.remote] 带上 CDN 候选图地址（只有下图那一趟需要）
  * @param {string|null} [opts.crossLinkHref] 覆盖报头那个「另一家的报告」的链接。
+ * @param {string|null} [opts.marketHref] 尾货市集的入口；给 null 就不显示那一格。
  *   Vercel 上两份报告在两个域名，各写绝对地址（站点描述符里的默认值）；
  *   Cloudflare 上两份在同一个域名的兄弟目录，改成相对路径 `../<站点>/` ——
  *   相对路径换域名、换本地双击都对。
  */
-export function buildPayload(db, site, images, { remote = false, crossLinkHref = null } = {}) {
+export function buildPayload(db, site, images, { remote = false, crossLinkHref = null, marketHref = null } = {}) {
   const deals = listDeals(db, site.id, { limit: 5000, minRate: 0.15 });
   const tracked = listTracked(db, site.id);
 
@@ -119,6 +120,15 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
 
   const meta = { ...site.report };
   if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
+
+  /**
+   * 报头行尾的入口先摆「另一家的报告」，再摆「尾货市集」。
+   * 市集那个链接是**全站共用的**（不属于哪一家），所以由核心补进来，适配器不用管。
+   */
+  meta.links = [
+    ...(meta.crossLink ? [meta.crossLink] : []),
+    ...(marketHref ? [{ href: marketHref, label: '尾货市集', title: '大家出的尾货：谁要谁寄（新标签打开）' }] : []),
+  ];
 
   return {
     site: site.id,
@@ -278,6 +288,22 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const dir = join(root, 'reports');
   mkdirSync(dir, { recursive: true });
 
+  // 尾货市集：手写的单页（market/index.html）+ Pages Functions（仓库根的 functions/）。
+  // 页面本身不是报告，但和报告同一个域名、同一套视觉语言，所以跟着一起部署。
+  const marketSrc = join(root, 'market', 'index.html');
+  if (existsSync(marketSrc)) {
+    mkdirSync(join(dir, 'market'), { recursive: true });
+    copyFileSync(marketSrc, join(dir, 'market', 'index.html'));
+  }
+
+  // 只有 /api/* 需要走 Functions——其余（两份报告、图片、落地页）让 Pages 直接发静态文件，
+  // 不为了市集给整站加一层函数调用。
+  writeFileSync(
+    join(dir, '_routes.json'),
+    JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }) + '\n',
+    'utf8'
+  );
+
   const index = join(dir, 'index.html');
   writeFileSync(index, renderRootRedirect({ defaultSite, sites }), 'utf8');
 
@@ -289,7 +315,7 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const notFound = join(dir, '404.html');
   writeFileSync(notFound, renderNotFound({ sites }), 'utf8');
 
-  return [index, redirects, notFound];
+  return [index, redirects, notFound, join(dir, '_routes.json')];
 }
 
 /**

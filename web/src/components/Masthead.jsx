@@ -10,8 +10,8 @@ import { META } from '../lib/site.js';
  *
  *   META.label         站点名（优衣库 / 迪卡侬 · 中国官网）—— 两家的写法不一样，
  *                      所以连「· 中国官网」这个后缀也归数据，不在这里拼
- *   META.crossLink     行尾另一个站点的入口。两家都定义了（两份报告互相有入口），
- *                      但仍然是可选的：契约里它允许为 null，值为 null 时这一格不渲染
+ *   META.links         行尾那组入口（数组）：另一家的报告 + 尾货市集。核心拼好，两家一样；
+ *                      没配就是空数组，一个都不渲染。
  *   META.showRecorded  是否显示「共记录 N 件」（迪卡侬有，优衣库没有）
  *
  * `recorded` 是数据库里的累计记录数，不是这一期榜上的条数 ——
@@ -19,7 +19,9 @@ import { META } from '../lib/site.js';
  * 后者说这一期筛出来多少。（工具栏右端那句「显示全部 N 件」2026-09-30 撤了。）契约里 `payload.recorded` 就是为这一格准备的。
  */
 export function Masthead({ recorded, generatedAt }) {
-  const cross = META.crossLink;
+  // 行尾那组入口：另一家的报告 + 尾货市集（核心拼好的数组，见 report.mjs 的 buildPayload）。
+  // 老的 meta.crossLink 还兼容着——万一有旧 payload 进来，别把入口弄没了。
+  const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink] : [];
   return (
     <header className="masthead">
       <div className="masthead__eyebrow">
@@ -27,18 +29,19 @@ export function Masthead({ recorded, generatedAt }) {
         <span className="label">{META.label}</span>
         <span className="label">抓取于 {stamp(generatedAt)}</span>
         {META.showRecorded && <span className="label">共记录 {num(recorded)} 件</span>}
-        {/* 行尾右对齐的兄弟报告入口：两份报告互认是一家工具做的（靠 margin-left: auto 顶到行尾） */}
-        {cross && (
+        {/* 行尾右对齐的入口：兄弟报告 + 尾货市集（靠 margin-left: auto 顶到行尾） */}
+        {links.map((l) => (
           <a
             className="label masthead__cross"
-            href={cross.href}
+            key={l.href}
+            href={l.href}
             target="_blank"
             rel="noreferrer"
-            title={cross.title}
+            title={l.title}
           >
-            {cross.label}
+            {l.label}
           </a>
-        )}
+        ))}
       </div>
     </header>
   );

@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>尾货市集 · 你家附近店里的漏</title>
+<!--
+  尾货市集。
+
+  为什么是手写的单页、不走报告那套 React 管线：报告要能双击打开（file://）、要单文件内联，
+  这个页面反过来——它必须有后端（/api/*），也永远只在线上用。所以怎么简单怎么来：
+  一个文件、原生 JS、零构建，改完直接部署。
+
+  和报告共用同一套视觉语言：墨 #000f17、品牌蓝 #3643ba、发丝线 #d9dde1、全站直角。
+-->
+<style>
+  :root {
+    --white: #fff;
+    --ink: #000f17;
+    --ink-2: #616161;
+    --ink-4: #b3bac3;
+    --rule: #d9dde1;
+    --rule-soft: #eff1f3;
+    --surface: #f5f4f5;
+    --blue: #3643ba;
+    --red: #e20c18;
+    --yellow: #ffcd4e;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font: 15px/1.6 var(--font); color: var(--ink); background: var(--white); }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--blue); }
+  button, input, textarea { font: inherit; color: inherit; border-radius: 0; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+
+  header.top { border-bottom: 1px solid var(--rule); padding: 18px 0 16px; margin-bottom: 26px; }
+  .top__row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .dot { width: 7px; height: 7px; background: var(--blue); display: inline-block; }
+  .top__title { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+  .top__sub { color: var(--ink-2); font-size: 13px; }
+  .top__links { margin-left: auto; display: flex; gap: 16px; font-size: 13px; color: var(--ink-2); }
+
+  h2 { font-size: 15px; margin: 0 0 12px; }
+  .card { border: 1px solid var(--rule); padding: 18px; margin-bottom: 24px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 4px; }
+  input[type=text], input[type=number], textarea {
+    width: 100%; padding: 9px 10px; border: 1px solid var(--rule); background: var(--white);
+  }
+  input:focus, textarea:focus { outline: 0; border-color: var(--ink); }
+  textarea { min-height: 68px; resize: vertical; }
+  .field { margin-bottom: 12px; }
+  .hint { font-size: 12px; color: var(--ink-4); margin-top: 4px; }
+  .btn {
+    display: inline-block; padding: 10px 18px; border: 1px solid var(--ink); background: var(--ink);
+    color: var(--white); cursor: pointer;
+  }
+  .btn:hover { background: var(--blue); border-color: var(--blue); color: var(--white); }
+  .btn[disabled] { opacity: .45; cursor: default; }
+  .btn--ghost { background: none; color: var(--ink); border-color: var(--rule); }
+  .btn--ghost:hover { background: none; color: var(--blue); border-color: var(--blue); }
+  .btn--sm { padding: 4px 10px; font-size: 12px; }
+  /* 蜜罐：机器人会填，人看不见 */
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+
+  #preview { display: none; margin-top: 10px; }
+  #preview img { max-width: 220px; border: 1px solid var(--rule); display: block; }
+  .msg { margin-top: 12px; font-size: 13px; }
+  .msg--err { color: var(--red); }
+  .msg--ok { color: var(--blue); }
+
+  .list { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  @media (max-width: 640px) { .list { grid-template-columns: 1fr; } }
+  .item { border: 1px solid var(--rule); display: flex; flex-direction: column; }
+  .item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: var(--surface); display: block; }
+  .item__body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .item__title { font-size: 15px; font-weight: 600; }
+  .item__price { color: var(--red); font-weight: 700; font-size: 18px; }
+  .item__meta { font-size: 13px; color: var(--ink-2); }
+  .item__note { font-size: 13px; color: var(--ink-2); }
+  .item__foot { margin-top: auto; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-4); }
+  .kbd {
+    display: inline-block; padding: 0 5px; border: 1px solid var(--rule); background: var(--surface);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; line-height: 18px; color: var(--ink);
+  }
+  .empty { border: 1px dashed var(--rule); padding: 40px; text-align: center; color: var(--ink-2); }
+  footer { border-top: 1px solid var(--rule); margin-top: 34px; padding: 18px 0 40px; font-size: 13px; color: var(--ink-2); }
+  footer b { color: var(--ink); }
+  footer ol { margin: 8px 0 0; padding-left: 20px; }
+  footer li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top__row">
+    <span class="dot"></span>
+    <span class="top__title">尾货市集</span>
+    <span class="top__sub">你家附近店里的漏，拍照发上来，有人要就寄给他</span>
+    <span class="top__links">
+      <a href="/uniqlo/">优衣库比价</a>
+      <a href="/decathlon/">迪卡侬比价</a>
+    </span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>我要出一件</h2>
+    <form id="form" autocomplete="off">
+      <div class="grid2">
+        <div class="field">
+          <label for="photo">商品照片（现拍或从相册选）</label>
+          <input type="file" id="photo" accept="image/*">
+          <div class="hint">会自动压到 400KB 以内再上传。拍吊牌、拍实物都行，别用官网图。</div>
+          <div id="preview"><img alt="预览"></div>
+        </div>
+        <div>
+          <div class="field">
+            <label for="title">商品名</label>
+            <input type="text" id="title" maxlength="60" placeholder="如：羊毛混纺大衣 米白">
+          </div>
+          <div class="field">
+            <label for="price">价格（元）</label>
+            <input type="number" id="price" min="0" step="1" placeholder="如：299">
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="size">尺码</label>
+              <input type="text" id="size" maxlength="24" placeholder="M / 165/88A">
+            </div>
+            <div class="field">
+              <label for="store">哪家店 · 城市</label>
+              <input type="text" id="store" maxlength="40" placeholder="上海 · 南京西路店">
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="field">
+          <label for="contact">联系方式（会公开显示）</label>
+          <input type="text" id="contact" maxlength="80" placeholder="微信号 / 手机号 / 闲鱼链接">
+          <div class="hint">买家直接找你交易。本站不经手钱、不担保。</div>
+        </div>
+        <div class="field">
+          <label for="note">说明</label>
+          <textarea id="note" maxlength="240" placeholder="包邮还是到付、有没有瑕疵、吊牌还在不在…"></textarea>
+        </div>
+      </div>
+      <div class="hp"><label for="website">网址</label><input type="text" id="website" tabindex="-1"></div>
+      <button class="btn" type="submit" id="submit">发布</button>
+      <div class="msg" id="msg"></div>
+    </form>
+  </div>
+
+  <h2 id="listTitle">大家在出</h2>
+  <div id="list" class="list"></div>
+  <div id="loading" class="empty">正在加载…</div>
+  <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，上面发一件试试。</div>
+
+  <footer>
+    <b>这里只是把东西摆出来，交易是你和买家之间的事。</b>
+    <ol>
+      <li>本站不经手钱、不担保、不介入纠纷。建议走闲鱼/微信的担保交易，或者当面交易。</li>
+      <li>照片请自己拍。用官网图、盗别人的图，被举报就下架。</li>
+      <li>不要发违禁品、假货、需要资质才能卖的东西。</li>
+      <li>联系方式是公开的，介意就别填太细（比如只留微信号）。</li>
+      <li>每 24 小时最多发 5 件；被举报 5 次会自动下架，等站长回看。</li>
+    </ol>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const MAX_BYTES = 400 * 1024;
+  let image = null;      // data URL（已压过）
+  let posting = false;
+
+  /** 把照片压到 400KB 以内：最长边 1200px，质量从 0.72 往下退 */
+  async function compress(file) {
+    if (!file.type.startsWith('image/')) throw new Error('这不是图片');
+    const bmp = await createImageBitmap(file);           // 会带上 EXIF 方向
+    const max = 1200;
+    const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+    const w = Math.round(bmp.width * scale), h = Math.round(bmp.height * scale);
+    const cv = document.createElement('canvas');
+    cv.width = w; cv.height = h;
+    cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    let q = 0.72, out = cv.toDataURL('image/jpeg', q);
+    while (out.length * 0.75 > MAX_BYTES && q > 0.36) { q -= 0.08; out = cv.toDataURL('image/jpeg', q); }
+    if (out.length * 0.75 > MAX_BYTES) throw new Error('这张图压不下来，换一张试试');
+    return out;
+  }
+
+  // ---- 我的删除凭据（只存在这个浏览器里）----
+  const tokens = {
+    all: () => { try { return JSON.parse(localStorage.getItem('market.tokens') || '{}'); } catch { return {}; } },
+    set: (id, token) => { const t = tokens.all(); t[id] = token; localStorage.setItem('market.tokens', JSON.stringify(t)); },
+    get: (id) => tokens.all()[id] || null,
+  };
+
+  const ago = (iso) => {
+    const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+    if (m < 1) return '刚刚';
+    if (m < 60) return m + ' 分钟前';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + ' 小时前';
+    return Math.floor(h / 24) + ' 天前';
+  };
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // ---- 列表 ----
+  async function load() {
+    $('loading').style.display = 'block';
+    try {
+      const r = await fetch('/api/listings', { headers: { Accept: 'application/json' } });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error || '读取失败');
+      render(data.items || []);
+    } catch (e) {
+      $('loading').textContent = '读不出来了：' + e.message;
+      return;
+    }
+    $('loading').style.display = 'none';
+  }
+
+  function render(items) {
+    const box = $('list');
+    box.innerHTML = '';
+    $('empty').style.display = items.length ? 'none' : 'block';
+    $('listTitle').textContent = items.length ? `大家在出（${items.length}）` : '大家在出';
+    for (const it of items) {
+      const el = document.createElement('article');
+      el.className = 'item';
+      const mine = !!tokens.get(it.id);
+      el.innerHTML = `
+        <img src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy">
+        <div class="item__body">
+          <div class="item__title">${esc(it.title)}</div>
+          <div class="item__price">¥${Number(it.price).toLocaleString('zh-CN')}</div>
+          <div class="item__meta">
+            ${it.size ? '<span class="kbd">' + esc(it.size) + '</span> ' : ''}${esc(it.store || '')}
+          </div>
+          ${it.note ? `<div class="item__note">${esc(it.note)}</div>` : ''}
+          <div class="item__meta">联系：<b>${esc(it.contact)}</b></div>
+          <div class="item__foot">
+            <span>${ago(it.created_at)}</span>
+            <span style="margin-left:auto"></span>
+            ${mine
+              ? `<button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
+              : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
+          </div>
+        </div>`;
+      box.appendChild(el);
+    }
+  }
+
+  // ---- 发布 ----
+  $('photo').addEventListener('change', async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    $('msg').textContent = '正在压缩…';
+    $('msg').className = 'msg';
+    try {
+      image = await compress(file);
+      $('preview').style.display = 'block';
+      $('preview').querySelector('img').src = image;
+      $('msg').textContent = `图片压好了（${Math.round((image.length * 0.75) / 1024)}KB）`;
+    } catch (err) {
+      image = null;
+      $('preview').style.display = 'none';
+      $('msg').textContent = err.message;
+      $('msg').className = 'msg msg--err';
+    }
+  });
+
+  $('form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (posting) return;
+    const msg = $('msg');
+    if (!image) { msg.className = 'msg msg--err'; msg.textContent = '先选一张照片'; return; }
+    posting = true;
+    $('submit').disabled = true;
+    msg.className = 'msg';
+    msg.textContent = '发布中…';
+    try {
+      const r = await fetch('/api/listings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: $('title').value, price: $('price').value, size: $('size').value,
+          store: $('store').value, contact: $('contact').value, note: $('note').value,
+          image, website: $('website').value,   // website 是蜜罐
+        }),
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error || '发布失败');
+      if (data.token && data.id) tokens.set(data.id, data.token);
+      msg.className = 'msg msg--ok';
+      msg.textContent = '发出去了。要下架就点这件下面的「下架」（凭据存在这个浏览器里）。';
+      $('form').reset();
+      image = null;
+      $('preview').style.display = 'none';
+      load();
+    } catch (err) {
+      msg.className = 'msg msg--err';
+      msg.textContent = err.message;
+    } finally {
+      posting = false;
+      $('submit').disabled = false;
+    }
+  });
+
+  // ---- 下架 / 举报 ----
+  $('list').addEventListener('click', async (e) => {
+    const del = e.target.closest('[data-del]');
+    const rep = e.target.closest('[data-report]');
+    if (del) {
+      const id = del.getAttribute('data-del');
+      if (!confirm('下架这件？凭据丢了就找不回来了。')) return;
+      const r = await fetch('/api/delete', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, token: tokens.get(id) }),
+      });
+      const data = await r.json();
+      alert(data.ok ? '已下架' : (data.error || '失败'));
+      if (data.ok) load();
+    }
+    if (rep) {
+      const id = rep.getAttribute('data-report');
+      if (!confirm('举报这件？（盗图、假货、已经卖了…）')) return;
+      await fetch('/api/report', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      rep.textContent = '已举报';
+      rep.disabled = true;
+    }
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>

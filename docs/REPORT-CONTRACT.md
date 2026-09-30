@@ -53,11 +53,13 @@
   "searchLabel": "名称或编号",           // 空结果提示里的措辞："没有「名称或编号」包含…"
   "storagePrefix": "uniql",             // localStorage 键前缀，见第五节
   "showRecorded": false,                // 报头是否显示「共记录 N 件」
-  "crossLink": {                        // 报头行尾另一个站点的入口；不需要就 null
-    "href": "https://goodprices.online/decathlon/",
-    "label": "迪卡侬",
-    "title": "迪卡侬比价报告（新标签打开）"
-  },
+  // 报头行尾那组入口。核心拼好：先是「另一家的报告」（来自适配器的 report.crossLink），
+  // 再是「尾货市集」（全站共用，只有 Cloudflare 那条部署路径给 marketHref 时才加）。
+  // 数组为空就一个都不渲染。**老字段 meta.crossLink 仍然保留**，组件优先读 links。
+  "links": [
+    { "href": "https://goodprices.online/decathlon/", "label": "迪卡侬", "title": "迪卡侬比价报告（新标签打开）" },
+    { "href": "https://goodprices.online/market/",    "label": "尾货市集", "title": "大家出的尾货：谁要谁寄（新标签打开）" }
+  ],
 
   "filters": [                          // 工具条页签。匹配语义固定为「标签成员」(tracked 除外)
     { "key": "all", "label": "全部" },

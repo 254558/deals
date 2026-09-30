@@ -1,0 +1,16 @@
+# 尾货市集那份 Pages 配置。
+#
+# 为什么用 Pages Functions 而不是另起一个 Worker：报告已经在这个 Pages 项目上，
+# 把接口挂在同一个项目里就是**同源**——不用 CORS、不用新域名，也不用动 DNS
+# （这个域名的 NS 在阿里云，不在 Cloudflare，所以 Worker Routes 那条路本来也走不通）。
+#
+# 部署：跟报告一起走 `deals all deploy --target cloudflare`
+#       （wrangler pages deploy reports 会把仓库根的 functions/ 一起带上）
+name = "deals-pinouts"
+compatibility_date = "2026-09-01"
+pages_build_output_dir = "reports"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "deals-market"
+database_id = "261fad76-3031-4b2d-b7a4-b43e1a1bf66a"
