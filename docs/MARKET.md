@@ -68,6 +68,22 @@ goodprices.online/
 - **蜜罐字段**：表单里有个肉眼看不见的 `website`，机器人会填 → 直接静默丢弃（返回成功，不落库）。
 - **限速**：每 IP 24 小时最多 5 件；全站每天最多 200 件。IP 只存**哈希**，不存原始地址。
 - **举报**：同一件被举报 5 次自动下架。
+### 站长：两个入口
+
+**① 网页版（推荐，手机也能用）**：<https://goodprices.online/market/admin/>
+
+- 进去填一次管理口令，存在这个浏览器的 localStorage 里，之后自动载入。
+- 能看到**全部**（含已下架、被举报的），三个动作：下架 / 放回 / 真删。
+  放回时会顺带把举报数清零（不清的话它一被举报又会自动下架）。
+- 口令是 Pages 项目的环境变量 **`ADMIN_TOKEN`**（Production 和 Preview 都设了，值一样）。
+  换口令：Cloudflare 面板 → Workers & Pages → `deals-pinouts` → Settings → Variables and Secrets，
+  或者 `npx wrangler pages secret put ADMIN_TOKEN --project-name deals-pinouts`。
+- 接口是 `/api/admin/list` 与 `/api/admin/act`，口令放在 `x-admin-token` 头上；
+  服务端比较两者的 SHA-256，**没配 ADMIN_TOKEN 时直接 503**（不是静默放行）。
+  本地开发用 `.dev.vars` 放这个变量（已在 .gitignore 里）。
+
+**② 命令行**（本机、不用口令，走已经登录过的 wrangler）：
+
 - **站长工具**（不需要往线上放任何管理密钥）：
 
   ```bash
@@ -78,7 +94,8 @@ goodprices.online/
   node scripts/market-admin.mjs remove <id>   # 连图真删
   ```
 
-  走本机已经登录过的 wrangler（`d1 execute --remote`），只有你自己能用。
+  走本机已经登录过的 wrangler（`d1 execute --remote`），只有你自己能用。适合批量或写脚本，
+  日常删一两件用上面那个网页更快。
 
 > 想做「先审后发」或者接 Turnstile 人机验证：都是在这个结构上加——`validate` 之后插一步、
 > 或者把 `status` 从「直接上架」改成「待审」。现在没做，是因为用户选的是「任何人可发，随时删」。

@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>尾货市集 · 管理</title>
+<!--
+  管理页。跟市集同一套视觉语言，但**没有任何服务端渲染**：它就用口令调 /api/admin/*。
+
+  口令从哪来：Pages 项目的环境变量 ADMIN_TOKEN（Cloudflare 面板 → Pages → 项目 →
+  Settings → Variables，或见 docs/MARKET.md）。页面把你填的口令存在**这个浏览器**的
+  localStorage 里，每次请求带在 x-admin-token 头上。
+-->
+<style>
+  :root {
+    --white: #fff; --ink: #000f17; --ink-2: #616161; --ink-4: #b3bac3; --rule: #d9dde1;
+    --surface: #f5f4f5; --surface-2: #fafafa; --blue: #3643ba; --red: #e20c18;
+    --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { font: 15px/1.6 var(--font); color: var(--ink); background: var(--white); margin: 0; }
+  a { color: inherit; text-decoration: none; }
+  a:hover { color: var(--blue); }
+  button, input { font: inherit; color: inherit; border-radius: 0; }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  header.top { border-bottom: 1px solid var(--rule); padding: 18px 0 16px; margin-bottom: 22px; }
+  .top__row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  .dot { width: 7px; height: 7px; background: var(--red); display: inline-block; }
+  .top__title { font-size: 20px; font-weight: 700; }
+  .top__links { margin-left: auto; display: flex; gap: 14px; font-size: 13px; color: var(--blue); }
+  .top__links a:hover { text-decoration: underline; }
+  .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
+  input[type=password], input[type=text] { padding: 9px 11px; border: 1px solid var(--rule); min-width: 280px; }
+  input:focus { outline: 0; border-color: var(--ink); }
+  .btn { padding: 10px 18px; border: 1px solid var(--ink); background: var(--ink); color: var(--white); cursor: pointer; }
+  .btn:hover { background: var(--blue); border-color: var(--blue); }
+  .btn--ghost { background: none; color: var(--ink); border-color: var(--rule); }
+  .btn--ghost:hover { background: none; color: var(--blue); border-color: var(--blue); }
+  .btn--sm { padding: 3px 10px; font-size: 12px; line-height: 20px; }
+  .btn--danger { border-color: var(--red); color: var(--red); background: none; }
+  .btn--danger:hover { background: var(--red); border-color: var(--red); color: var(--white); }
+  .msg { font-size: 13px; }
+  .msg--err { color: var(--red); }
+  .msg--ok { color: var(--blue); }
+  .counts { font-size: 13px; color: var(--ink-2); margin-left: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--rule-soft, #eff1f3); vertical-align: middle; }
+  th { font-size: 12px; color: var(--ink-2); font-weight: 400; border-bottom-color: var(--rule); }
+  tr.is-hidden td { color: var(--ink-4); }
+  tr.is-reported td { background: #fff8f8; }
+  .pic { width: 56px; height: 56px; object-fit: cover; background: var(--surface); display: block; border: 1px solid var(--rule); }
+  .tag { font-size: 11px; padding: 1px 6px; border: 1px solid var(--rule); color: var(--ink-2); }
+  .tag--hidden { border-color: var(--ink-4); }
+  .tag--reported { border-color: var(--red); color: var(--red); }
+  .acts { display: flex; gap: 6px; flex-wrap: wrap; }
+  .id { font-family: var(--mono); font-size: 12px; color: var(--ink-2); }
+  .empty { border: 1px dashed var(--rule); padding: 40px; text-align: center; color: var(--ink-2); }
+  footer { border-top: 1px solid var(--rule); margin-top: 30px; padding: 16px 0 40px; font-size: 13px; color: var(--ink-2); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top__row">
+    <span class="dot"></span>
+    <span class="top__title">尾货市集 · 管理</span>
+    <span class="top__links">
+      <a href="/market/">回市集</a>
+      <a href="/uniqlo/">优衣库</a>
+      <a href="/decathlon/">迪卡侬</a>
+    </span>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="bar">
+    <input type="password" id="token" placeholder="管理口令（只需填一次）" autocomplete="current-password">
+    <button class="btn" id="load">载入</button>
+    <button class="btn btn--ghost" id="forget">忘掉口令</button>
+    <span class="msg" id="msg"></span>
+    <span class="counts" id="counts"></span>
+  </div>
+
+  <div id="box"></div>
+  <div id="empty" class="empty" hidden>还没有人发东西。</div>
+
+  <footer>
+    口令来自 Pages 项目的环境变量 <b>ADMIN_TOKEN</b>；它只存在这个浏览器里，每次请求放在
+    <span class="id">x-admin-token</span> 头上。<b>真删</b>会连图一起删掉，不可恢复；
+    <b>下架</b>只是从市集隐藏（库里留着，能放回）。发帖人自己那条「下架」走的是另一条路
+    （发帖时回给他的凭据），跟这里互不影响。
+  </footer>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const KEY = 'market.admin.token';
+  $('token').value = localStorage.getItem(KEY) || '';
+
+  const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const when = (iso) => String(iso || '').replace('T', ' ').slice(5, 16);
+  const call = async (path, opts = {}) => {
+    const r = await fetch(path, {
+      ...opts,
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': $('token').value.trim(), ...(opts.headers || {}) },
+    });
+    return { status: r.status, body: await r.json().catch(() => null) };
+  };
+
+  function render(items, counts) {
+    $('counts').textContent = items.length
+      ? `在售 ${counts.live} · 已下架 ${counts.hidden} · 被举报 ${counts.reported}`
+      : '';
+    $('empty').hidden = items.length > 0;
+    if (!items.length) { $('box').innerHTML = ''; return; }
+    $('box').innerHTML = `<table>
+      <thead><tr><th>图</th><th>商品</th><th>价格 / 尺码</th><th>店 / 联系</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+      <tbody>${items.map((it) => `
+        <tr class="${it.hidden ? 'is-hidden' : ''}${it.reports > 0 && !it.hidden ? ' is-reported' : ''}">
+          <td><img class="pic" src="/api/img/${esc(it.id)}" alt="" loading="lazy"></td>
+          <td>
+            <div>${esc(it.title)}</div>
+            <div class="id">${esc(it.id)}</div>
+            ${it.note ? `<div style="font-size:12px;color:var(--ink-2)">${esc(it.note)}</div>` : ''}
+          </td>
+          <td>¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? `<div><span class="tag">${esc(it.size)}</span></div>` : ''}</td>
+          <td>${esc(it.store || '—')}<div class="id">${esc(it.contact)}</div></td>
+          <td>
+            ${it.hidden ? '<span class="tag tag--hidden">已下架</span>' : '<span class="tag">在售</span>'}
+            ${it.reports > 0 ? `<span class="tag tag--reported">被举报 ${it.reports}</span>` : ''}
+          </td>
+          <td class="id">${when(it.created_at)}</td>
+          <td><div class="acts">
+            ${it.hidden
+              ? `<button class="btn btn--ghost btn--sm" data-act="unhide" data-id="${esc(it.id)}">放回</button>`
+              : `<button class="btn btn--ghost btn--sm" data-act="hide" data-id="${esc(it.id)}">下架</button>`}
+            <button class="btn btn--danger btn--sm" data-act="remove" data-id="${esc(it.id)}">真删</button>
+          </div></td>
+        </tr>`).join('')}</tbody></table>`;
+  }
+
+  async function load() {
+    const token = $('token').value.trim();
+    localStorage.setItem(KEY, token);
+    $('msg').className = 'msg';
+    $('msg').textContent = '载入中…';
+    const { status, body } = await call('/api/admin/list');
+    if (status !== 200) {
+      $('msg').className = 'msg msg--err';
+      $('msg').textContent = body?.error === '口令不对' ? '口令不对' : (body?.error || '载入失败');
+      return;
+    }
+    $('msg').className = 'msg msg--ok';
+    $('msg').textContent = '已载入';
+    render(body.items || [], body.counts || {});
+  }
+
+  $('load').addEventListener('click', load);
+  $('token').addEventListener('keydown', (e) => { if (e.key === 'Enter') load(); });
+  $('forget').addEventListener('click', () => {
+    localStorage.removeItem(KEY);
+    $('token').value = '';
+    $('msg').className = 'msg';
+    $('msg').textContent = '已忘掉本机存的口令';
+  });
+
+  $('box').addEventListener('click', async (e) => {
+    const btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    const { act, id } = btn.dataset;
+    if (act === 'remove' && !confirm('真删？连图一起没了，不可恢复。')) return;
+    if (act === 'hide' && !confirm('下架这件？市集里就不显示了（能放回）。')) return;
+    btn.disabled = true;
+    const { status, body } = await call('/api/admin/act', { method: 'POST', body: JSON.stringify({ id, action: act }) });
+    if (status !== 200) { alert(body?.error || '失败'); btn.disabled = false; return; }
+    load();
+  });
+
+  // 口令存在就直接载入
+  if ($('token').value) load();
+})();
+</script>
+</body>
+</html>

@@ -5,12 +5,14 @@ import { validate, clean, len, SHA, checkRate, PER_IP_PER_DAY } from '../functio
 import { onRequestPost as createListing, onRequestGet as listListings } from '../functions/api/listings.js';
 import { onRequestPost as deleteListing } from '../functions/api/delete.js';
 import { onRequestPost as reportListing } from '../functions/api/report.js';
+import { onRequestGet as adminList } from '../functions/api/admin/list.js';
+import { onRequestPost as adminAct } from '../functions/api/admin/act.js';
 
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
 /**
  * 一个够用的假 D1：按 SQL 里的关键词回话，并记下都执行过什么。
- * 真实 D1 的行为（BLOB 回成数组、RETURNING、LIMIT…）不在这里模拟——那些靠
+ * 真实 D1 的行为（BLOB 回成数组、LIMIT 的语义…）不在这里完全模拟——那些靠
  * `npm run smoke:market` 打真实服务来验。
  */
 function fakeDB(seed = {}) {
@@ -30,6 +32,19 @@ function fakeDB(seed = {}) {
             const row = state.listings.find((l) => l.id === q.args[0]);
             return row ? { token_hash: row.token_hash } : null;
           }
+          // 带 RETURNING 的写操作：D1 那边也是走 first()/all() 拿回行
+          if (/UPDATE listings SET hidden = \? WHERE id = \? RETURNING id/.test(sql)) {
+            const r = state.listings.find((l) => l.id === q.args[1]);
+            if (!r) return null;
+            r.hidden = q.args[0];
+            return { id: r.id };
+          }
+          if (/DELETE FROM listings WHERE id = \? RETURNING id/.test(sql)) {
+            const i = state.listings.findIndex((l) => l.id === q.args[0]);
+            if (i < 0) return null;
+            const [r] = state.listings.splice(i, 1);
+            return { id: r.id };
+          }
           if (/SELECT reports FROM listings/.test(sql)) {
             const row = state.listings.find((l) => l.id === q.args[0]);
             return row ? { reports: row.reports } : null;
@@ -46,6 +61,7 @@ function fakeDB(seed = {}) {
             state.listings.push({ id, created_at, title, price, size, store, contact, note, image_bytes, token_hash, reports: 0, hidden: 0 });
           }
           if (/UPDATE listings SET hidden = 1/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.hidden = 1; }
+          if (/UPDATE listings SET reports = 0/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.reports = 0; }
           if (/UPDATE listings SET reports/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[3]); if (r) { r.reports = q.args[0]; if (q.args[1] >= q.args[2]) r.hidden = 1; } }
           return { success: true };
         },
@@ -162,4 +178,58 @@ test('限速表会顺手清理一周前的记录（表不会一直长）', async
   const { db, calls } = fakeDB();
   await checkRate({ DB: db }, 'hash-1');
   assert.equal(calls.some((c) => /DELETE FROM posts WHERE at </.test(c.sql)), true);
+});
+
+test('管理接口：没有口令一律挡住', async () => {
+  const { db } = fakeDB();
+  const req2 = (token) => new Request('https://x/api/admin/list', { headers: token ? { 'x-admin-token': token } : {} });
+
+  const noEnv = await adminList({ request: req2('whatever'), env: { DB: db } });
+  assert.equal(noEnv.status, 503, '服务端没配 ADMIN_TOKEN 要说清楚，不是静默放行');
+
+  const env = { DB: db, ADMIN_TOKEN: 'the-right-token' };
+  assert.equal((await adminList({ request: req2(''), env })).status, 401);
+  assert.equal((await adminList({ request: req2('nope'), env })).status, 403);
+  const good = await adminList({ request: req2('the-right-token'), env });
+  assert.equal(good.status, 200);
+  assert.deepEqual((await good.json()).counts, { live: 0, hidden: 0, reported: 0 });
+});
+
+test('管理动作：下架 / 放回（顺带清举报数）/ 真删', async () => {
+  const { db, state } = fakeDB();
+  const env = { DB: db, ADMIN_TOKEN: 'k' };
+  const { id } = await (await createListing({ request: req({ ...good }), env })).json();
+  const act = (action, token = 'k') =>
+    adminAct({
+      request: new Request('https://x/api/admin/act', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+        body: JSON.stringify({ id, action }),
+      }),
+      env,
+    });
+
+  assert.equal((await act('hide')).status, 200);
+  assert.equal(state.listings[0].hidden, 1);
+
+  // 放回时要把举报数清掉，不然一被举报又会自动下架
+  state.listings[0].reports = 3;
+  assert.equal((await act('unhide')).status, 200);
+  assert.equal(state.listings[0].hidden, 0);
+  assert.equal(state.listings[0].reports, 0);
+
+  assert.equal((await act('nuke')).status, 400, '非法动作要被拒');
+  assert.equal((await act('remove')).status, 200);
+  assert.equal(state.listings.length, 0);
+  assert.equal((await act('remove')).status, 404, '删不存在的返回 404');
+
+  const noAuth = await adminAct({
+    request: new Request('https://x/api/admin/act', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, action: 'hide' }),
+    }),
+    env,
+  });
+  assert.equal(noAuth.status, 401, '不带口令的动作一律挡住');
 });

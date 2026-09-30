@@ -134,7 +134,10 @@
   }
   .photo__swap:hover { color: var(--blue); }
 
-  .submit-row { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; align-self: end; }
+  /* 发布按钮铺满所在那一列：桌面版左列就 240 宽，于是和上面那个虚线框一样宽；
+     手机版整行都是字段宽，于是和「联系方式」「说明」一样宽（用户要的） */
+  .submit-row { display: flex; flex-direction: column; align-items: stretch; gap: 8px; align-self: end; }
+  .submit-row .btn { width: 100%; text-align: center; }
   .msg { font-size: 13px; }
   .msg--err { color: var(--red); }
   .msg--ok { color: var(--blue); }

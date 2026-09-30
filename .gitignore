@@ -21,4 +21,7 @@ logs/
 
 # wrangler pages dev / d1 execute --local 的本地状态（本地 D1 的 sqlite 等等）
 .wrangler/
+
+# 本地 wrangler pages dev 用的环境变量（含管理口令），绝不进仓库
+.dev.vars
 .DS_Store

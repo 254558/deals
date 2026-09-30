@@ -284,16 +284,31 @@ p{color:#616161}ul{padding-left:1.2em}li{margin:6px 0}a{color:#3643ba}</style>
  *
  * @returns {string[]} 写出去的文件路径
  */
+/** market/ 下所有 .html 的相对路径（递归）。schema.sql 这类东西不发布 */
+function htmlUnder(base, prefix = '') {
+  const out = [];
+  for (const e of readdirSync(join(base, prefix), { withFileTypes: true })) {
+    const rel = prefix ? join(prefix, e.name) : e.name;
+    if (e.isDirectory()) out.push(...htmlUnder(base, rel));
+    else if (e.name.endsWith('.html')) out.push(rel);
+  }
+  return out;
+}
+
 export function writeDeployRoot(root, { defaultSite, sites }) {
   const dir = join(root, 'reports');
   mkdirSync(dir, { recursive: true });
 
-  // 尾货市集：手写的单页（market/index.html）+ Pages Functions（仓库根的 functions/）。
-  // 页面本身不是报告，但和报告同一个域名、同一套视觉语言，所以跟着一起部署。
-  const marketSrc = join(root, 'market', 'index.html');
+  // 尾货市集：手写的页面（market/*.html，含 market/admin/）+ Pages Functions（仓库根的 functions/）。
+  // 页面不是报告，但和报告同一个域名、同一套视觉语言，所以跟着一起部署。
+  // 只拷 .html：market/schema.sql 是给 wrangler 建表用的，不该出现在网站上。
+  const marketSrc = join(root, 'market');
   if (existsSync(marketSrc)) {
-    mkdirSync(join(dir, 'market'), { recursive: true });
-    copyFileSync(marketSrc, join(dir, 'market', 'index.html'));
+    for (const rel of htmlUnder(marketSrc)) {
+      const out = join(dir, 'market', rel);
+      mkdirSync(dirname(out), { recursive: true });
+      copyFileSync(join(marketSrc, rel), out);
+    }
   }
 
   // 只有 /api/* 需要走 Functions——其余（两份报告、图片、落地页）让 Pages 直接发静态文件，
