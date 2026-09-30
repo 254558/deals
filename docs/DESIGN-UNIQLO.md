@@ -218,6 +218,8 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 ## 五、图片：为什么是 561 档
 
+> 顺带一条两家共用的规则（2026-09-30 加）：**没图的商品不上榜**。抓不到图、或者官网自己就没图，卡片上只剩一个灰框，看不到是什么东西也就没法买，所以生成时就剔掉（见 [DESIGN-DECATHLON.md](DESIGN-DECATHLON.md) 第五节）。这一站目前没有这种商品——878 件全部有图。
+
 官方只提供两档能用的尺寸（中间档如 160 / 320 一律 404）：
 
 | 档位 | 实际尺寸 | 单张体积 |

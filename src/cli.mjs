@@ -405,8 +405,8 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     process.stdout.write(`\r${' '.repeat(48)}\r`);
     console.log(C.dim(`图片：新下载 ${res.downloaded} 张，已有缓存 ${res.cached} 张${res.failed ? `，失败 ${res.failed} 张` : ''}`));
     if (res.failed) {
-      // 候选链全挂＝这个商品所有图在 CDN 上都没了，报告里会留白框
-      console.log(C.yellow(`  ${res.failed} 张的候选图全部取不到，报告里这几件是空占位。`));
+      // 候选链全挂 = 这个商品在 CDN 上没有可用图（或者官网本来就没图）→ 不上榜
+      console.log(C.yellow(`  ${res.failed} 件没有可用图，已从报告里剔除（看不到东西就没法买）。`));
       for (const d of res.dead.slice(0, 5)) console.log(C.dim(`    ${d.code} ${truncate(d.name, 24)} 试了 ${d.tried} 张：${d.error}`));
       if (res.dead.length > 5) console.log(C.dim(`    …另外 ${res.dead.length - 5} 件`));
     }

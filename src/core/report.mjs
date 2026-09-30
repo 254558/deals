@@ -45,7 +45,8 @@ function toDeal(row, images, remote) {
     season: row.season || '',
     sizeRange: row.size_range || '',
     url: row.url,
-    // `image` 是本地缓存好的相对路径；没下到图的商品为 null，页面留灰占位框
+    // `image` 是本地缓存好的相对路径。理论上不会为 null —— 没图的商品在 buildPayload
+    // 里就被剔掉了（见那里的注释），页面那个灰占位框只是兜底
     image: images?.get(row.product_code) ?? null,
     tags: row.tags || [],
     launchPrice,
@@ -88,6 +89,22 @@ export function buildPayload(db, site, images, { remote = false, fontNotice = si
   const seen = new Set(deals.map((d) => d.product_code));
   const rows = [...deals, ...tracked.filter((t) => !seen.has(t.product_code))];
 
+  /**
+   * 没图的商品不上榜。
+   *
+   * 有的站点自己就没图（迪卡侬的冷门备件常见，实测 32 件），有的是图在 CDN 上挂了。
+   * 两种情况对用户是同一件事：卡片上只剩一个灰框，不知道是什么东西，也就没法决定买不买。
+   * 所以在生成阶段就剔掉，根本不进 payload。
+   *
+   * **只在 images 传进来时过滤。** 传 null 的那一趟（`remote: true`，见 cli.mjs 的
+   * cmdReport）是给 ensureImages 用的候选清单，过滤了就没图可下 —— 所以这里不能用
+   * `remote` 当开关。
+   *
+   * 这不是「下架」：商品仍留在库里、终端 `list` 里仍然看得到，只是不进报告。
+   * ensureImages 只补缺的图，所以哪天图下到了，它下一轮自动回到榜上。
+   */
+  const shown = images ? rows.filter((r) => images.get(r.product_code)) : rows;
+
   const meta = { ...site.report, fontNotice };
   if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
 
@@ -96,7 +113,7 @@ export function buildPayload(db, site, images, { remote = false, fontNotice = si
     generatedAt: new Date().toISOString(),
     recorded: stats(db, site.id).total,
     meta,
-    deals: rows.map((r) => toDeal(r, images, remote)),
+    deals: shown.map((r) => toDeal(r, images, remote)),
   };
 }
 

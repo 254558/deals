@@ -51,6 +51,9 @@ export function ProductCard({ deal, index, onPick, onHide }) {
       </a>
     </div>
   ) : (
+    /* 兜底，正常情况下用不到：payload 里不会有没图的商品（生成时就剔掉了，见
+       core/report.mjs 的 buildPayload）。留着是因为「少一张图」比「一张破图」好看，
+       万一哪天有别的路径塞进来一件没图的，页面也不至于难看 */
     <span className="card__img card__img--none" />
   );
 

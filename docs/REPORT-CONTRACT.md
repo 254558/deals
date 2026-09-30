@@ -125,7 +125,8 @@
   "season": "2025 秋冬",     // 报顶榜单的小灰字（可能为空）
   "sizeRange": "S ~ XL",    // 同上
   "url": "https://www.uniqlo.cn/product-detail.html?productCode=…",
-  "image": "img/u0000000072656@561.jpg",   // 本地缓存相对路径；没下到图是 null
+  "image": "img/u0000000072656@561.jpg",   // 本地缓存相对路径。不会为 null ——
+                                            // 没图的商品在生成阶段就被剔掉了（见下）
   "tags": ["concessional_rate"],
   "launchPrice": 249,
   "price": 59,
