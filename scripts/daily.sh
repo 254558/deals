@@ -1,7 +1,12 @@
 #!/bin/bash
 #
 # 每天一次：抓价 → 生成两份报告 → 推到 Cloudflare → 备份价格库 → 该提醒就提醒。
-# 由 launchd 在 09:00 调起（安装见 scripts/install-launchd.sh）。
+#
+# 注：**每天定时跑这件事已经搬到 GitHub Actions 了**（.github/workflows/daily.yml）——
+# 本机那套只在「Mac 开着、你还登录着」时才跑，出差一周就断档；而且 runner 是临时的，
+# 价格库因此进了版本管理，git 历史本身就是带版本的异地备份。
+# 这个脚本保留下来，用于「我现在就想跑一轮」，以及万一想退回本机定时
+# （install-launchd.sh 还在，两条路都守同一条规矩：先拉库、跑完把库提交回去）。
 #
 # 想立刻手动跑一次：
 #     bash ~/deals/scripts/daily.sh
@@ -47,6 +52,15 @@ fi
 mkdir -p logs
 LOG="$ROOT/logs/daily.log"
 
+# 价格库现在**由 GitHub Actions 每天更新并提交回仓库**（见 .github/workflows/daily.yml）。
+# 本机这套是「想立刻跑一轮」时用的备用路径，所以得守同一条规矩：
+# 先把仓库拉下来（免得拿旧库抓完再推时打架），跑完再把库提交回去。
+# 不这么做的话，本机抓到的快照只留在本机，下一次 CI 跑起来会用它自己那份库覆盖线上。
+if [ -d .git ] && git remote get-url origin >/dev/null 2>&1; then
+  echo "[$(date '+%F %T')] 先从仓库拉一次（价格库由 CI 维护）"
+  git pull --rebase --autostash --quiet || echo "  拉取失败：本地继续跑，跑完的库留给你手动处理"
+fi
+
 {
   echo "======================== $(date '+%F %T') ========================"
   echo "node $("$NODE" -v)　仓库 $ROOT"
@@ -65,14 +79,26 @@ LOG="$ROOT/logs/daily.log"
   "$NODE" src/cli.mjs backup
   backup_rc=$?
 
-  echo "sync 退出码 $sync_rc　report 退出码 $report_rc　deploy 退出码 $deploy_rc　backup 退出码 $backup_rc"
+  # 把这次抓到的历史提交回仓库——它才是「库的主人」。没变化就不提交。
+  if [ -d .git ]; then
+    git add data/deals.db
+    if git diff --cached --quiet; then
+      echo "价格库没有变化，不提交"
+    else
+      git -c user.name="deals bot" -c user.email="deals-bot@users.noreply.github.com" \
+        commit -q -m "价格快照 $(date '+%Y-%m-%d')（本机手动跑）" && \
+        git push -q && echo "价格库已提交并推送" || echo "提交/推送失败（数据仍在本地库里）"
+    fi
+  fi
+
+  echo "sync 退出码 ${sync_rc}　report 退出码 ${report_rc}　deploy 退出码 ${deploy_rc}　backup 退出码 $backup_rc"
 } >>"$LOG" 2>&1
 
 # 出问题要出声。抓取返回 0 件也算出问题——接口改了、被拦了，都会表现为「一件都没抓到」，
 # 而这时候报告仍然是「成功生成」的，静悄悄地就没数据了。
 if [ "$sync_rc" -ne 0 ] || [ "$report_rc" -ne 0 ] || [ "$deploy_rc" -ne 0 ] || [ "$backup_rc" -ne 0 ]; then
   if [ "$(uname)" = "Darwin" ]; then
-    osascript -e "display notification \"sync=$sync_rc report=$report_rc deploy=$deploy_rc backup=$backup_rc，详见 logs/daily.log\" with title \"deals 每日任务失败\""
+    osascript -e "display notification \"sync=$sync_rc report=$report_rc deploy=$deploy_rc backup=${backup_rc}，详见 logs/daily.log\" with title \"deals 每日任务失败\""
   fi
 fi
 
@@ -80,5 +106,5 @@ fi
 "$NODE" src/cli.mjs alert >/dev/null 2>&1
 
 # 给 launchd 的 stdout 留一行短的，方便 `log show` 或者看 launchd.out.log
-echo "[$(date '+%F %T')] deals 每日任务结束（sync=$sync_rc report=$report_rc deploy=$deploy_rc backup=$backup_rc，详情见 logs/daily.log）"
+echo "[$(date '+%F %T')] deals 每日任务结束（sync=$sync_rc report=$report_rc deploy=$deploy_rc backup=${backup_rc}，详情见 logs/daily.log）"
 exit $(( sync_rc || report_rc || deploy_rc || backup_rc ))

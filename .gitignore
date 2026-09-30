@@ -2,10 +2,15 @@
 node_modules/
 
 # 本地数据与产物：都是跑出来的，不进版本管理
-# （历史库是这个工具唯一攒出来的资产，但也只属于这台机器）
-data/
 reports/
 .build/
+
+# 唯一的例外是价格库——它是这个工具唯一攒出来的资产，而且现在**由 GitHub Actions 更新**
+# （runner 每次都是空的，库不进 git 的话历史每次都重置、上市价永远算不出来）。
+# 每次跑完由工作流提交回仓库，于是 git 历史本身就是带版本的异地备份。
+# data/ 下其余的东西（字体缓存、本机快照）继续忽略。
+data/*
+!data/deals.db
 
 # `deals <站点> dev` 用的暂存数据（data.js 是生成的、font.css 是子集字体、img 是指向 reports/<站点>/img 的软链）
 web/public/data.js
