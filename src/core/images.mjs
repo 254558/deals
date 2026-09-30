@@ -25,18 +25,56 @@
  * 5xx 或超时是网络抖动，同一张图再试一次。
  */
 
-import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
+import { mkdirSync, existsSync, writeFileSync, unlinkSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+
+/**
+ * 图片统一转成 WebP（实测同样清晰度下比官网给的 JPEG 小一半：6 张样本 488KB → 247KB）。
+ *
+ * 为什么值得：报告首屏那十来张图是**整页最大的一笔流量**（优衣库实测 1.26MB），
+ * 手机上 4G 要等一两秒；而且这份报告是每天在手机上翻的。
+ *
+ * sharp 是 devDependency（只在生成报告时用，报告本身是静态文件）。没装（比如
+ * `npm ci --omit=dev`）就退回 JPEG——扩展名跟着变，上游拿到的路径永远是对的。
+ */
+const WEBP_QUALITY = 82;
+let sharp = null;
+try {
+  sharp = (await import('sharp')).default;
+} catch {
+  sharp = null;
+}
+const OUT_EXT = sharp ? 'webp' : 'jpg';
 
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-async function tryDownload(url, dest) {
+async function fetchImage(url) {
   const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(25_000) });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const buf = Buffer.from(await res.arrayBuffer());
   if (buf.length < 100) throw new Error('返回内容为空');
-  writeFileSync(dest, buf);
+  return buf;
+}
+
+/** 转成 WebP；没有 sharp（或本来就不是图片）就原样返回 */
+async function encode(buf) {
+  if (!sharp) return buf;
+  try {
+    return await sharp(buf).webp({ quality: WEBP_QUALITY }).toBuffer();
+  } catch {
+    return buf; // 转不动就别转，宁可大一点也不能丢图
+  }
+}
+
+/**
+ * 把老缓存里的 JPEG 就地升级成 WebP（本机、以及 GitHub Actions 那份缓存里都是 JPEG）。
+ * 转完删掉 JPEG——两份都留着只会让部署多传一遍。
+ */
+async function upgradeLegacy(jpgPath, webpPath) {
+  const buf = await encode(readFileSync(jpgPath));
+  writeFileSync(webpPath, buf);
+  try { unlinkSync(jpgPath); } catch {}
 }
 
 /** 逐个候选试，第一个成功的就是它。410/404 都算「这张没了」，换下一张。 */
@@ -45,7 +83,7 @@ async function download(urls, dest) {
   for (const url of urls) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        await tryDownload(url, dest);
+        writeFileSync(dest, await encode(await fetchImage(url)));
         return { ok: true };
       } catch (err) {
         lastError = err.message;
@@ -73,16 +111,18 @@ function candidatesOf(p, size, sizeVariant) {
 /**
  * 保证每件商品都有本地图，已存在的跳过。
  *
- * 文件名带档位（`120367@800.jpg`），换档位时不会把旧档当缓存命中，
- * 也不会把两种分辨率混在一起。
+ * 文件名带档位与格式（`120367@800.webp`），换档位/换格式时不会把旧的当缓存命中，
+ * 也不会把两种分辨率混在一起。老缓存里的 `.jpg` 会被就地转成 WebP 再删掉，
+ * 所以本机和 CI 缓存都能平滑升级。
  *
  * @param {object[]} products 每项要有 id/code 与候选图（`remoteImages` / `remoteImage`）
  * @param {string} imgDir
  * @param {object} opts
  * @param {(url:string,size:number)=>string} opts.sizeVariant 站点自己的档位改写规则
  * @param {boolean} [opts.offline] 只认已经缓存好的图，缺的不去下载（开发预览用这个）
- * @returns {Promise<{images:Map<string,string>, downloaded:number, failed:number, cached:number, dead:object[]}>}
+ * @returns {Promise<{images:Map<string,string>, downloaded:number, converted:number, failed:number, cached:number, dead:object[]}>}
  *   缺图的不在 images 里；`dead` 是候选链全挂的商品，留个记录好排查。
+ *   `converted` 是「由老 JPEG 就地转成 WebP」的——它不走网络，所以不算进 `downloaded`。
  */
 export async function ensureImages(products, imgDir, { size = 800, concurrency = 8, offline = false, onProgress, sizeVariant } = {}) {
   if (typeof sizeVariant !== 'function') throw new Error('ensureImages 需要站点提供 sizeVariant(url, size)');
@@ -93,9 +133,15 @@ export async function ensureImages(products, imgDir, { size = 800, concurrency =
   for (const p of products) {
     const code = p.id || p.product_code || p.productCode;
     if (!code) continue;
-    const file = `${code}@${size}.jpg`;
+    const file = `${code}@${size}.${OUT_EXT}`;
     if (existsSync(join(imgDir, file))) {
       result.set(code, `img/${file}`);
+      continue;
+    }
+    // 老缓存：有 JPEG 没 WebP → 就地转（不重新下载）
+    const legacy = `${code}@${size}.jpg`;
+    if (OUT_EXT === 'webp' && existsSync(join(imgDir, legacy))) {
+      todo.push({ code, file, legacy, name: p.name });
       continue;
     }
     const urls = candidatesOf(p, size, sizeVariant);
@@ -106,15 +152,29 @@ export async function ensureImages(products, imgDir, { size = 800, concurrency =
   const dead = [];
   let done = 0;
   let failed = 0;
+  let converted = 0; // 由老 JPEG 就地转出来的（不是下载）
 
   async function worker() {
     while (todo.length) {
       const job = todo.shift();
-      const { ok, lastError } = await download(job.urls, join(imgDir, job.file));
+      let ok = false;
+      let lastError = '';
+      if (job.legacy) {
+        // 老 JPEG → WebP（本地转换，不走网络）
+        try {
+          await upgradeLegacy(join(imgDir, job.legacy), join(imgDir, job.file));
+          ok = true;
+          converted++;
+        } catch (err) {
+          lastError = err.message;
+        }
+      } else {
+        ({ ok, lastError } = await download(job.urls, join(imgDir, job.file)));
+      }
       if (ok) result.set(job.code, `img/${job.file}`);
       else {
         failed++;
-        dead.push({ code: job.code, name: job.name, tried: job.urls.length, error: lastError });
+        dead.push({ code: job.code, name: job.name, tried: job.urls?.length ?? 0, error: lastError });
       }
       done++;
       // 每 20 张回一次进度：两家都是上千件商品，太密的回调只是白刷屏
@@ -123,5 +183,5 @@ export async function ensureImages(products, imgDir, { size = 800, concurrency =
   }
 
   await Promise.all(Array.from({ length: Math.min(concurrency, total || 1) }, worker));
-  return { images: result, downloaded: total - failed, failed, cached: products.length - total, dead };
+  return { images: result, downloaded: total - failed - converted, converted, failed, cached: products.length - total, dead };
 }

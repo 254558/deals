@@ -422,7 +422,11 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     });
     images = res.images;
     process.stdout.write(`\r${' '.repeat(48)}\r`);
-    console.log(C.dim(`图片：新下载 ${res.downloaded} 张，已有缓存 ${res.cached} 张${res.failed ? `，失败 ${res.failed} 张` : ''}`));
+    console.log(
+      C.dim(
+        `图片：新下载 ${res.downloaded} 张${res.converted ? `，由旧 JPEG 转出 ${res.converted} 张` : ''}，已有缓存 ${res.cached} 张${res.failed ? `，失败 ${res.failed} 张` : ''}`
+      )
+    );
     if (res.failed) {
       // 候选链全挂 = 这个商品在 CDN 上没有可用图（或者官网本来就没图）→ 不上榜
       console.log(C.yellow(`  ${res.failed} 件没有可用图，已从报告里剔除（看不到东西就没法买）。`));

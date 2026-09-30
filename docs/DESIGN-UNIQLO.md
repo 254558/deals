@@ -37,7 +37,7 @@
 三件事没有变，是有意的：
 
 1. **localStorage 键沿用 `uniql.picks` / `uniql.dropped` / `uniql.hidden`**，`deals[].id` 也沿用旧的 `productCode` 值。所以在合并前那份报告里点过的收藏、隐藏过的商品，在新报告里原样还在（契约第五节）。
-2. **优衣库图片 CDN 的 ORB 坑没变**：它返回的 `Content-Type` 是 `application/octet-stream`，Chrome 的 ORB 会拦掉跨域引用，报告里会是一片空白。所以商品图必须下到 `reports/uniqlo/img/`，payload 里给的是本地相对路径 `img/u…@561.jpg`，**不能**回头去引 CDN。
+2. **优衣库图片 CDN 的 ORB 坑没变**：它返回的 `Content-Type` 是 `application/octet-stream`，Chrome 的 ORB 会拦掉跨域引用，报告里会是一片空白。所以商品图必须下到 `reports/uniqlo/img/`，payload 里给的是本地相对路径 `img/u…@561.webp`，**不能**回头去引 CDN。
 3. **上市价照旧是攒出来的**：抓的仍是官方原价（`originPrice`），存进 `launch_price` 时取历次快照的最大值。合并后是**空库重新抓的**（没有迁移旧的 `uniql.db`），所以头几天 `launch_price` 必然等于当前原价，降幅看着偏小；等每天 `sync` 攒到几周才是真的上市价。
 
 ---
@@ -229,7 +229,11 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 80 档在大图视图里根本不够看——卡片在 1440 宽是 `318px`、单列窄屏能到 `513px`，Retina 下要 `600~1000px` 的源图——所以用 561 档：全站约 88MB，CDN 吞吐 6MB/s，一次抓完二十几秒。
 
-档位写在 URL 路径里（`.../main/first/561/1.jpg`），所以适配器的 `sizeVariant` 是个纯字符串替换：把 `/first/<任意数字>/` 换成 `/first/561/`。这条规则**留在站点这一侧**，共享核心只负责「把 URL 交出去、把字节收回来」。文件名带档位（`u0000000072656@561.jpg`），换档位时不会把旧档的图当缓存命中。
+档位写在 URL 路径里（`.../main/first/561/1.jpg`），所以适配器的 `sizeVariant` 是个纯字符串替换：把 `/first/<任意数字>/` 换成 `/first/561/`。这条规则**留在站点这一侧**，共享核心只负责「把 URL 交出去、把字节收回来」。文件名带档位与格式（`u0000000072656@561.webp`），换档位/换格式时不会把旧的当缓存命中。
+   落盘前统一过一次 **WebP q82**（见 core/images.mjs 的 `encode`）：官网给的 JPEG 同样清晰度下
+   实测大一半（6 张样本 488KB → 247KB），而首屏那十来张图是整页最大一笔流量。
+   老缓存里的 JPEG 会被**就地转换**再删掉，所以本机和 CI 的缓存都能平滑升级；没装 sharp
+   （`npm ci --omit=dev`）就退回 JPEG，扩展名跟着变，上游拿到的路径永远是对的。
 
 优衣库只需要**一张**图，所以它的候选链长度是 1；共享核心统一按「候选链」处理（一张一张试，第一张下来了就停），逻辑完全一样。这一站没有迪卡侬那种「主图 410、副图还在」的问题，但共用这套代码不损失任何东西。
 

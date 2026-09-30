@@ -319,6 +319,31 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
     'utf8'
   );
 
+  /**
+   * 缓存头。Pages 的默认策略是 `max-age=0, must-revalidate`——**连那两千多张商品图也是**，
+   * 于是每次打开报告，浏览器都要为每一张图跑一趟 304 校验：手机上 10 张图就是 10 个来回，
+   * 光等 RTT 就一两秒（图片字节一个没省，白等）。实测见 docs/DESIGN-UNIQLO.md。
+   *
+   * 分档：
+   *   图片   —— 文件名里带 id 和档位，内容极少变 → 30 天 + 后台慢慢刷
+   *   报告页 —— 每天更新一次，但同一个人可能连着开好几次 → 5 分钟新鲜 + 其余时间先给旧的
+   *   API    —— 市集是活的，一律不缓存（Functions 自己也会带 no-store）
+   */
+  // ⚠️ 别用 `/*` 兜底：_headers 的规则是**叠加**的——图片会同时命中 `/uniqlo/img/*` 和 `/*`，
+  // 响应里就出现两条 Cache-Control（实测 `max-age=2592000…, max-age=300…`），浏览器按哪条
+  // 算不确定。所以逐条写清楚，不留重叠。
+  const html = '  Cache-Control: public, max-age=300, stale-while-revalidate=86400\n';
+  const headers = [
+    ...sites.map((x) => `/${x.id}/img/*\n  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400\n`),
+    '/api/*\n  Cache-Control: no-store\n',
+    ...sites.map((x) => `/${x.id}/\n${html}`),
+    '/market/\n' + html,
+    '/market/admin/\n  Cache-Control: no-store\n',
+    '/\n' + html,
+    '/*.html\n' + html,
+  ].join('\n');
+  writeFileSync(join(dir, '_headers'), headers, 'utf8');
+
   const index = join(dir, 'index.html');
   writeFileSync(index, renderRootRedirect({ defaultSite, sites }), 'utf8');
 
@@ -330,7 +355,7 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const notFound = join(dir, '404.html');
   writeFileSync(notFound, renderNotFound({ sites }), 'utf8');
 
-  return [index, redirects, notFound, join(dir, '_routes.json')];
+  return [index, redirects, notFound, join(dir, '_routes.json'), join(dir, '_headers')];
 }
 
 /**

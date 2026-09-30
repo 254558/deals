@@ -129,7 +129,7 @@
   // 「都有」用「同家族内在售的码是否连成一段」判。迪卡侬没有这个钩子，恒为 null。
   "sizes": { "full": false, "labels": ["P21", "W23"], "count": 2 },
   "url": "https://www.uniqlo.cn/product-detail.html?productCode=…",
-  "image": "img/u0000000072656@561.jpg",   // 本地缓存相对路径。不会为 null ——
+  "image": "img/u0000000072656@561.webp",  // 本地缓存相对路径（统一 WebP，见 docs/DESIGN-UNIQLO.md）。不会为 null ——
                                             // 没图的商品在生成阶段就被剔掉了（见下）
   "tags": ["concessional_rate"],
   "launchPrice": 249,
