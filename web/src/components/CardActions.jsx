@@ -14,7 +14,7 @@ import { Heart, EyeClosed } from 'lucide-react';
  * 「不再出现」用闭眼（`EyeClosed`），不用垃圾桶、也不用叉号：垃圾桶填成实心就是一只
  * 黑桶，跟一排数字排在一起又重又钝；叉号虽然轻，但它是两条硬邦邦的直线，跟圆润的爱心
  * 并排像两个体系的东西。闭眼是「不看了／不显示」最安静的说法，也正好对上这件商品的状态
- * ——它没被销毁，只是从这张榜上隐掉了，工具栏那个「放回」一点就能叫回来。形状上它和
+ * ——它没被销毁，只是从这张榜上**永久**隐掉了（2026-09-30 起没有放回）。形状上它和
  * 爱心一样是圆润的有机图形，并列不打架。
  *
  * 它是全组里最淡的一个图形（实测墨迹量只有实心爱心的 0.27，划掉的眼睛是 0.55），
@@ -52,11 +52,11 @@ export function CardActions({ watched, onPick, onHide }) {
         type="button"
         className="dealact"
         onClick={onHide}
-        title="以后不再出现这件（工具栏上可以全部放回）"
+        title="永久隐藏这件：不再出现在榜上，也无法放回"
       >
         {/* 同 size 即可：EyeClosed 跟爱心一样铺满 24 格，量到同样的墨迹跨度 */}
         <EyeClosed size={16} strokeWidth={2} aria-hidden="true" />
-        <span className="sr-only">不再出现</span>
+        <span className="sr-only">永久隐藏</span>
       </button>
     </div>
   );

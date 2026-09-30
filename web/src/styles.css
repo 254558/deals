@@ -263,18 +263,6 @@ button {
 .search::placeholder { color: var(--ink-4); }
 .search:focus { border-color: var(--ink); }
 
-/* 闭眼那个动作的回头路：只在真隐藏过东西时才出现，没隐藏就一点位置都不占 */
-.hiddenctl {
-  font-family: inherit;
-  color: var(--ink-2);
-  background: none;
-  border: 1px solid var(--rule);
-  cursor: pointer;
-  transition: color .12s, border-color .12s;
-}
-.hiddenctl:hover { color: var(--ink); border-color: var(--ink); }
-.hiddenctl:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-
 /* ---------------- 排序 / 视图开关 ---------------- */
 
 .sortctl { display: flex; align-items: center; }
@@ -589,7 +577,6 @@ button {
 [data-site="uniqlo"] .tab__n { margin-left: 5px; }
 [data-site="uniqlo"] .search { font-size: 12px; padding: 7px 12px; width: 240px; }
 [data-site="uniqlo"] .search:focus { border-color: var(--ink); }
-[data-site="uniqlo"] .hiddenctl { font-size: 11px; padding: 5px 10px; }
 [data-site="uniqlo"] .toolbar__count { font-size: 11px; }
 
 [data-site="uniqlo"] .sortctl { gap: 0; }
@@ -762,18 +749,8 @@ html[data-site="decathlon"] {
   border-radius: 0;
 }
 [data-site="decathlon"] .search:focus { border-color: var(--blue); }
-[data-site="decathlon"] .hiddenctl {
-  margin-left: auto;
-  font-size: 13px;
-  color: var(--blue);
-  border: 0;
-  border-bottom: 1px solid var(--blue);
-  padding-bottom: 1px;
-}
-[data-site="decathlon"] .hiddenctl:hover { color: var(--blue); border-color: var(--blue); }
-/* 计数靠右：共用那条已经给了 `margin-left: auto`，这里再写一遍是为了把它钉死 ——
-   迪卡侬旧版是靠 .hiddenctl 顶开的，而那个按钮只在「真隐藏过商品」时才出现，
-   一出现一消失，计数就会左右跳一下。靠 auto 定住位置，多一个按钮也不重排 */
+/* 计数靠右：共用那条已经给了 `margin-left: auto`，这里再写一遍是为了把它钉死，
+   免得将来工具条上多一个会消失的控件时，计数跟着左右跳一下 */
 [data-site="decathlon"] .toolbar__count { margin-left: auto; font-size: 13px; color: var(--ink-faint); }
 
 [data-site="decathlon"] .sortctl { gap: 6px; font-size: 14px; }
@@ -924,7 +901,6 @@ html[data-site="decathlon"] {
      排序默认就是最该看的「降幅」，视图在窄屏本来也只剩一种能看。
      撤完工具条就是一行 57px（手机的 7%），钉着才划算：877 / 1302 件商品，
      滚到中段想换个页签「只看尾货」，不该一路滚回顶部。
-     「已隐藏 N 件 · 放回」不受影响——它只在真藏了商品时出现，是回头的路。
 
      合并时这里曾经按「拿高度说话」分成两家两种做法（优衣库 57px 钉住、
      迪卡侬 104px 滚走），依据是两家的旧版各自量过的高度。后来统一成一行之后，

@@ -183,7 +183,7 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('rate');
   const [asc, setAsc] = useState(false);
-  const { watch, togglePick, hide, restoreHidden } = useWatch();
+  const { watch, togglePick, hide } = useWatch();
 
   /**
    * 点过闭眼（不再出现）的直接从榜上拿掉——榜单和计数都看不到它，所以先从源头上滤一遍；
@@ -276,8 +276,6 @@ export default function App() {
         counts={counts}
         shown={rows.length}
         total={deals.length}
-        hiddenCount={watch.hidden.size}
-        onRestoreHidden={restoreHidden}
         sort={sort}
         asc={asc}
         onSort={handleSort}

@@ -164,7 +164,7 @@
 ```
 `${meta.storagePrefix}.picks`    在报告里点过爱心
 `${meta.storagePrefix}.dropped`  在报告里点过取消收藏（压住终端 track 进来的）
-`${meta.storagePrefix}.hidden`   点过闭眼，不再出现
+`${meta.storagePrefix}.hidden`   点过闭眼：**永久**不再出现，没有放回
 ```
 
 因为 `deals[].id` 沿用了旧仓库的 `productCode` / `dsmCode`，前缀也沿用

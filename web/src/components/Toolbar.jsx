@@ -11,7 +11,6 @@ import { META } from '../lib/site.js';
  */
 export function Toolbar({
   filter, onFilter, query, onQuery, counts, shown, total,
-  hiddenCount, onRestoreHidden,
   sort, asc, onSort, onDir,
 }) {
   return (
@@ -79,17 +78,6 @@ export function Toolbar({
             {shown === total ? `显示全部 ${num(total)} 件` : `筛出 ${num(shown)} / ${num(total)} 件`}
           </span>
 
-          {/* 「不再出现」是个一键到底的动作，误点了得有地方回头，否则只能去清浏览器存储 */}
-          {hiddenCount > 0 && (
-            <button
-              type="button"
-              className="hiddenctl"
-              onClick={onRestoreHidden}
-              title="把点过闭眼的商品全部放回榜上"
-            >
-              已隐藏 {num(hiddenCount)} 件 · 放回
-            </button>
-          )}
         </div>
       </div>
     </div>

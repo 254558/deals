@@ -12,7 +12,7 @@ import { META } from './site.js';
  *   picks    在报告里点过「收藏」的
  *   dropped  在报告里点过「取消收藏」的——用来压住终端 `deals <站点> track` 进来的那些，
  *            否则点了取消，刷新又从数据库里冒回来
- *   hidden   点过闭眼图标的，不再出现
+ *   hidden   点过闭眼图标的：**永久**不再出现（没有放回，见文件末尾那段）
  *
  * 键前缀取 `META.storagePrefix`（uniql / deca），**不是**新造的：
  * `deals[].id` 沿用旧仓库那两个商品编号字段的值，键前缀也沿用旧的，
@@ -79,10 +79,13 @@ export function useWatch() {
     setWatch((w) => ({ ...w, hidden: new Set(w.hidden).add(code) }));
   }, []);
 
-  /** 工具栏那颗「已隐藏 N 件 · 放回」点一下全放回来 */
-  const restoreHidden = useCallback(() => {
-    setWatch((w) => ({ ...w, hidden: new Set() }));
-  }, []);
-
-  return { watch, togglePick, hide, restoreHidden };
+  /**
+   * 这里原先还有一个 `restoreHidden`（工具栏那颗「已隐藏 N 件 · 放回」）。
+   * 2026-09-30 应要求删掉了：闭眼就是**永久删掉**——有些东西就是不想见第二次，
+   * 而一颗「放回」按钮等于天天提醒你「这儿还堆着你藏起来的东西」。
+   * 于是 hidden 只增不减，也不再有任何入口能看见它、动它。
+   *
+   * 代价是误点没法撤：真要撤只能清浏览器存储（写进 README 了）。
+   */
+  return { watch, togglePick, hide };
 }
