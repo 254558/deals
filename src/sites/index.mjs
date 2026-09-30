@@ -54,8 +54,6 @@ export const CLOUDFLARE = {
  */
 export const DEFAULT_SITE = 'uniqlo';
 
-export const byId = (id) => SITES.find((s) => s.id === id) ?? null;
-
 /** 'u' / 'uniql' / 'uniqlo' 都指向同一个站点；认不出来返回 null */
 export function resolveSite(token) {
   const t = String(token ?? '').toLowerCase();

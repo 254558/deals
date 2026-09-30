@@ -350,12 +350,32 @@ function sizeInfo(row, vocab) {
     .sort((a, b) => a.ord - b.ord)
     .map((e) => shortLabel(e.label, e.code));
 
-  // 「都有」＝同家族里在售的码连成一段（中途不缺档）
+  // 「都有」＝同家族里在售的码连成一段（中途不缺档）。
+  // 这是**保守判据**：只看在售的码彼此连不连续，不看该款到底有哪几档——
+  // 因为范围串的写法和词表并不一致（裤子写 '160/70A ~ 190/120C'，词表里却是
+  // 'W28/28英寸/28码'），拿它比会得出不可靠的结果。
   const ords = entries.map((e) => e.ord).sort((a, b) => a - b);
   const sameFamily = entries.every((e) => e.grp === grp);
-  const contiguous = sameFamily && ords[ords.length - 1] - ords[0] === ords.length - 1;
+  let full = sameFamily && ords[ords.length - 1] - ords[0] === ords.length - 1;
 
-  return { full: contiguous, labels, count: codes.length };
+  // 但范围串**能用的时候**（两端都能在词表里认出来：字母码 'S ~ XL'、厘米码 '110cm ~ 160cm'），
+  // 再校一道——**只降不升**：在售的码只要有一个落在范围之外，就不能说「都有」。
+  // 补的是这个缺口：该款 S~XL、只剩 XS 时，光看连续性会说「都 有」（只有一档当然连续），
+  // 而范围明明写着它还有 S/M/L。认不出来（CMD/INS 那种写法）就跳过，维持上面的判断。
+  if (full) {
+    const labelOf = (code) => shortLabel(vocab.get(code)?.label, code);
+    const fam = [...vocab.entries()].filter(([, e]) => e.grp === grp).map(([code, e]) => ({ code, ord: e.ord }));
+    const idx = (text) => fam.find(({ code }) => labelOf(code).toLowerCase() === String(text).trim().toLowerCase());
+    const [lo, hi] = String(row.size_range || '').split('~').map((t) => t.trim());
+    const a = idx(lo);
+    const b = idx(hi);
+    if (a && b) {
+      const inRange = new Set(fam.filter(({ ord }) => ord >= Math.min(a.ord, b.ord) && ord <= Math.max(a.ord, b.ord)).map((x) => x.code));
+      if (codes.some((c) => !inRange.has(c))) full = false;
+    }
+  }
+
+  return { full, labels, count: codes.length };
 }
 
 export { sizeInfo, fetchSizeVocab };
@@ -407,6 +427,8 @@ export default {
 
   copy: {
     syncTitle: '抓取优衣库特价商品…',
+    // CLI 的 --sort 提示文案（cmdList 与 help 都在读它）
+    sortHint: 'rate|saving|newest',
     dropped: '这次又降价的商品',
     permanent: '官方永久降价（原价下调，比限时特优更值得出手）',
     added: '本次新出现的特价商品（可能是刚降价，也可能之前就没抓全）',
@@ -420,7 +442,6 @@ export default {
       { tag: 'concessional_rate', text: '超值精选（清仓，会继续降，但容易断码）' },
       { tag: 'time_doptimal', text: '限时特优（下周可能涨回原价）' },
     ],
-    sortHint: 'rate|saving|newest',
     tagHint: 'time_doptimal|concessional_rate',
     sourceNote: '数据源：uniqlo.cn 公开搜索接口。价格以结账页为准。',
   },

@@ -23,8 +23,8 @@ export const DEALS = DATA.deals ?? [];
  * 站点标识。它只做一件事：写进 `<html data-site>`，也就是 styles.css 里
  * `[data-site="…"]` 那些专有作用域的挂钩。
  *
- * **组件里不许用它做版面判断** —— 契约第三节：`data-site` 是版面差异的唯一开关，
- * 而组件里的差异一律走 `META.features.*`。这里导出它只是为了 main.jsx 落 DOM 属性和
- * dev 时排错，任何 `site === 'uniqlo' ? … : …` 都是错的。
+ * **组件里不许拿站点名做版面判断** —— 契约第三节：`data-site` 是版面差异的唯一开关，
+ * 而组件里的差异一律走 `META.features.*`。`DATA.site` 只在 main.jsx 里落一次
+ * `<html data-site>`；任何 `site === 'uniqlo' ? … : …` 都是错的。
  */
-export const SITE = DATA.site;
+// （原先这里还导出一个 SITE = DATA.site，全仓库没人引用，2026-09-30 删掉）

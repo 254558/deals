@@ -52,7 +52,7 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 
 站点别名：`uniqlo` / `uniql` / `u`，`decathlon` / `deca` / `d`。也认 `--site uniqlo`。
 
-`package.json` 里有对应的 npm scripts（`npm run sync`、`npm run report:uniqlo`…）。
+`package.json` 里有对应的 npm scripts（`npm run sync`、`npm run report:uniqlo`…），以及 **`npm test`**——跑 `node --test`，零依赖，覆盖那些「光看代码看不出对错」的规则：下架判定与安全阀、谢绝名单、payload 契约（没有空图、没有被屏蔽的商品、meta 里没有页脚）、尺码映射（字母码 / 腰围码换厘米 / 英寸换算 / 认不出来就不猜）。测试全在 `test/`，用临时库跑，不碰 `data/deals.db`。
 
 ## 网页报告
 

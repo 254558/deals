@@ -396,6 +396,8 @@ export default {
 
   copy: {
     syncTitle: '抓取迪卡侬特惠专区…',
+    // CLI 的 --sort 提示文案（cmdList 与 help 都在读它）
+    sortHint: 'rate|saving|price|newest',
     dropped: '这次又降价的商品',
     permanent: '官方下调划线价（比打折更值得出手）',
     added: '本次新出现的商品（可能刚降价，也可能之前没抓全）',
@@ -408,7 +410,6 @@ export default {
       { tag: 'endlife', text: '尾货（清仓，会继续降，但容易断码）' },
       { tag: 'new_arrival', text: '新品（刚上架就在打折）' },
     ],
-    sortHint: 'rate|saving|price|newest',
     tagHint: 'endlife|new_arrival',
     sourceNote: '数据源：decathlon.com.cn 公开接口。价格以结账页为准。',
   },
