@@ -839,6 +839,10 @@ html[data-site="decathlon"] {
 
 @media (max-width: 1180px) {
     html { --pad: 24px; }
+
+    /* 触屏平板（≤1180）上搜索框还看得见：输入框字号必须 ≥16px，否则 iOS 一聚焦
+       就自动把整页放大一点（手机端搜索是隐藏的，见下面那条，所以这条只管平板）。 */
+    [data-site] .search { font-size: 16px; }
   /* 五格还是五格，只是每格的内衬收一收——换列数会让格与格之间的竖线断在换行处 */
   [data-site="uniqlo"] .topranks { gap: 16px; }
 

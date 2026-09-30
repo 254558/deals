@@ -33,6 +33,8 @@
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
+  /* 手机上别让系统自作主张放大字号（和下面输入框 16px 是一件事的两半） */
+  html { -webkit-text-size-adjust: 100%; }
   /* `hidden` 属性在 UA 样式里只是 `[hidden] { display: none }`，优先级极低——
      下面 `.photo img { display: block }` 会把它盖掉，于是没选图时破图图标和 alt 文字
      会露出来（本地截图抓到的）。这条兜底一次，免得每处都记着加 [hidden]。 */
@@ -89,12 +91,19 @@
   .card__head[aria-expanded="true"] .card__arrow { transform: rotate(-135deg) translate(-2px, -2px); }
   .card__body { padding: 2px 22px 22px; border-top: 1px solid var(--rule-soft); }
   label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
+  /* 输入框一律 16px：**iOS 只认这个数**——小于 16px 的输入框一被聚焦，Safari 会
+     自动把整页放大一点（用户报的「点一下商品名，屏幕突然放大一点」就是这个），
+     而且它放大之后不会自己缩回去。改成 16px 是正解；`user-scalable=no` 那条路
+     iOS 从 10 起就不认了，还会顺手废掉双指缩放。 */
   input[type=text], input[type=number], textarea {
-    width: 100%; padding: 9px 11px; border: 1px solid var(--rule); background: var(--white); line-height: 22px;
+    width: 100%; padding: 9px 11px; border: 1px solid var(--rule); background: var(--white);
+    font-size: 16px; line-height: 22px;
   }
   input[type=text]::placeholder, input[type=number]::placeholder, textarea::placeholder { color: var(--ink-4); }
   input:focus, textarea:focus { outline: 0; border-color: var(--ink); }
-  textarea { min-height: 76px; resize: vertical; }
+  /* resize: none —— 右下角那个能拖的斜纹小滑块（用户说的「侧边滑块那条」）没意义，
+     拖动改高还会把表单撑歪；高度由 min-height 定就够了 */
+  textarea { min-height: 76px; resize: none; }
   .hint { font-size: 12px; color: var(--ink-4); margin-top: 6px; }
   .btn {
     display: inline-block; padding: 11px 22px; border: 1px solid var(--ink); background: var(--ink);
@@ -148,7 +157,7 @@
   .photo:hover { border-color: var(--ink-4); }
   .photo--dragover { border-color: var(--blue); background: #f2f3fb; }
   .photo--has { border-style: solid; border-color: var(--rule); background: none; cursor: default; }
-  .photo input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+  .photo input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; font-size: 16px; }
   /* 标签铺满整块虚线区：点框里任何地方都能唤起选图，不是只有中间那行字能点。
      ⚠️ 这里**不能**写 `pointer-events: none`——当初为了让拖拽落到外层框上加了它，
      结果点击也被一起屏蔽：点「选择照片」毫无反应（用户报的就是这个）。
