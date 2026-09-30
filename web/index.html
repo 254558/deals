@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>捡漏榜</title>
+<!-- 这个页面只给 `deals <站点> dev` 用（Vite 热更新调试页），真正发出去的报告是
+     `deals <站点> report` 生成的自包含 reports/<站点>/index.html，
+     那里面 CSS / JS / 数据 / 字体全部内联，不许有任何外部请求。
+
+     数据和字体走的是 web/public/ 里的两份文件，由报告生成器在每次 report 之前写好：
+       data.js  = `window.__DEALS_DATA__ = {…}`（合并前两家各用各的全局变量名，见契约）
+       font.css = 思源黑体子集，只有优衣库那一站生成；迪卡侬那站是个空文件
+
+     data-site 由 main.jsx 从 payload 里写上去（真报告里是 renderHtml 直接写在 <html> 上），
+     这样 dev 页的版面也和正式报告一致。 -->
+<link rel="stylesheet" href="/font.css">
+<script src="/data.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

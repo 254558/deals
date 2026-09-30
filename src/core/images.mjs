@@ -1,0 +1,127 @@
+/**
+ * 商品图片本地缓存（两家共用一套）。
+ *
+ * 为什么要下载而不是直接引用外链：
+ *  - 优衣库的图片 CDN 返回的 `Content-Type` 是 `application/octet-stream`，
+ *    Chrome 的 ORB（Opaque Response Blocking）会因此拦掉这些跨域图片请求，
+ *    报告里的图全是空白。这条是硬性的。
+ *  - 迪卡侬的 CDN 返回正常的 `image/jpeg`，不存在 ORB 问题，但仍然要抓下来：
+ *    报告要能离线看，而且迪卡侬尾货卖完就下架，下架后图片 404/410，榜上会留一排破图。
+ *
+ * ── 合并时把两边的差异抽成了两件事 ──────────────────────────────────────
+ *
+ * 1. **档位怎么写**（`sizeVariant`，由站点适配器提供）。这是个纯字符串游戏，
+ *    两家的规则完全不同：优衣库是 `/first/80/1.jpg` 这种路径里的档位目录，且
+ *    官方只有 80 / 561 两档能用（中间档一律 404）；迪卡侬有两个图床，一个
+ *    `/800x800/content.jpg` 插路径、另一个阿里云 OSS 得走 `?x-oss-process=`。
+ *    所以这条规则必须留在站点那一侧，核心只负责「把 URL 交出去、把字节收回来」。
+ *
+ * 2. **一张图还是一串候选**（`images` 链）。迪卡侬一件商品有 3 张图，而且
+ *    实测有 130 件的**首图**在 CDN 上已经永久消失（HTTP 410 Gone），副图却还在，
+ *    所以它需要一个候选链：一张一张试，第一张下下来了就停。优衣库只需要一张。
+ *    核心统一按「候选链」处理 —— 优衣库那条链长度是 1，逻辑完全一样。
+ *
+ * 4xx 与 5xx 区别对待：4xx 是「这张图不存在」，重试没意义，直接换候选；
+ * 5xx 或超时是网络抖动，同一张图再试一次。
+ */
+
+import { mkdirSync, existsSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
+const UA =
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
+async function tryDownload(url, dest) {
+  const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(25_000) });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length < 100) throw new Error('返回内容为空');
+  writeFileSync(dest, buf);
+}
+
+/** 逐个候选试，第一个成功的就是它。410/404 都算「这张没了」，换下一张。 */
+async function download(urls, dest) {
+  let lastError = '';
+  for (const url of urls) {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        await tryDownload(url, dest);
+        return { ok: true };
+      } catch (err) {
+        lastError = err.message;
+        if (/HTTP 4/.test(err.message)) break;
+        if (attempt === 0) await new Promise((r) => setTimeout(r, 500));
+      }
+    }
+  }
+  return { ok: false, lastError };
+}
+
+/**
+ * 一个商品的候选图 URL（已按档位改写），去重、去空。
+ *
+ * 只认 `remoteImages`（整条链）和 `remoteImage`（首图）：传进来的对象来自
+ * `buildPayload(db, site, null, { remote: true })`，那里的 `image` 还是 null 占位。
+ * **不能**把 `image` 也当候选 —— 渲染用的那份数据里它是本地相对路径
+ * （`img/120367@800.jpg`），拿它去拼档位目录只会得到一个不存在的地址。
+ */
+function candidatesOf(p, size, sizeVariant) {
+  const list = p.remoteImages?.length ? p.remoteImages : [p.remoteImage];
+  return [...new Set(list.filter(Boolean).map((u) => sizeVariant(u, size)))];
+}
+
+/**
+ * 保证每件商品都有本地图，已存在的跳过。
+ *
+ * 文件名带档位（`120367@800.jpg`），换档位时不会把旧档当缓存命中，
+ * 也不会把两种分辨率混在一起。
+ *
+ * @param {object[]} products 每项要有 id/code 与候选图（`remoteImages` / `remoteImage`）
+ * @param {string} imgDir
+ * @param {object} opts
+ * @param {(url:string,size:number)=>string} opts.sizeVariant 站点自己的档位改写规则
+ * @param {boolean} [opts.offline] 只认已经缓存好的图，缺的不去下载（开发预览用这个）
+ * @returns {Promise<{images:Map<string,string>, downloaded:number, failed:number, cached:number, dead:object[]}>}
+ *   缺图的不在 images 里；`dead` 是候选链全挂的商品，留个记录好排查。
+ */
+export async function ensureImages(products, imgDir, { size = 800, concurrency = 8, offline = false, onProgress, sizeVariant } = {}) {
+  if (typeof sizeVariant !== 'function') throw new Error('ensureImages 需要站点提供 sizeVariant(url, size)');
+  mkdirSync(imgDir, { recursive: true });
+  const result = new Map();
+
+  const todo = [];
+  for (const p of products) {
+    const code = p.id || p.product_code || p.productCode;
+    if (!code) continue;
+    const file = `${code}@${size}.jpg`;
+    if (existsSync(join(imgDir, file))) {
+      result.set(code, `img/${file}`);
+      continue;
+    }
+    const urls = candidatesOf(p, size, sizeVariant);
+    if (urls.length && !offline) todo.push({ code, file, urls, name: p.name });
+  }
+
+  const total = todo.length;
+  const dead = [];
+  let done = 0;
+  let failed = 0;
+
+  async function worker() {
+    while (todo.length) {
+      const job = todo.shift();
+      const { ok, lastError } = await download(job.urls, join(imgDir, job.file));
+      if (ok) result.set(job.code, `img/${job.file}`);
+      else {
+        failed++;
+        dead.push({ code: job.code, name: job.name, tried: job.urls.length, error: lastError });
+      }
+      done++;
+      // 每 20 张回一次进度：两家都是上千件商品，太密的回调只是白刷屏
+      if (onProgress && (done % 20 === 0 || done === total)) onProgress({ done, total, failed });
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, total || 1) }, worker));
+  return { images: result, downloaded: total - failed, failed, cached: products.length - total, dead };
+}

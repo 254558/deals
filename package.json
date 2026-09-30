@@ -1,0 +1,38 @@
+{
+  "name": "deals",
+  "version": "1.0.0",
+  "description": "比价与捡漏工具：记录各家零售商的上市价与现价，找出降价最狠的商品（优衣库 / 迪卡侬）",
+  "type": "module",
+  "bin": {
+    "deals": "./src/cli.mjs"
+  },
+  "scripts": {
+    "sites": "node src/cli.mjs sites",
+    "sync": "node src/cli.mjs all sync",
+    "sync:uniqlo": "node src/cli.mjs uniqlo sync",
+    "sync:decathlon": "node src/cli.mjs decathlon sync",
+    "list": "node src/cli.mjs uniqlo list",
+    "report": "node src/cli.mjs all report",
+    "report:uniqlo": "node src/cli.mjs uniqlo report",
+    "report:decathlon": "node src/cli.mjs decathlon report",
+    "dev:uniqlo": "node src/cli.mjs uniqlo dev",
+    "dev:decathlon": "node src/cli.mjs decathlon dev",
+    "build": "vite build",
+    "deploy:uniqlo": "node src/cli.mjs uniqlo deploy",
+    "deploy:decathlon": "node src/cli.mjs decathlon deploy"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "private": true,
+  "dependencies": {
+    "lucide-react": "^1.48.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.7.0",
+    "subset-font": "^2.9.0",
+    "vite": "^5.4.21"
+  }
+}

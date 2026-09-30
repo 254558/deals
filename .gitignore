@@ -1,0 +1,16 @@
+# 依赖
+node_modules/
+
+# 本地数据与产物：都是跑出来的，不进版本管理
+# （历史库是这个工具唯一攒出来的资产，但也只属于这台机器）
+data/
+reports/
+.build/
+
+# `deals <站点> dev` 用的暂存数据（data.js 是生成的、font.css 是子集字体、img 是指向 reports/<站点>/img 的软链）
+web/public/data.js
+web/public/font.css
+web/public/img
+
+logs/
+.DS_Store
