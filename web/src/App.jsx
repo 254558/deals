@@ -3,8 +3,6 @@ import { flushSync } from 'react-dom';
 import { Masthead } from './components/Masthead.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
 import { RankBoard } from './components/RankBoard.jsx';
-import { ColumnHeader } from './components/ColumnHeader.jsx';
-import { DealRow } from './components/DealRow.jsx';
 import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
@@ -46,39 +44,16 @@ function matcher(key) {
 
 /**
  * 中文列按 `localeCompare` 排，其余按数字。
- * 哪些列是文本列由 payload 的 `meta.textKeys` 给（优衣库只有 name，
+ * 哪些字段是文本由 payload 的 `meta.sorts[].text` 给（优衣库只有 name，
  * 迪卡侬还多一个 sports），组件里不猜。
  */
 function compare(key, asc) {
   const dir = asc ? 1 : -1;
-  const textKeys = new Set(META.textKeys ?? []);
+  const textKeys = new Set(META.sorts.filter((s) => s.text).map((s) => s.key));
   if (textKeys.has(key)) {
     return (a, b) => dir * String(a[key] || '').localeCompare(String(b[key] || ''), 'zh');
   }
   return (a, b) => dir * ((a[key] ?? 0) - (b[key] ?? 0));
-}
-
-/**
- * 表头要粘在工具栏正下方，所以它的 top 必须等于「工具栏此刻的高度」。
- * 工具栏是 flex-wrap 的，换行数随宽度变（实测：1440/1280/1100 一档 57px，
- * 900/761 两行 109px，760/620/480 三行 157.5px，380 四行 226px），
- * 写死一个断点值总会有几档对不上，于是干脆让浏览器自己量。
- * 量的时机：挂载、工具栏尺寸变化、切换视图（两家的工具栏行数不同，同一份代码照样量得准）。
- */
-function useStickyHeadOffset(view) {
-  useEffect(() => {
-    const tb = document.querySelector('.toolbar');
-    if (!tb) return;
-    const set = () =>
-      document.documentElement.style.setProperty(
-        '--headtop',
-        `${Math.round(tb.getBoundingClientRect().height)}px`
-      );
-    set();
-    const ro = new ResizeObserver(set);
-    ro.observe(tb);
-    return () => ro.disconnect();
-  }, [view]);
 }
 
 /**
@@ -208,11 +183,6 @@ export default function App() {
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('rate');
   const [asc, setAsc] = useState(false);
-  // 默认大图浏览：捡漏要先看得见东西（衣服 / 装备），价格对比可以切到列表
-  const [view, setView] = useState('grid');
-
-  useStickyHeadOffset(view);
-
   const { watch, togglePick, hide, restoreHidden } = useWatch();
 
   /**
@@ -258,7 +228,7 @@ export default function App() {
       deals
         .filter(matcher(filter))
         .filter((d) => !q || hay(d).includes(q))
-        // 排序键就是 meta.columns 里的 key；降幅那一列比的是 payload 里的 rate（精确值），
+        // 排序键就是 meta.sorts 里的 key；降幅那一项比的是 payload 里的 rate（精确值），
         // 不是四舍五入后的整数百分比——三件都显示 -74% 时顺序仍由真实值决定
         .sort(compare(sort, asc))
     );
@@ -266,14 +236,14 @@ export default function App() {
 
   // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
   // resetKey 里放的是「会让结果换一批」的五个状态：筛选、搜索、排序、升降序、视图。
-  const { visible, sentinelRef } = useIncremental(rows.length, `${filter}|${query}|${sort}|${asc}|${view}`);
+  const { visible, sentinelRef } = useIncremental(rows.length, `${filter}|${query}|${sort}|${asc}`);
 
   function handleSort(key) {
     if (key === sort) setAsc((v) => !v);
     // 切到一个新列时：文本列升序读起来顺（拼音序），数字列降序才有意义（先看降得最狠的）
     else {
       setSort(key);
-      setAsc((META.textKeys ?? []).includes(key));
+      setAsc(META.sorts.some((s) => s.key === key && s.text));
     }
   }
 
@@ -308,65 +278,32 @@ export default function App() {
         total={deals.length}
         hiddenCount={watch.hidden.size}
         onRestoreHidden={restoreHidden}
-        view={view}
-        onView={setView}
         sort={sort}
         asc={asc}
         onSort={handleSort}
         onDir={() => setAsc((v) => !v)}
       />
 
-      {view === 'grid' ? (
-        <div className="wrap">
-          {rows.length === 0 ? (
-            <Empty query={query} filter={filter} onReset={reset} />
-          ) : (
-            <>
-              <div className="grid" role="list" aria-label={META.pageTitle}>
-                {rows.slice(0, visible).map((deal, i) => (
-                  <ProductCard
-                    key={deal.id}
-                    deal={deal}
-                    index={i}
-                    onPick={() => pick(deal)}
-                    onHide={() => hideDeal(deal)}
-                  />
-                ))}
-              </div>
-              <More visible={visible} total={rows.length} sentinelRef={sentinelRef} />
-            </>
-          )}
-        </div>
-      ) : (
-        /* 表头和数据行必须在同一个 rowgroup 里：一是 role="columnheader"/aria-sort
-           需要有 table 祖先，二是 sticky 表头只有在父容器比它高时才能粘住。
-           `.table` 那层只是 ARIA 容器（迪卡侬那份顺手给了它一点下边距），没有版面。
-           「加载更多」那行放在 rowgroup **外面**：rowgroup 里只该有 row */
-        <div className="table" role="table" aria-label={META.pageTitle}>
-          <div className="wrap" role="rowgroup">
-            {rows.length > 0 && <ColumnHeader sort={sort} asc={asc} onSort={handleSort} />}
-
-            {rows.length === 0 ? (
-              <Empty query={query} filter={filter} onReset={reset} />
-            ) : (
-              rows.slice(0, visible).map((deal, i) => (
-                <DealRow
+      <div className="wrap">
+        {rows.length === 0 ? (
+          <Empty query={query} filter={filter} onReset={reset} />
+        ) : (
+          <>
+            <div className="grid" role="list" aria-label={META.pageTitle}>
+              {rows.slice(0, visible).map((deal, i) => (
+                <ProductCard
                   key={deal.id}
                   deal={deal}
                   index={i}
                   onPick={() => pick(deal)}
                   onHide={() => hideDeal(deal)}
                 />
-              ))
-            )}
-          </div>
-          {rows.length > 0 && (
-            <div className="wrap">
-              <More visible={visible} total={rows.length} sentinelRef={sentinelRef} />
+              ))}
             </div>
-          )}
-        </div>
-      )}
+            <More visible={visible} total={rows.length} sentinelRef={sentinelRef} />
+          </>
+        )}
+      </div>
 
       <div className="wrap">
         <footer className="foot">

@@ -63,15 +63,15 @@
     { "key": "tracked", "label": "待拔草" }
   ],
 
-  // 列表视图的列 = 表头 + 排序入口 + 行内单元格，一份声明三处共用。
-  // kind 决定 DealRow 渲染哪种单元格；排序键就是 key。
-  "columns": [
-    { "key": "name",         "label": "商品",   "align": "l", "kind": "name"  },
-    { "key": "launchPrice",  "label": "上市价", "align": "r", "kind": "was"   },
-    { "key": "price",        "label": "现价",   "align": "r", "kind": "now"   },
-    { "key": "rate",         "label": "降幅",   "align": "l", "kind": "scale" }
+  // 能按哪些字段排序：工具条那个下拉框照这个渲染（列表视图撤掉后，
+  // 这份声明只剩排序一个用途，所以叫 sorts 不叫 columns）。
+  // "text": true = 这个字段是文本：排序走中文 localeCompare，默认方向取升序。
+  "sorts": [
+    { "key": "name",        "label": "商品",   "text": true },
+    { "key": "launchPrice", "label": "上市价" },
+    { "key": "price",       "label": "现价"   },
+    { "key": "rate",        "label": "降幅"   }
   ],
-  "textKeys": ["name"],                 // 排序时按中文 localeCompare 的列，其余按数字
 
   "features": {                         // 界面开关，全部是布尔；缺省即 false
     "rankBoard": true,          // 页顶「本期降得最狠的 N 件」榜单（uniqlo）
@@ -80,11 +80,7 @@
     "priceOffBadge": false,     // 价格行里的黄底「-xx%」角标（deca）
     "dealBarNumber": true,      // 卡片横条尾部的红色降幅数字（uniqlo）
     "cardChips": false,         // 卡片底部的 chips 行（deca；托住底边对齐）
-    "trackChip": false,         // ★ 待拔草 chip（deca 的卡片与列表行）
-    "rowMetaLine": false,       // 列表行名称上方那行品牌+编号小灰字（deca）
-    "rowChips": false,          // 列表行的 chips+动作行（deca）；false 时只渲染动作
-    "flatWasDash": false,       // 没降价时「上市价」那格写「—」（deca）；false 时照写价格（uniqlo）
-    "scaleLayout": "inline"     // 'inline' = 降幅数字贴条尾（uniqlo）；'top' = 降幅+省 在条上方（deca）
+    "trackChip": false          // ★ 待拔草 chip（deca 的卡片）
   },
 
   "tagLabels": { "time_doptimal": "限时特优", "concessional_rate": "超值精选" },
@@ -109,8 +105,8 @@
 | `storagePrefix` | `uniql` | `deca` |
 | `showRecorded` | `false` | `true` |
 | `filters` | 全部 / 限时特优 / 超值精选 / 待拔草 | 全部 / 尾货 / 新品 / 待拔草 |
-| 尾列 | 无（原先的「月销」已撤：接口字段数值自相矛盾，见 [DESIGN-UNIQLO](DESIGN-UNIQLO.md)） | `sports` → 运动 |
-| `features` | `rankBoard`、`dealBarNumber`、`scaleLayout:'inline'` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip`、`rowMetaLine`、`rowChips`、`flatWasDash`、`scaleLayout:'top'` |
+| `sorts` | 商品 / 上市价 / 现价 / 降幅 | 商品 / 上市价 / 现价 / 降幅 / 运动 |
+| `features` | `rankBoard`、`dealBarNumber` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip` |
 | `fontNotice` | 思源黑体子集声明 | `null` |
 
 ## 四、deals — 每件商品

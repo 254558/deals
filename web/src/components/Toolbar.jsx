@@ -2,16 +2,6 @@ import { num } from '../lib/format.js';
 import { META } from '../lib/site.js';
 
 /**
- * 视图开关。它和站点无关（两家都有大图 / 列表两个视图），所以直接写在这里；
- * 契约里也没有对应字段 —— `features` 那组开关管的是**内容**（角标、chips、
- * 标尺布局…），不是这两个按钮。
- */
-const VIEWS = [
-  { key: 'grid', label: '大图' },
-  { key: 'table', label: '列表' },
-];
-
-/**
  * 筛选页签。
  *
  * 两家的页签不一样（优衣库：全部/限时特优/超值精选/待拔草；迪卡侬：全部/尾货/新品/待拔草），
@@ -22,7 +12,7 @@ const VIEWS = [
 export function Toolbar({
   filter, onFilter, query, onQuery, counts, shown, total,
   hiddenCount, onRestoreHidden,
-  view, onView, sort, asc, onSort, onDir,
+  sort, asc, onSort, onDir,
 }) {
   return (
     /* 三层，各管一件事：
@@ -57,8 +47,8 @@ export function Toolbar({
             aria-label={META.searchPlaceholder}
           />
 
-          {/* 大图视图里没有表头可点，排序得有个独立入口；列表视图里也一并能用。
-              排序下拉框的选项就是列表视图那几列，一份声明两处用 */}
+          {/* 排序入口。以前还能点列表的表头排序，列表撤掉之后这里是唯一入口，
+              选项来自 payload 的 `meta.sorts` */}
           <div className="sortctl">
             <label className="sortctl__label" htmlFor="sortsel">
               排序
@@ -69,7 +59,7 @@ export function Toolbar({
               value={sort}
               onChange={(e) => onSort(e.target.value)}
             >
-              {META.columns.map((c) => (
+              {META.sorts.map((c) => (
                 <option key={c.key} value={c.key}>
                   {c.label}
                 </option>
@@ -83,19 +73,6 @@ export function Toolbar({
             >
               {asc ? '↑' : '↓'}
             </button>
-          </div>
-
-          <div className="viewtabs" role="group" aria-label="视图">
-            {VIEWS.map((v) => (
-              <button
-                key={v.key}
-                className="tab viewtab"
-                aria-pressed={view === v.key}
-                onClick={() => onView(v.key)}
-              >
-                {v.label}
-              </button>
-            ))}
           </div>
 
           <span className="toolbar__count">
