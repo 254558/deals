@@ -173,8 +173,42 @@ ${other ? `<p style="color:#616161;font-size:14px">另一份在 <a href="${other
 }
 
 /**
- * 写部署根目录里的两个小文件：`reports/index.html`（落地页）与
- * `reports/_redirects`（Cloudflare 的 302）。生成器从不清 `reports/`，
+ * 404 页。为什么非要有它：部署根上放了 `index.html`（落地页）之后，
+ * **任何不存在的路径都会返回 200 + 那个落地页**（实测 `/zzz-不存在`、
+ * `/uniqlo/nope`、`/favicon.ico` 全是 718 字节的落地页）。也就是说站点永远不会 404，
+ * 打错一个地址会被悄悄送到优衣库，爬虫也能把任意垃圾路径都收成 200。
+ * 放一个 `404.html` 进去，Pages 就会用它 + 404 状态码回。
+ */
+export function renderNotFound({ sites = [] } = {}) {
+  const links = sites
+    .map((s) => `<li><a href="${s.id}/">${s.label}捡漏榜</a></li>`)
+    .join('\n      ');
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>这个地址不存在 · 捡漏榜</title>
+<style>body{margin:0;font:400 16px/1.7 -apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;color:#000f17;background:#fff}
+main{max-width:32rem;margin:18vh auto;padding:0 24px}h1{font-size:20px;margin:0 0 12px}
+p{color:#616161}ul{padding-left:1.2em}li{margin:6px 0}a{color:#3643ba}</style>
+</head>
+<body>
+<main>
+<h1>这个地址不存在</h1>
+<p>报告只有这几份：</p>
+<ul>
+      ${links}
+</ul>
+</main>
+</body>
+</html>
+`;
+}
+
+/**
+ * 写部署根目录里的三个小文件：`index.html`（落地页）、`_redirects`（Cloudflare 的
+ * 302）、`404.html`（不存在的路径别悄悄返回 200）。生成器从不清 `reports/`，
  * 所以写完就一直在，不会被下次生成冲掉。
  *
  * @returns {string[]} 写出去的文件路径
@@ -191,7 +225,10 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const redirects = join(dir, '_redirects');
   writeFileSync(redirects, `/  /${defaultSite}/  302\n`, 'utf8');
 
-  return [index, redirects];
+  const notFound = join(dir, '404.html');
+  writeFileSync(notFound, renderNotFound({ sites }), 'utf8');
+
+  return [index, redirects, notFound];
 }
 
 /**

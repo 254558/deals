@@ -196,10 +196,11 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 >
 > 另外 Cloudflare 的文档写「裸域必须是 Cloudflare 上的 zone」，实测**不是硬要求**：用 API 直接挂裸域会被接受，验证方式走 HTTP、照样签发证书。这条是踩过之后记下来的——别照文档那句话就下结论（我一开始就下错了）。
 
-**根路径 `/` 默认进优衣库。** 部署上去的是整个 `reports/`，两份各占一个子目录，所以 `/` 本来什么都没有、打开是 404。生成报告时会顺手写两个小文件到部署根：
+**根路径 `/` 默认进优衣库。** 部署上去的是整个 `reports/`，两份各占一个子目录，所以 `/` 本来什么都没有、打开是 404。生成报告时会顺手写三个小文件到部署根：
 
 - `reports/_redirects` → `/  /uniqlo/  302`（Cloudflare 给真 302，`curl -I /` 能看到 `location: /uniqlo/`）
 - `reports/index.html` → 一份 meta refresh 落地页，**相对路径** `uniqlo/`。相对路径的好处是网页上解析成 `/uniqlo/`、本地双击解析成旁边的 `reports/uniqlo/`，两边都对；而且不依赖托管方特性，将来搬到阿里云 OSS 也一样用
+- `reports/404.html` → 不存在的路径的兜底页。**这个必须有**：部署根上放了 `index.html` 之后，Cloudflare Pages 会把**任何**不存在的路径都回成 `200 + 落地页`（实测 `/zzz-不存在`、`/uniqlo/nope`、`/favicon.ico` 全是那份 718 字节的落地页）——站点于是永远不 404，打错地址会被悄悄送到优衣库，爬虫也能把任意垃圾路径收成 200。放上 `404.html` 之后 Pages 才回 404 状态码
 
 想换默认站点，改 `src/sites/index.mjs` 里的 `DEFAULT_SITE` 一行即可，重跑一次 `report` 就更新。
 
