@@ -426,7 +426,7 @@ export default {
     storagePrefix: 'deca',
     showRecorded: true,
     crossLink: {
-      href: 'https://uniql-tau.vercel.app',
+      href: 'https://goodprices.online/uniqlo/',
       label: '优衣库',
       title: '优衣库比价报告（新标签打开）',
     },

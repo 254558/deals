@@ -317,8 +317,7 @@ function cmdNew(site) {
 
 async function cmdTrack(site, codeArg) {
   if (!codeArg) {
-    console.error(`用法：deals ${site.id} track <商品编号>，${site.copy.trackUsage}`);
-    process.exit(1);
+    throw new Error(`用法：deals ${site.id} track <商品编号>，${site.copy.trackUsage}`);
   }
   const code = site.parseCode(codeArg);
   const db = openDb(DB_PATH);
@@ -326,8 +325,7 @@ async function cmdTrack(site, codeArg) {
 
   const p = await site.findByCode(code);
   if (!p) {
-    console.error(`没找到编号为 ${code} 的商品，确认一下编号是否正确。`);
-    process.exit(1);
+    throw new Error(`没找到编号为 ${code} 的商品，确认一下编号是否正确。`);
   }
 
   const diff = saveSnapshot(db, site.id, [p], { tracked: true });
@@ -354,13 +352,8 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
 
   const build = ensureBuild(ROOT, { force: rebuild });
   if (!build.ok) {
-    if (build.reason === 'missing-deps') {
-      console.error(C.red('\n报告页面依赖 React，还没装。先跑一次：'));
-      console.error(C.bold('  npm install\n'));
-    } else {
-      console.error(C.red('\n报告页面构建失败，看上面的 Vite 报错。\n'));
-    }
-    process.exit(1);
+    if (build.reason === 'missing-deps') throw new Error('报告页面依赖 React，还没装。先跑一次 npm install');
+    throw new Error('报告页面构建失败，看上面的 Vite 报错');
   }
 
   const outDir = reportDir(site);
@@ -463,13 +456,11 @@ function cmdHistory(site, codeArg) {
   // 特惠区里的商品——正是接口查不到、而本地还留着记录的那些
   const code = site.parseCode(codeArg);
   if (!codeArg) {
-    console.error(`用法：deals ${site.id} history <商品编号>`);
-    process.exit(1);
+    throw new Error(`用法：deals ${site.id} history <商品编号>`);
   }
   const rows = historyOf(openDb(DB_PATH), site.id, code);
   if (!rows.length) {
-    console.error(`本地没有 ${code} 的价格快照。`);
-    process.exit(1);
+    throw new Error(`本地没有 ${code} 的价格快照`);
   }
   console.log(C.dim(`\n${code} 的价格快照（一天一条，价格取当天最低）\n`));
   console.table(rows);
@@ -533,12 +524,9 @@ async function cmdDeployVercel(site) {
   const args = ['deploy', dir, '--project', site.vercelProject, '--prod', '--yes'];
   console.log(C.bold(`\nvercel ${args.join(' ')}\n`));
   const res = spawnSync('vercel', args, { cwd: ROOT, stdio: 'inherit' });
-  if (res.error) {
-    console.error(C.red(`\n部署失败：${res.error.message}`));
-    console.error(C.dim('  要装 Vercel CLI 并先登录一次：npm i -g vercel && vercel login\n'));
-    process.exit(1);
-  }
-  process.exit(res.status ?? 1);
+  if (res.error) throw new Error(`vercel 起不来：${res.error.message}（要装 Vercel CLI 并先登录一次：npm i -g vercel && vercel login）`);
+  if (res.status !== 0) throw new Error(`vercel 返回 ${res.status}，看上面的输出`);
+  return res.status;
 }
 
 /**
@@ -720,26 +708,49 @@ try {
       console.error(C.red(`\n${cmd} 一次只能对一个站点做，请指明：deals ${siteList()} ${cmd}\n`));
       process.exit(1);
     } else {
+      /**
+       * 逐个站点跑，而且**互相隔离**：一个站点失败不该让另一个也做不成。
+       *
+       * 之前这里只是一个 for 循环外套一个 try，两处会连带：
+       *  1. 抛错（比如优衣库接口抖一下）会直接跳出循环 —— 迪卡侬当天就不抓了；
+       *  2. 命令内部的 `process.exit` 更狠：`all deploy`（默认 Vercel 目标）里
+       *     第一个站点部署完就 exit，第二个站点**根本没跑**。
+       * 所以现在逐站捕获、继续跑完剩下的，最后统一报一次并给出非零退出码
+       * （每日任务靠退出码弹「失败」通知，所以这个码不能吞）。
+       */
+      const failures = [];
       for (const site of sites) {
-        switch (cmd) {
-          case 'sync': await cmdSync(site); break;
-          case 'list': cmdList(site); break;
-          case 'new': cmdNew(site); break;
-          case 'track': await cmdTrack(site, rest[0] || flag('code')); break;
-          case 'report':
-            await cmdReport(site, {
-              open: !has('no-open') && sites.length === 1, // 两家一起生成时不要连开两个窗口
-              withImages: !has('no-images'),
-              rebuild: has('rebuild'),
-              withFont: !has('no-font'),
-            });
-            break;
-          case 'stats': cmdStats(site); break;
-          case 'history': cmdHistory(site, rest[0] || flag('code')); break;
-          case 'dev': await cmdDev(site); break;
-          case 'deploy': await cmdDeployVercel(site); break;
-          default: cmdHelp(sites.length === 1 ? sites[0] : null);
+        try {
+          switch (cmd) {
+            case 'sync': await cmdSync(site); break;
+            case 'list': cmdList(site); break;
+            case 'new': cmdNew(site); break;
+            case 'track': await cmdTrack(site, rest[0] || flag('code')); break;
+            case 'report':
+              await cmdReport(site, {
+                open: !has('no-open') && sites.length === 1, // 两家一起生成时不要连开两个窗口
+                withImages: !has('no-images'),
+                rebuild: has('rebuild'),
+                withFont: !has('no-font'),
+              });
+              break;
+            case 'stats': cmdStats(site); break;
+            case 'history': cmdHistory(site, rest[0] || flag('code')); break;
+            case 'dev': await cmdDev(site); break;
+            case 'deploy': await cmdDeployVercel(site); break;
+            default: cmdHelp(sites.length === 1 ? sites[0] : null);
+          }
+        } catch (err) {
+          failures.push(`${site.label}：${err.message}`);
+          console.error(C.red(`\n${site.label} 这一步没做成：${err.message}`));
+          if (process.env.DEALS_DEBUG) console.error(err);
         }
+      }
+      if (failures.length) {
+        console.error(C.red(`\n${failures.length} 个站点失败（其余站点已照常完成）：`));
+        for (const f of failures) console.error(`  ${f}`);
+        console.error();
+        process.exit(1);
       }
     }
   }

@@ -1,4 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { Masthead } from './components/Masthead.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
 import { RankBoard } from './components/RankBoard.jsx';
@@ -161,6 +162,21 @@ function useIncremental(total, resetKey) {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, [grow]);
+
+  /**
+   * 打印要的是**全部**商品，而屏幕上只渲染了一部分（见上面 useIncremental）。
+   * 所以在 `beforeprint` 里一次性把总数补上，并用 `flushSync` 逼 React 同步渲染完
+   * ——普通 setState 在 React 18 里是异步的，浏览器开始排版时可能还没画出来，
+   * 打印就会缺内容（实测：不补的话迪卡侬只能印 18 页，补上之后是全部）。
+   *
+   * 打印完**不还原**：还原会让页面高度骤减、把滚动位置裁掉；打印本来就很少见，
+   * 下次刷新自然回到「先渲染 10 件」的快路径。
+   */
+  useEffect(() => {
+    const before = () => flushSync(() => setVisible(total));
+    window.addEventListener('beforeprint', before);
+    return () => window.removeEventListener('beforeprint', before);
+  }, [total]);
 
   return { visible: Math.min(visible, total), sentinelRef };
 }
