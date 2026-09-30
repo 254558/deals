@@ -121,7 +121,8 @@
   //   { full: false, labels }  断码 → 卡片显示「剩余：W21 · W23」，名字改挂在 title/aria-label 上
   // labels 是给人看的短名，**一律是厘米**（'70cm'、'53cm'、'22.5cm'）或原本就有的字母码
   // （'M'、'AA65'、'均码'）——「W28」那种美制腰围码没人读得出来。换算规则见
-  // src/sites/uniqlo.mjs 的 shortLabel。组件最多列 6 档，再多只显示 count。
+  // src/sites/uniqlo.mjs 的 shortLabel。组件把它们渲染成一个个 `<kbd>` 方块，
+  // 最多列 5 档（超过 5 档那行会折行、顶歪同排卡片的价格线），再多只显示 count。
   // 怎么算出来的见 src/sites/uniqlo.mjs 的 sizeInfo：词表存在库里（size_vocab 表），
   // 「都有」用「同家族内在售的码是否连成一段」判。迪卡侬没有这个钩子，恒为 null。
   "sizes": { "full": false, "labels": ["P21", "W23"], "count": 2 },

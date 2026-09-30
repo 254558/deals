@@ -560,10 +560,22 @@ button {
 }
 [data-site="uniqlo"] .card__img--none { background: var(--surface); }
 /* 断码时名字那一行显示的是尺码（见 ProductCard 的 sizeLine）。
-   字号跟着名字走（15px），所以两行的高度、跟价格的间距都不变。
-   「剩余：」和后面那几档**同一个墨色**（用户要求：不要灰的）——
-   整行读起来是一句话，不去分主次；这条靠继承 a{color:inherit} 拿到的就是墨色 */
-[data-site="uniqlo"] .cardsizes__list { letter-spacing: 0.02em; }
+   每一档是一个 **kbd 方块**（用户要的「像键盘键帽」）：直角、发丝边、浅底，
+   跟工具条上那些页签是同一种语言（白底 + #d9dde1 边、全站直角）。
+   文字用等宽体——尺码是数字和字母，等宽排出来整齐，也让方块宽度不忽宽忽窄。
+   「剩余：」和方块里的字**同一个墨色**（用户要求：不要灰的）。 */
+[data-site="uniqlo"] .sizekey {
+  display: inline-block;
+  margin: 0 3px 2px 0;
+  padding: 0 4px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 17px;
+  color: var(--ink);
+  vertical-align: 1px;
+}
 
 [data-site="uniqlo"] .card__name {
   display: -webkit-box;

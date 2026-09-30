@@ -29,11 +29,11 @@ import { CardActions } from './CardActions.jsx';
 /**
  * 这一行最多列几档尺码，超了就只写「剩 N 档」。
  *
- * 实测（1440 宽时卡片那行可用 318px）：W 码 8 档、厘米码 6 档、内衣码（AA65 这种）7 档
- * 能排成一行，再多就折成第二行——一折就把同一行卡片的价格线顶歪（一行的卡片高度必须一样）。
- * 取三个家族里最保守的那个：6。超过 6 档的实测只有 19 件，它们本来也列不全。
+ * 尺码改成 kbd 方块之后重量的（1440 宽时那行可用 322px）：方块比「 · 」分隔宽，
+ * 能排一行的上限跟着降——童装厘米码（110cm 这种）只到 **5** 档，腰围厘米码到 6 档、
+ * 字母码到 8 档。取最保守的 5。再多就折成第二行，一折就把同一行卡片的价格线顶歪。
  */
-const MAX_SIZE_LABELS = 6;
+const MAX_SIZE_LABELS = 5;
 
 export function ProductCard({ deal, index, onPick, onHide }) {
   const { url, image, name, brand, tags, tracked, rate, sizes } = deal;
@@ -51,10 +51,10 @@ export function ProductCard({ deal, index, onPick, onHide }) {
   const sizeLine = !sizes || sizes.full
     ? null
     : sizes.labels.length > MAX_SIZE_LABELS
-      ? { lead: '', text: `剩 ${sizes.count} 档` } // 太长，不列了，只报个数
+      ? { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` } // 太长，只报个数（不拆方块）
       : sizes.labels.length
-        ? { lead: '剩余：', text: sizes.labels.join(' · ') }
-        : { lead: '', text: `剩 ${sizes.count} 档` };
+        ? { lead: '剩余：', labels: sizes.labels, plain: sizes.labels.join(' · ') } // 一档一个 kbd 小方块
+        : { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` };
   // 动效错开只给前几行，否则滚到下面时动画早跑完了
   const delay = Math.min(index, 11) * 40;
   const now = priceParts(deal.price);
@@ -121,12 +121,23 @@ export function ProductCard({ deal, index, onPick, onHide }) {
           target="_blank"
           rel="noreferrer"
           title={sizeLine ? name : undefined}
-          aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.text}` : undefined}
+          // 方块之间没有分隔符，读屏/悬停要的是连成一句话的 plain
+          aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.plain}` : undefined}
         >
           {sizeLine ? (
             <>
               {sizeLine.lead && <span className="cardsizes__lead">{sizeLine.lead}</span>}
-              <span className="cardsizes__list">{sizeLine.text}</span>
+              {/* 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
+                  语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观——
+                  它没有 ARIA role，读屏不会多念什么；用真元素而不是 span 还白拿一层
+                  兜底（样式没加载时它是等宽字，仍然读得出来） */}
+              {sizeLine.labels
+                ? sizeLine.labels.map((l) => (
+                    <kbd className="sizekey" key={l}>
+                      {l}
+                    </kbd>
+                  ))
+                : <span className="cardsizes__list">{sizeLine.text}</span>}
             </>
           ) : (
             name
