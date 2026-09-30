@@ -389,7 +389,7 @@
     const open = postToggle.getAttribute('aria-expanded') === 'true';
     postToggle.setAttribute('aria-expanded', String(!open));
     $('postBody').hidden = open;
-    if (!open) $('title').focus(); // 展开就把光标放到第一个输入框，少点一次
+    // 不自动聚焦「商品名」：手机上会立刻弹出键盘、还会把页面顶一下，展开就是展开
   });
 
   // ---- 选图 / 拖图 ----
