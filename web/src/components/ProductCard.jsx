@@ -39,13 +39,12 @@ export function ProductCard({ deal, index, onPick, onHide }) {
    *   sizes.full=true   → 该款所有档位都有货，只写一个 all
    *   sizes.labels=[]   → 翻译不出来的多档商品：只报个数（宁可不说是哪几档，也不瞎猜）
    */
-  const sizeLine = !sizes
+  // 都有货就**不写**（用户要求：all 不用显示）。这一行留白但不写字的判断在下面渲染处。
+  const sizeLine = !sizes || sizes.full
     ? null
-    : sizes.full
-      ? 'all'
-      : sizes.labels.length
-        ? `剩余：${sizes.labels.join(' · ')}`
-        : `剩 ${sizes.count} 码`;
+    : sizes.labels.length
+      ? `剩余：${sizes.labels.join(' · ')}`
+      : `剩 ${sizes.count} 码`;
   // 动效错开只给前几行，否则滚到下面时动画早跑完了
   const delay = Math.min(index, 11) * 40;
   const now = priceParts(deal.price);
@@ -110,14 +109,19 @@ export function ProductCard({ deal, index, onPick, onHide }) {
       )}
 
       {/* 「还剩什么尺码」**另起一行**，跟在名字下面（2026-09-30：先做过一版把名字整个
-          换成尺码，用户看过之后要名字回来、尺码单独一行）。整块只在适配器算得出尺码时
-          才挂上去——算不出来的（睡衣/帽子/手套那类接口没给尺码的）就只少这一行。 */}
-      {sizeLine && (
+          换成尺码，用户看过之后要名字回来、尺码单独一行）。
+          **都有货就不写字**（用户要求 all 不用显示）——但这一行的高度照留：同一行里
+          这一行**永远画**（优衣库靠 features.cardSizes 开），算不出尺码的那些空着，
+          所以同一行卡片的高度一致。唯一会破坏对齐的是尺码特别多的（剩 10 档以上，
+          实测 19 件），那行会折成两行——少到可以不管。 */}
+      {feats.cardSizes && (
         <p className="card__sizes">
-          {!sizes.full && sizes.labels.length > 0 && <span className="cardsizes__lead">剩余：</span>}
-          <span className={`cardsizes__list${sizes.full ? ' cardsizes__list--full' : ''}`}>
-            {sizeLine.replace('剩余：', '')}
-          </span>
+          {sizeLine && (
+            <>
+              {sizes.labels.length > 0 && <span className="cardsizes__lead">剩余：</span>}
+              <span className="cardsizes__list">{sizeLine.replace('剩余：', '')}</span>
+            </>
+          )}
         </p>
       )}
 

@@ -70,7 +70,11 @@ function normalize(p) {
   return {
     productCode: p.productCode,
     code: p.code,
-    name: (p.name4zhCN || p.name || '').trim(),
+    // 官网的名字是「主名/一堆形容词」拼的，例如
+    // 「高性能修身防皱衬衫/长袖衬衣商务通勤」——斜线后面那截是给搜索/分类用的，
+    // 卡片上没人看（图片比字清楚）。只留斜线前面那一段，实测这样读起来正好。
+    // 完整名字没丢：它照旧进 extra.fullName。
+    name: shortName(p.name4zhCN || p.name || ''),
     fullName: (p.productName4zhCN || p.productName || '').trim(),
     season: p.season4zhCN || p.season || '',
     sex: p.sex4zhCN || '',
@@ -259,8 +263,23 @@ const tableColumns = [
  * 而「连续＝不缺码」不依赖那个串，且不会误报（真缺了档就一定不连续）。
  */
 
-/** 词表里的显示名取第一段：'W28/28英寸/28码' → 'W28'、'36/225mm/22.5cm' → '36' */
-const shortLabel = (label) => String(label || '').split('/')[0].trim();
+/** 站点的商品名：只留斜线前面那截 */
+const shortName = (name) => String(name || '').split('/')[0].trim();
+
+/**
+ * 词表里的显示名取一段。**优先取 W 段**，取不到才用第一段。
+ *
+ * 为什么不是无脑取第一段：同一个家族里词表的写法自己就不统一——CMD/INS 里
+ * CMD070 是 'W28/28英寸/28码'（第一段就是 W28），而 CMD073 是 '73cm/W29/29英寸/29码'
+ * （第一段是 73cm）。无脑取第一段，卡片上就会冒出
+ * 「W28 · 76cm · 79cm · 82cm · W40…」这种半中半英的混排（用户报的就是这个）。
+ * 而 CMD/INS 全部 41 档都带 W 段，所以按 W 段取一定统一。其它家族（字母码、厘米码、
+ * 鞋码 '36/225mm/22.5cm'、内衣 'AA65/65AA/…'）没有 W 段，第一段本来就是对的那个。
+ */
+const shortLabel = (label) => {
+  const parts = String(label || '').split('/').map((t) => t.trim());
+  return parts.find((t) => /^W\d+$/.test(t)) || parts[0] || '';
+};
 
 /** 抓尺码词表。侧边栏跟搜索条件无关（是整站的尺码体系），随便带一个条件就行。 */
 async function fetchSizeVocab() {
@@ -419,6 +438,8 @@ export default {
     ],
 
     features: {
+    // 卡片上「还剩什么尺码」那一行（含没有内容时占位，保证同一行卡片价格对齐）
+    cardSizes: true,
       rankBoard: true, // 页顶「本期降得最狠的五件」（优衣库独有）
       stickerTags: false,
       brandMark: false,
