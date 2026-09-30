@@ -69,8 +69,12 @@ function toDeal(row, images, remote) {
  * @param {object} [opts]
  * @param {boolean} [opts.remote] 带上 CDN 候选图地址（只有下图那一趟需要）
  * @param {string|null} [opts.fontNotice] 实际内嵌了字体才写版权声明，否则 null
+ * @param {string|null} [opts.crossLinkHref] 覆盖报头那个「另一家的报告」的链接。
+ *   Vercel 上两份报告在两个域名，各写绝对地址（站点描述符里的默认值）；
+ *   Cloudflare 上两份在同一个域名的兄弟目录，改成相对路径 `../<站点>/` ——
+ *   相对路径换域名、换本地双击都对。
  */
-export function buildPayload(db, site, images, { remote = false, fontNotice = site.report.fontNotice } = {}) {
+export function buildPayload(db, site, images, { remote = false, fontNotice = site.report.fontNotice, crossLinkHref = null } = {}) {
   const deals = listDeals(db, site.id, { limit: 5000, minRate: 0.15 });
   const tracked = listTracked(db, site.id);
 
@@ -78,11 +82,14 @@ export function buildPayload(db, site, images, { remote = false, fontNotice = si
   const seen = new Set(deals.map((d) => d.product_code));
   const rows = [...deals, ...tracked.filter((t) => !seen.has(t.product_code))];
 
+  const meta = { ...site.report, fontNotice };
+  if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
+
   return {
     site: site.id,
     generatedAt: new Date().toISOString(),
     recorded: stats(db, site.id).total,
-    meta: { ...site.report, fontNotice },
+    meta,
     deals: rows.map((r) => toDeal(r, images, remote)),
   };
 }

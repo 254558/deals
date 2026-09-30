@@ -27,6 +27,19 @@ import decathlon from './decathlon.mjs';
 
 export const SITES = [uniqlo, decathlon];
 
+/**
+ * Cloudflare Pages 的配置。
+ *
+ * 和 Vercel 那边不一样：Vercel 是**每站一个项目**（站点描述符里的 `vercelProject`），
+ * Cloudflare 这边是**一个项目装两份报告**，各占一个子目录 —— 把整个 `reports/`
+ * 目录发上去，得到 `<host>/uniqlo/` 与 `<host>/decathlon/`。
+ * 所以项目名/域名属于「一次部署」，不属于某个站点，放在这里而不是站点描述符里。
+ */
+export const CLOUDFLARE = {
+  project: 'deals-pinouts',
+  host: 'https://deals-pinouts.pages.dev',
+};
+
 export const byId = (id) => SITES.find((s) => s.id === id) ?? null;
 
 /** 'u' / 'uniql' / 'uniqlo' 都指向同一个站点；认不出来返回 null */

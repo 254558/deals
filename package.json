@@ -19,7 +19,8 @@
     "dev:decathlon": "node src/cli.mjs decathlon dev",
     "build": "vite build",
     "deploy:uniqlo": "node src/cli.mjs uniqlo deploy",
-    "deploy:decathlon": "node src/cli.mjs decathlon deploy"
+    "deploy:decathlon": "node src/cli.mjs decathlon deploy",
+    "deploy:cloudflare": "node src/cli.mjs all deploy --target cloudflare"
   },
   "engines": {
     "node": ">=22"

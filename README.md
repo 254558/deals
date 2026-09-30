@@ -42,7 +42,7 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 | `deals <站点> report` | 生成 HTML 报告并打开。`--no-images` 跳过图片缓存、`--no-open` 只生成不打开、`--rebuild` 强制重建页面、`--no-font` 不内嵌字体 |
 | `deals <站点> stats` | 本地数据概览 |
 | `deals <站点> dev` | 起 Vite 开发服务器调报告页面（热更新），数据来自当前数据库 |
-| `deals <站点> deploy` | 生成最新报告并 `vercel deploy` 到对应的项目 |
+| `deals <站点> deploy` | 生成最新报告并推上去。默认 Vercel（每站一个项目）；`--target cloudflare` 改推 Cloudflare Pages（一个项目装两份） |
 | `deals sites` | 有哪些站点、各攒了多少 |
 
 站点别名：`uniqlo` / `uniql` / `u`，`decathlon` / `deca` / `d`。也认 `--site uniqlo`。
@@ -92,6 +92,7 @@ src/core/            两个站点共用的核心
   report.mjs         组装 payload + 把 CSS/JS/数据/字体内联成单文件 HTML
   fonts.mjs          下载中文字体并按实际用字子集化（声明了 fonts 的站点才用）
   terminal.mjs       终端颜色、按显示宽度补位、通用表格
+  cf-wrangler.mjs    Cloudflare Pages 部署（含「大请求体被掐时改用小批次」的兜底）
 src/sites/           站点适配器：只有「这家才这样」的东西
   uniqlo.mjs         优衣库：搜索接口、字段映射、标签文案、图片档位、字体、报告开关
   decathlon.mjs      迪卡侬：匿名令牌 + BFF 接口、model 选价、两个图床的缩放写法
@@ -133,12 +134,14 @@ reports/<站点>/       生成的报告与图片缓存
 
 **新库是空库重新抓的**，没有迁移旧的 `uniql.db` / `deca.db`。所以开头几天「上市价」等于当前原价，降幅看着会偏小；等快照攒到几周，这个判断才真正准。想立刻要旧库的历史，见下面的「注意」。
 
-## 部署到 Vercel
+## 部署
 
-两份报告都是静态文件（一个自包含 HTML + 一目录本地商品图），所以**直接把 `reports/<站点>/` 当静态站发上去**：
+两份报告都是静态文件（一个自包含 HTML + 一目录本地商品图），随便往哪个静态托管上发都行。仓库里接好了两个目标，`--target` 切：
+
+### Vercel（默认，每站一个项目）
 
 ```bash
-vercel login                    # 只需一次
+vercel login                        # 只需一次
 node src/cli.mjs uniqlo deploy      # 生成最新报告，再 vercel deploy reports/uniqlo --project uniql --prod --yes
 node src/cli.mjs decathlon deploy   # 同理，项目 decathlon-deals
 ```
@@ -147,11 +150,26 @@ node src/cli.mjs decathlon deploy   # 同理，项目 decathlon-deals
 
 挑 `reports/<站点>/` 而不是仓库根目录来部署是刻意的：那个目录里没有 `package.json`，**不会跑依赖安装、也没有 `build` 脚本可跑**——Vercel 只负责原样收下这些文件。生成报告时会顺手在目录里放一份三行的 `vercel.json`（`framework` / `installCommand` / `buildCommand` 全置空），把「这是静态文件」这件事写死，免得被识别成 Vite 预设白跑一遍构建；生成器从不清 `reports/`，所以这份配置不会被下次生成冲掉。
 
-三个要知道的点：
+### Cloudflare Pages（一个项目装两份）
 
-- **部署的是一份快照。** Vercel 上不会自己抓数据——数据库和抓取脚本都在本地。要更新就再跑一次 `deploy`。
-- **收藏 / 不再出现不会跟过去。** 两本账存在 localStorage 里、按域名隔离。
-- 部署**默认是公开的**：实测没有任何访问保护，拿到链接的人都能看。要收起来，去项目的 Deployment Protection 开 Vercel Authentication。
+```bash
+npx wrangler login                  # 只需一次（浏览器点一下 Allow）
+node src/cli.mjs all deploy --target cloudflare
+```
+
+线上地址：<https://deals-pinouts.pages.dev/uniqlo/> 与 <https://deals-pinouts.pages.dev/decathlon/>（项目名在 `src/sites/index.mjs` 的 `CLOUDFLARE` 里）。
+
+和 Vercel 那边不一样，这里是**一个项目装两份报告**：命令会把两份都重新生成，再把整个 `reports/` 目录发上去，站点各占一个子目录。所以报头那个「另一家的报告」入口在 Cloudflare 上改成了**同域的相对路径**（`../decathlon/`、`../uniqlo/`），换域名、甚至本地双击都对。这个命令与「对哪个站点做」无关，从哪一站触发都一样。
+
+> **这台机器上必须知道的一件事。** `wrangler pages deploy` 是按 **40MB 一批**打包上传的（bundle 里写死的 `MAX_BUCKET_SIZE`），而这条网络（Clash Verge 的 TUN）传大请求体会断流：实测 1MB×10 并发全过、2MB×3 全过、5MB 起开始掉、40MB×3 就必挂，报 `write EPIPE` / `ERR_HTTP2_STREAM_ERROR`。同一个 13MB 请求体换 `node:https`（HTTP/1.1）或 curl 都 100% 成功，所以是 HTTP/2 大请求体在这条路上不稳，不是网络不通。
+>
+> 于是 `deploy --target cloudflare` 是**两次尝试**：先照常跑 wrangler；失败就复制一份 wrangler 的 bundle、只把批次从 40MB 改成 2MB，再用 node 跑那份副本（见 `src/core/cf-wrangler.mjs` 里的实测数据与理由）。日常只改两个 HTML 时，第一次尝试就能过（素材已在 Cloudflare 上，`check-missing` 只补变化的那两个文件，实测 2 秒）；只有大批新图时才会走到小批次那条路。
+
+三个两个目标共通的点：
+
+- **部署的是一份快照。** 托管方不会自己抓数据——数据库和抓取脚本都在本地。要更新就再跑一次 `deploy`。
+- **收藏 / 不再出现不会跟过去。** 两本账存在 localStorage 里、按域名隔离；Cloudflare 与 Vercel 是两个域名，各是一本账。
+- 部署**默认是公开的**：拿到链接的人都能看。要收起来，Vercel 走项目的 Deployment Protection，Cloudflare 走 Cloudflare Access。
 
 ## 自动化
 

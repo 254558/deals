@@ -34,7 +34,8 @@ import { openDb, saveSnapshot, listDeals, listTracked, listJustDropped, historyO
 import { buildPayload, writeData, ensureBuild, renderHtml } from './core/report.mjs';
 import { ensureFontFiles, buildFontCss } from './core/fonts.mjs';
 import { ensureImages } from './core/images.mjs';
-import { SITES, resolveTargets, siteList } from './sites/index.mjs';
+import { findWranglerBundle, smallBatchBundle, pagesDeploy } from './core/cf-wrangler.mjs';
+import { SITES, CLOUDFLARE, resolveTargets, siteList } from './sites/index.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DB_PATH = join(ROOT, 'data', 'deals.db');
@@ -226,7 +227,7 @@ ${tagLine}  ${diff.added.length ? C.green('已加入关注列表。') : C.dim('�
   console.log(C.dim(`  以后用 deals ${site.id} list --tracked 只看待拔草的商品，或 deals ${site.id} report 在网页里看。\n`));
 }
 
-async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true } = {}) {
+async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, crossLinkHref = null } = {}) {
   const db = openDb(DB_PATH);
 
   const build = ensureBuild(ROOT, { force: rebuild });
@@ -271,12 +272,12 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   if (withFont && site.fonts) {
     const files = await ensureFontFiles(join(ROOT, 'data', 'fonts'), site.fonts, { onStatus: (m) => console.log(C.dim(`\n${m}`)) });
     if (files) {
-      const payloadText = JSON.stringify(buildPayload(db, site, images));
+      const payloadText = JSON.stringify(buildPayload(db, site, images, { crossLinkHref }));
       fontCss = await buildFontCss({ files, text: js + payloadText, family: site.fonts.family, notice: site.fonts.notice });
     } else console.log(C.yellow('\n字体下载失败，报告改用系统字体栈（版面不受影响）。'));
   }
 
-  const payload = buildPayload(db, site, images, { fontNotice: fontCss ? site.fonts?.notice ?? null : null });
+  const payload = buildPayload(db, site, images, { fontNotice: fontCss ? site.fonts?.notice ?? null : null, crossLinkHref });
   writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, payload }), 'utf8');
 
   // 报告目录里放一份三行的 vercel.json（framework / installCommand / buildCommand 全置空）：
@@ -398,7 +399,7 @@ async function cmdDev(site) {
   spawnSync(vite, ['--open'], { cwd: ROOT, stdio: 'inherit' });
 }
 
-async function cmdDeploy(site) {
+async function cmdDeployVercel(site) {
   console.log(C.dim(`\n先重新生成 ${site.label} 的报告…`));
   await cmdReport(site, { open: false });
 
@@ -414,6 +415,74 @@ async function cmdDeploy(site) {
   process.exit(res.status ?? 1);
 }
 
+/**
+ * 两份报告互相指路的链接：Cloudflare 上它们是同一个域名的兄弟目录，
+ * 所以用相对路径 `../<另一个站点>/` —— 换域名、换本地双击都对。
+ */
+const cfCrossLink = (site) => {
+  const other = SITES.find((s) => s.id !== site.id);
+  return other ? `../${other.id}/` : null;
+};
+
+/**
+ * Cloudflare Pages。
+ *
+ * 和 Vercel 那边的关键差别：**一个项目装两份报告**。所以这个命令与「对哪个站点做」
+ * 无关 —— 从哪一站触发都会把两份报告一起刷新，再把整个 `reports/` 目录发上去，
+ * 得到 `<host>/uniqlo/` 与 `<host>/decathlon/`。
+ *
+ * 报告目录里那两个 `vercel.json` 会跟着一起传上去，当成普通静态文件放着（无害）；
+ * wrangler 没有 exclude 之类的开关，不为它专门绕路。
+ */
+async function cmdDeployCloudflare() {
+  const { project, host } = CLOUDFLARE;
+
+  console.log(C.bold(`\nCloudflare Pages · 项目 ${project}`));
+  console.log(C.dim(`  一个项目装两份：${host}/uniqlo/ 与 ${host}/decathlon/`));
+  console.log(C.dim('  所以两份报告都会重新生成一遍，报头那个交叉入口改成同域的相对路径。\n'));
+
+  for (const site of SITES) await cmdReport(site, { open: false, crossLinkHref: cfCrossLink(site) });
+
+  // 第一次部署时项目还不存在，而 `pages deploy` 遇到不存在的项目会反过来问你一句
+  // （非交互环境下就卡住了），所以先确保项目在。已经存在时这条会失败，属正常。
+  const create = spawnSync('npx', ['--yes', 'wrangler@latest', 'pages', 'project', 'create', project, '--production-branch', 'main'], {
+    cwd: ROOT,
+    encoding: 'utf8',
+  });
+  if (create.status === 0) {
+    console.log(C.dim(`  已创建 Pages 项目 ${project}（生产分支 main）`));
+  } else if (!/already exists|existed/i.test(`${create.stdout || ''}${create.stderr || ''}`)) {
+    console.error(C.red('\n创建 Pages 项目失败：'));
+    console.error(C.dim(`${(create.stderr || create.stdout || '').trim().slice(0, 600)}\n`));
+    process.exit(1);
+  }
+
+  // --commit-dirty=true：这个「工作区」不是 git 仓库的干净状态（报告是刚生成的），
+  // 不让 wrangler 因为这点小事停下来问
+  let ok = pagesDeploy({ root: ROOT, project });
+
+  if (!ok) {
+    // 标准 wrangler 按 40MB 一批发请求，这条网络扛不住（见 cf-wrangler.mjs 里的实测）。
+    // 改成 2MB 一批的副本再跑一次：传得慢一点，但传得完。
+    console.log(C.yellow('\n上传失败（大请求体在这条网络上会被掐断）。改用 2MB 小批次重试…'));
+    const bundle = findWranglerBundle(ROOT);
+    const small = bundle ? smallBatchBundle(bundle) : null;
+    if (!small) {
+      console.error(C.red('\n找不到可用的 wrangler，或者它的批次常量变了，没法打小批次补丁。'));
+      console.error(C.dim('  先装一份 wrangler 再试：npm i -D wrangler\n'));
+      process.exit(1);
+    }
+    ok = pagesDeploy({ root: ROOT, project, bundle: small });
+  }
+
+  if (!ok) {
+    console.error(C.red('\n部署失败。'));
+    console.error(C.dim('  没登录过或凭据过期的话先跑一次：npx wrangler login\n'));
+    process.exit(1);
+  }
+  console.log(`\n已发布：${C.bold(`${host}/uniqlo/`)} 与 ${C.bold(`${host}/decathlon/`)}\n`);
+}
+
 function cmdSites() {
   const db = existsSync(DB_PATH) ? openDb(DB_PATH) : null;
   console.log(`\n${C.bold('可用站点')}\n`);
@@ -424,7 +493,12 @@ function cmdSites() {
       line += C.dim(`　已记录 ${st.total} 件 · 有折扣 ${st.discounted} 件` + (st.lastRun?.finished_at ? ` · 上次抓取 ${new Date(st.lastRun.finished_at).toLocaleString('zh-CN')}` : ' · 还没抓过'));
     }
     console.log(line);
-    console.log(C.dim(`    ${s.aliases.join(' / ')}　图片档位 ${s.imageSize}${s.fonts ? '　内嵌中文字体' : ''}　Vercel 项目 ${s.vercelProject}`));
+    console.log(
+      C.dim(
+        `    ${s.aliases.join(' / ')}　图片档位 ${s.imageSize}${s.fonts ? '　内嵌中文字体' : ''}` +
+          `　Vercel 项目 ${s.vercelProject}　Cloudflare ${CLOUDFLARE.project}/${s.id}/`
+      )
+    );
   }
   console.log(C.dim(`\n用法：deals <站点> sync|list|new|track|report|stats|history|dev|deploy，站点也可以写 all。\n`));
 }
@@ -452,7 +526,9 @@ ${C.bold('deals')} —— 比价与捡漏工具（${siteList()}）
        --rebuild                         强制重新构建 React 页面
   ${C.bold(`deals ${id} stats`)}             本地数据概览
   ${C.bold(`deals ${id} dev`)}               起 Vite 开发服务器调报告页面
-  ${C.bold(`deals ${id} deploy`)}            生成最新报告并推到 Vercel
+  ${C.bold(`deals ${id} deploy`)}            生成最新报告并推到 Vercel（每站一个项目）
+       --target cloudflare               改推 Cloudflare Pages
+                                          （一个项目装两份，与站点无关）
 
   ${C.bold('deals sites')}               有哪些站点、各攒了多少
   ${C.bold('deals all sync')}            两家一起抓
@@ -469,6 +545,9 @@ const { target, cmd, rest } = parseInvocation();
 const SINGLE = new Set(['list', 'new', 'track', 'stats', 'history', 'dev']);
 /** 可以 all 的命令 */
 const MULTI = new Set(['sync', 'report', 'deploy']);
+
+/** 部署目标。默认 Vercel（每站一个项目）；`--target cloudflare` 走一个 Pages 项目装两份 */
+const DEPLOY_TARGETS = new Set(['vercel', 'cloudflare']);
 
 try {
   if (cmd === 'help' && !target) {
@@ -491,8 +570,17 @@ try {
     }
     const sites = resolved.sites;
 
+    const deployTo = flag('target', 'vercel').toLowerCase();
+    if (cmd === 'deploy' && !DEPLOY_TARGETS.has(deployTo)) {
+      console.error(C.red(`\n没有「${deployTo}」这个部署目标。可用：${[...DEPLOY_TARGETS].join(' / ')}\n`));
+      process.exit(1);
+    }
+
     if (cmd === 'help') {
       cmdHelp(sites.length === 1 ? sites[0] : null);
+    } else if (cmd === 'deploy' && deployTo === 'cloudflare') {
+      // 与「对哪个站点做」无关：一个 Pages 项目装两份报告，所以这里不进站点循环
+      await cmdDeployCloudflare();
     } else if (SINGLE.has(cmd) && sites.length > 1) {
       console.error(C.red(`\n${cmd} 一次只能对一个站点做，请指明：deals ${siteList()} ${cmd}\n`));
       process.exit(1);
@@ -514,7 +602,7 @@ try {
           case 'stats': cmdStats(site); break;
           case 'history': cmdHistory(site, rest[0] || flag('code')); break;
           case 'dev': await cmdDev(site); break;
-          case 'deploy': await cmdDeploy(site); break;
+          case 'deploy': await cmdDeployVercel(site); break;
           default: cmdHelp(sites.length === 1 ? sites[0] : null);
         }
       }
