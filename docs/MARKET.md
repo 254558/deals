@@ -33,7 +33,7 @@ goodprices.online/
 | 方法 | 路径 | 干什么 |
 | --- | --- | --- |
 | `GET` | `/api/listings` | 在售列表，最新在前（最多 200 条）。**不含图片字节** |
-| `POST` | `/api/listings` | 发一件。`{title, price, size, store, contact, note, image}`，`image` 是 data URL |
+| `POST` | `/api/listings` | 发一件。`{title, price, size, contact, note, image}`，`image` 是 data URL。（`store` 这一栏 2026-10-01 从表单里删了，接口仍兼容，老数据照常显示） |
 | `GET` | `/api/img/<id>` | 商品图（`Cache-Control: immutable`，id 随机、内容永不改） |
 | `POST` | `/api/delete` | 发帖人自己下架。`{id, token}` |
 | `POST` | `/api/report` | 举报。累加到 5 次自动下架，等站长回看 |
@@ -43,6 +43,12 @@ goodprices.online/
 换个浏览器或清了缓存，就只剩站长能删了。这是没有账号体系的必然代价，写在这里免得以后奇怪。
 
 ### 表单长什么样（两张脸）
+
+- **平时是收起的一行**：「我要出一件」+ 一句「拍张照、标个价」+ 行尾一个箭头。
+  点整行展开表单（箭头转 180°），再点收起；展开后光标自动落到「商品名」。
+  用真实的 `<button aria-expanded aria-controls>`，键盘/读屏都能用；箭头是两条边框旋转出来的，
+  没引图标字体或 SVG。收起时表单是 `hidden`——页里那条 `[hidden]{display:none!important}`
+  就是为它兜底的（否则 `.card__body` 的 padding 会让它露出来）。
 
 - **照片也是一个「字段」，有自己的标签**（「商品照片」）。别的字段都有标签，它当初没有——
   于是它的框跟的是隔壁的**标签**、不是隔壁的**输入框**，看着就是错位的（用户报的）。

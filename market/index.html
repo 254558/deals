@@ -53,7 +53,25 @@
 
   /* ---------- 通用 ---------- */
   h2 { font-size: 15px; margin: 0 0 14px; }
-  .card { border: 1px solid var(--rule); padding: 20px 22px 22px; margin-bottom: 30px; }
+  .card { border: 1px solid var(--rule); margin-bottom: 30px; }
+
+  /* 「我要出一件」平时就是一行字，点一下（整行都能点）才展开表单。
+     箭头用两条边框旋转出来，不引图标字体/SVG。 */
+  .card__head {
+    display: flex; align-items: center; gap: 10px; width: 100%;
+    padding: 14px 22px; background: none; border: 0; cursor: pointer; text-align: left;
+  }
+  .card__head:hover { color: var(--blue); }
+  .card__head:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .card__title { font-size: 15px; font-weight: 600; }
+  .card__hint { font-size: 13px; color: var(--ink-4); }
+  .card__arrow {
+    margin-left: auto; width: 8px; height: 8px;
+    border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translate(-2px, -2px); transition: transform 120ms linear;
+  }
+  .card__head[aria-expanded="true"] .card__arrow { transform: rotate(-135deg) translate(-2px, -2px); }
+  .card__body { padding: 2px 22px 22px; border-top: 1px solid var(--rule-soft); }
   label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
   input[type=text], input[type=number], textarea {
     width: 100%; padding: 9px 11px; border: 1px solid var(--rule); background: var(--white); line-height: 22px;
@@ -182,7 +200,12 @@
 <div class="wrap">
 
   <div class="card">
-    <h2>我要出一件</h2>
+    <button class="card__head" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">
+      <span class="card__title">我要出一件</span>
+      <span class="card__hint">拍张照、标个价</span>
+      <span class="card__arrow" aria-hidden="true"></span>
+    </button>
+    <div class="card__body" id="postBody" hidden>
     <form id="form" autocomplete="off">
       <div class="poster">
         <!-- 照片也是一个「字段」：**有标签**，标签和右边「商品名」并排，
@@ -218,10 +241,6 @@
             <input type="text" id="size" maxlength="24" placeholder="M / 165/88A">
           </div>
           <div class="field field--full">
-            <label for="store">哪家店 · 城市</label>
-            <input type="text" id="store" maxlength="40" placeholder="上海 · 南京西路店">
-          </div>
-          <div class="field field--full">
             <label for="contact">联系方式（会公开显示）</label>
             <input type="text" id="contact" maxlength="80" placeholder="微信号 / 手机号 / 闲鱼链接">
             <div class="hint">买家直接找你交易。本站不经手钱、不担保。介意就别填太细。</div>
@@ -241,6 +260,7 @@
       <div class="hp"><label for="website">网址</label><input type="text" id="website" tabindex="-1"></div>
 
     </form>
+    </div><!-- /.card__body -->
   </div>
 
   <h2 id="listTitle">大家在出</h2>
@@ -330,6 +350,15 @@
   };
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
+  // ---- 展开 / 收起发帖表单（平时就一行「我要出一件」）----
+  const postToggle = $('postToggle');
+  postToggle.addEventListener('click', () => {
+    const open = postToggle.getAttribute('aria-expanded') === 'true';
+    postToggle.setAttribute('aria-expanded', String(!open));
+    $('postBody').hidden = open;
+    if (!open) $('title').focus(); // 展开就把光标放到第一个输入框，少点一次
+  });
+
   // ---- 选图 / 拖图 ----
   $('photo').addEventListener('change', (e) => takeFile(e.target.files?.[0]));
   $('swap').addEventListener('click', () => { clearPhoto(); $('photo').click(); });
@@ -405,7 +434,7 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: $('title').value, price: $('price').value, size: $('size').value,
-          store: $('store').value, contact: $('contact').value, note: $('note').value,
+          contact: $('contact').value, note: $('note').value,
           image, website: $('website').value,   // website 是蜜罐
         }),
       });
