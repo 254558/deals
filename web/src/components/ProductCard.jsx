@@ -26,6 +26,15 @@ import { CardActions } from './CardActions.jsx';
  * 但这页的全部意义就是上市价对比，所以把上市价补在现价后面 —— 灰字、划删除线。
  * 划线只在真降了的时候才画（`cut`），没降的原价等于现价，划它没意义。
  */
+/**
+ * 这一行最多列几档尺码，超了就只写「剩 N 档」。
+ *
+ * 实测（1440 宽时卡片那行可用 318px）：W 码 8 档、厘米码 6 档、内衣码（AA65 这种）7 档
+ * 能排成一行，再多就折成第二行——一折就把同一行卡片的价格线顶歪（一行的卡片高度必须一样）。
+ * 取三个家族里最保守的那个：6。超过 6 档的实测只有 19 件，它们本来也列不全。
+ */
+const MAX_SIZE_LABELS = 6;
+
 export function ProductCard({ deal, index, onPick, onHide }) {
   const { url, image, name, brand, tags, tracked, rate, sizes } = deal;
 
@@ -42,9 +51,11 @@ export function ProductCard({ deal, index, onPick, onHide }) {
   // 都有货就**不写**（用户要求：all 不用显示）。这一行留白但不写字的判断在下面渲染处。
   const sizeLine = !sizes || sizes.full
     ? null
-    : sizes.labels.length
-      ? `剩余：${sizes.labels.join(' · ')}`
-      : `剩 ${sizes.count} 码`;
+    : sizes.labels.length > MAX_SIZE_LABELS
+      ? { lead: '', text: `剩 ${sizes.count} 档` } // 太长，不列了，只报个数
+      : sizes.labels.length
+        ? { lead: '剩余：', text: sizes.labels.join(' · ') }
+        : { lead: '', text: `剩 ${sizes.count} 档` };
   // 动效错开只给前几行，否则滚到下面时动画早跑完了
   const delay = Math.min(index, 11) * 40;
   const now = priceParts(deal.price);
@@ -118,8 +129,8 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         <p className="card__sizes">
           {sizeLine && (
             <>
-              {sizes.labels.length > 0 && <span className="cardsizes__lead">剩余：</span>}
-              <span className="cardsizes__list">{sizeLine.replace('剩余：', '')}</span>
+              {sizeLine.lead && <span className="cardsizes__lead">{sizeLine.lead}</span>}
+              <span className="cardsizes__list">{sizeLine.text}</span>
             </>
           )}
         </p>
