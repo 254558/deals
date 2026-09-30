@@ -560,10 +560,10 @@ button {
 }
 [data-site="uniqlo"] .card__img--none { background: var(--surface); }
 /* 断码时名字那一行显示的是尺码（见 ProductCard 的 sizeLine）。
-   字号跟着名字走（15px），所以两行的高度、跟价格的间距都不变；
-   「剩余：」压暗一档，真正要看的是后面那几档。 */
-[data-site="uniqlo"] .cardsizes__lead { color: var(--ink-4); }
-[data-site="uniqlo"] .cardsizes__list { color: var(--ink); letter-spacing: 0.02em; }
+   字号跟着名字走（15px），所以两行的高度、跟价格的间距都不变。
+   「剩余：」和后面那几档**同一个墨色**（用户要求：不要灰的）——
+   整行读起来是一句话，不去分主次；这条靠继承 a{color:inherit} 拿到的就是墨色 */
+[data-site="uniqlo"] .cardsizes__list { letter-spacing: 0.02em; }
 
 [data-site="uniqlo"] .card__name {
   display: -webkit-box;
