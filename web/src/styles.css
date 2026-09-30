@@ -231,7 +231,6 @@ button {
   /* 线画在内层，才和报头、表头那两条一样是内缩的 */
   border-bottom: 1px solid var(--rule);
 }
-.toolbar__count { margin-left: auto; color: var(--ink-4); font-variant-numeric: tabular-nums; }
 /* 官网的按钮是直角的，没有圆角药丸那一套 */
 .tabs { display: flex; flex-wrap: wrap; }
 .tab {
@@ -376,7 +375,7 @@ button {
 }
 .empty__reset:hover { background: var(--blue); }
 
-/* 「已显示 N / M · 继续下滑加载更多」那行：要安静——它不是内容，是给
+/* 「继续下滑加载更多」那行：要安静——它不是内容，是给
    「往下滑还有东西吗」这个问题一个答复。所以最淡的灰、居中、不占太多高度 */
 .more {
   padding: 30px 0 10px;
@@ -542,7 +541,6 @@ button {
 [data-site="uniqlo"] .tab__n { margin-left: 5px; }
 [data-site="uniqlo"] .search { font-size: 12px; padding: 7px 12px; width: 240px; }
 [data-site="uniqlo"] .search:focus { border-color: var(--ink); }
-[data-site="uniqlo"] .toolbar__count { font-size: 11px; }
 
 /* 榜单行名称底下那行小灰字（季节/尺码）——卡片和列表行的同款小字已经撤掉，
    这是它最后的使用处（用 rowMetaLine 开关的那一行是迪卡侬的，见第三段） */
@@ -703,7 +701,6 @@ html[data-site="decathlon"] {
 [data-site="decathlon"] .search:focus { border-color: var(--blue); }
 /* 计数靠右：共用那条已经给了 `margin-left: auto`，这里再写一遍是为了把它钉死，
    免得将来工具条上多一个会消失的控件时，计数跟着左右跳一下 */
-[data-site="decathlon"] .toolbar__count { margin-left: auto; font-size: 13px; color: var(--ink-faint); }
 
 /* ---------------- 大图视图 ---------------- */
 
@@ -835,7 +832,7 @@ html[data-site="decathlon"] {
      合并时这里曾经按「拿高度说话」分成两家两种做法（优衣库 57px 钉住、
      迪卡侬 104px 滚走），依据是两家的旧版各自量过的高度。后来统一成一行之后，
      迪卡侬那两行的前提不成立了，于是跟优衣库对齐——这也是用户明确要的。 */
-  .search, .toolbar__count { display: none; }
+  .search { display: none; }
 
   [data-site="uniqlo"] { --pad: 16px; }
   [data-site="uniqlo"] .masthead { padding-top: 26px; }

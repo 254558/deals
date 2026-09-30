@@ -105,8 +105,9 @@ function useIncremental(total, resetKey) {
    *
    * 哨兵在列表末尾，而列表后面还有页脚（名词解释、数据来源，手机上七八百像素高）。
    * 拖滚动条到底、按 End、或者猛甩一下，视口会一下落在页脚之后——此时哨兵在视口
-   * **上方**，IntersectionObserver 的 800px 提前量也够不着，于是「已显示 10 / 878」
-   * 就停在那儿不动了（实测踩到）。所以再加一条：离**文档**底部不足 400px 就补一批。
+   * **上方**，IntersectionObserver 的 800px 提前量也够不着，于是它停在那儿不再往下补
+   * （实测踩到；那行小字当时还写着「已显示 10 / 878」，现在只写「继续下滑加载更多」）。
+   * 所以再加一条：离**文档**底部不足 400px 就补一批。
    *
    * 这条会不会失控？不会——前提是**关掉了滚动锚定**（`html { overflow-anchor: none }`，
    * 见 styles.css）。锚定开着的话，补完内容浏览器会把视口重新钉回底部，条件继续成立，
@@ -143,16 +144,15 @@ function useIncremental(total, resetKey) {
 }
 
 /**
- * 列表末尾那行小字：还没到底就说清「已显示多少 / 共多少」，
- * 到底了就说一句「到底了」——不然往下滑到没有新内容时，用户会以为卡住了。
- * 总件数本来就少（不超过一批）时不画，那种情况下一句「到底了」只是噪音。
+ * 列表末尾那行小字：只回答「还有没有」——还没到底就说「继续下滑加载更多」，
+ * 到底了就说「已经到底了」。**不报总数**（用户不关心总共有多少，见 2026-09-30）。
+ * 件数本来就少（不超过一批）时不画，那种情况下一句「到底了」只是噪音。
  */
 function More({ visible, total, sentinelRef }) {
   if (total <= INITIAL) return null;
-  const done = visible >= total;
   return (
     <div className="more" ref={sentinelRef}>
-      {done ? `已经到底了 · 共 ${num(total)} 件` : `已显示 ${num(visible)} / ${num(total)} 件 · 继续下滑加载更多`}
+      {visible >= total ? '已经到底了' : '继续下滑加载更多'}
     </div>
   );
 }
@@ -256,8 +256,6 @@ export default function App() {
         query={query}
         onQuery={setQuery}
         counts={counts}
-        shown={rows.length}
-        total={deals.length}
       />
 
       <div className="wrap">

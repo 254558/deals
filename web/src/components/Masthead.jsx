@@ -15,8 +15,8 @@ import { META } from '../lib/site.js';
  *   META.showRecorded  是否显示「共记录 N 件」（迪卡侬有，优衣库没有）
  *
  * `recorded` 是数据库里的累计记录数，不是这一期榜上的条数 ——
- * 所以它和「显示全部 N 件」那个 N 会对不上，这是对的：前者说库里攒了多少，
- * 后者说这一期筛出来多少。契约里 `payload.recorded` 就是为这一格准备的。
+ * 所以它和榜上实际有多少件会对不上，这是对的：前者说库里攒了多少，
+ * 后者说这一期筛出来多少。（工具栏右端那句「显示全部 N 件」2026-09-30 撤了。）契约里 `payload.recorded` 就是为这一格准备的。
  */
 export function Masthead({ recorded, generatedAt }) {
   const cross = META.crossLink;

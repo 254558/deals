@@ -10,7 +10,7 @@ import { META } from '../lib/site.js';
  * 不是标签）—— 这条规则两家一样，所以它是代码而不是数据。
  */
 export function Toolbar({
-  filter, onFilter, query, onQuery, counts, shown, total,
+  filter, onFilter, query, onQuery, counts,
 }) {
   return (
     /* 三层，各管一件事：
@@ -44,10 +44,6 @@ export function Toolbar({
             placeholder={META.searchPlaceholder}
             aria-label={META.searchPlaceholder}
           />
-
-          <span className="toolbar__count">
-            {shown === total ? `显示全部 ${num(total)} 件` : `筛出 ${num(shown)} / ${num(total)} 件`}
-          </span>
 
         </div>
       </div>
