@@ -267,18 +267,29 @@ const tableColumns = [
 const shortName = (name) => String(name || '').split('/')[0].trim();
 
 /**
- * 词表里的显示名取一段。**优先取 W 段**，取不到才用第一段。
+ * 词表里的显示名取一段，**尽量给出厘米**——'W28' 这种美制腰围码没人读得出来
+ * （2026-09-30 用户要求「换成 xl 这种、或者 150cm 这种」）。
  *
- * 为什么不是无脑取第一段：同一个家族里词表的写法自己就不统一——CMD/INS 里
- * CMD070 是 'W28/28英寸/28码'（第一段就是 W28），而 CMD073 是 '73cm/W29/29英寸/29码'
- * （第一段是 73cm）。无脑取第一段，卡片上就会冒出
- * 「W28 · 76cm · 79cm · 82cm · W40…」这种半中半英的混排（用户报的就是这个）。
- * 而 CMD/INS 全部 41 档都带 W 段，所以按 W 段取一定统一。其它家族（字母码、厘米码、
- * 鞋码 '36/225mm/22.5cm'、内衣 'AA65/65AA/…'）没有 W 段，第一段本来就是对的那个。
+ * 词表里每档是一串，比如 'W28/28英寸/28码'、'73cm/W29/29英寸/29码'、
+ * '36/225mm/22.5cm'、'XS'、'AA65/65AA/AA70/70AA'。按这个顺序取：
+ *   ① 串里明写了厘米（'73cm'、'22.5cm'）→ 用它；
+ *   ② CMD 家族：**码里的数字就是厘米**。实测词表里带 cm 的 7 档（CMD073→73cm、
+ *      CMD088→88cm…）全部等于码里数字，所以没写 cm 的那 12 档照着补（CMD070 → 70cm）。
+ *      注意不能拿英寸去乘 2.54：官网自己的腰围是 3cm 一档的梯子（73/76/79/82/85/88/91），
+ *      不是英寸换算（W32 写成 82cm，而 32 英寸 = 81.3cm）；
+ *   ③ 按英寸给的（INS：码里数字就是英寸，实测 INS021 的 label 是 'W21/21英寸/21码'）
+ *      → 乘 2.54 换成厘米（INS023 → 58cm，正对得上同款商品尺码范围里的「150/58A」）；
+ *   ④ 其余家族第一段本来就是对的：字母码 'XS'、厘米码 '80cm'、袜码 '25-27cm'、
+ *      鞋码走 ①、内衣 'AA65'、'均码'。
  */
-const shortLabel = (label) => {
+const shortLabel = (label, code = '') => {
   const parts = String(label || '').split('/').map((t) => t.trim());
-  return parts.find((t) => /^W\d+$/.test(t)) || parts[0] || '';
+  const cm = parts.find((t) => /^\d+(?:\.\d+)?cm$/.test(t));
+  if (cm) return cm;
+  if (/^CMD\d{3}$/.test(code)) return `${Number(code.slice(3))}cm`;
+  const inch = parts.find((t) => /^\d+(?:\.\d+)?英寸$/.test(t));
+  if (inch) return `${Math.round(parseFloat(inch) * 2.54)}cm`;
+  return parts[0] || '';
 };
 
 /** 抓尺码词表。侧边栏跟搜索条件无关（是整站的尺码体系），随便带一个条件就行。 */
@@ -325,7 +336,11 @@ function sizeInfo(row, vocab) {
   const codes = codesOf(row);
   if (!codes.length || !vocab?.size) return null;
 
-  const entries = codes.map((c) => vocab.get(c));
+  // 把码本身也挂在条目上：shortLabel 要靠它判 CMD（码里数字是厘米）/ INS（码里数字是英寸）
+  const entries = codes.map((c) => {
+    const e = vocab.get(c);
+    return e ? { ...e, code: c } : null;
+  });
   // 词表里查不到的码：不猜（新家族出现而词表还没刷新时会走到这儿）
   if (entries.some((e) => !e)) return null;
 
@@ -333,7 +348,7 @@ function sizeInfo(row, vocab) {
   const labels = entries
     .slice()
     .sort((a, b) => a.ord - b.ord)
-    .map((e) => shortLabel(e.label));
+    .map((e) => shortLabel(e.label, e.code));
 
   // 「都有」＝同家族里在售的码连成一段（中途不缺档）
   const ords = entries.map((e) => e.ord).sort((a, b) => a - b);
