@@ -3,7 +3,7 @@
    ----------------------------------------------------------------------------
    这一份 CSS 同时渲染优衣库和迪卡侬两份报告，分层是固定的三段：
 
-     一、共用骨架      令牌、重置、.wrap / .toolbar / .grid / .foot / .empty /
+     一、共用骨架      令牌、重置、.wrap / .toolbar / .grid / .empty /
                        .sr-only / .dealact / .picframe
                        这些两家的**结构**一样，只写一次
      二、[data-site="uniqlo"]    优衣库专有：3:4 画框、auto-fill 258px 网格、
@@ -67,7 +67,7 @@ html, body { margin: 0; padding: 0; }
 /**
  * 关掉滚动锚定（scroll anchoring）。
  *
- * 报告改成「先渲染 10 件、下滑再补」之后，锚定会帮倒忙：补进来的卡片插在页脚**上面**，
+ * 报告改成「先渲染 10 件、下滑再补」之后，锚定会帮倒忙：补进来的卡片插在哨兵**前面**，
  * 锚定会把视口重新拽回底部（它觉得该让页面底部保持可见），于是「离文档底部很近」这个
  * 条件一直成立，一批接一批地补——实测一次「直达底部」连补了 12 批（10 → 130 张），
  * 等于把刚省下来的渲染成本又花回去。
@@ -386,17 +386,6 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-.foot {
-  padding: 30px 0 60px;
-  color: var(--ink-2);
-  border-top: 1px solid var(--rule);
-  margin-top: 40px;
-}
-/* dt / dd 必须**直接**是 dl 的孩子，这两列 grid 才接得到它们 */
-.foot dl { display: grid; grid-template-columns: max-content 1fr; }
-.foot dt { color: var(--ink); font-weight: 700; letter-spacing: 0.02em; }
-.foot dd { margin: 0; max-width: 92ch; }
-.foot__note { color: var(--ink-4); }
 
 /* ======================== 二、优衣库专有 ========================
    版面尺寸量自 uniqlo.cn（字号、缩略图 3:4、列宽、卡片网格），配色、价格排版、
@@ -534,10 +523,16 @@ button {
 [data-site="uniqlo"] .tab {
   font-size: 12px;
   font-weight: 400;
-  border-left-width: 0;
   padding: 7px 14px;
+  /* 和左边那颗共用一条竖线：用 -1px 压过去，**不要**把自己的左边框设成 0。
+     设成 0 的写法在选中时会露馅——那时边框变蓝，左边那条却是空的，
+     整个框看起来是断的（2026-09-30 用户报的就是这个）。压边距则四条边永远都在，
+     也不会因为谁被选中就挤动后面的页签 */
+  margin-left: -1px;
 }
-[data-site="uniqlo"] .tab:first-child { border-left-width: 1px; }
+[data-site="uniqlo"] .tab:first-child { margin-left: 0; }
+/* 选中的那颗盖在邻居之上，被压住的那条左边线才是它自己的蓝线 */
+[data-site="uniqlo"] .tab[aria-pressed="true"] { position: relative; z-index: 1; }
 [data-site="uniqlo"] .tab__n { margin-left: 5px; }
 [data-site="uniqlo"] .search { font-size: 12px; padding: 7px 12px; width: 240px; }
 [data-site="uniqlo"] .search:focus { border-color: var(--ink); }
@@ -592,14 +587,6 @@ button {
 
 [data-site="uniqlo"] .empty__hint { font-size: 12px; }
 [data-site="uniqlo"] .empty__reset { font-size: 12px; margin-top: 18px; padding: 9px 18px; }
-[data-site="uniqlo"] .foot { font-size: 11.5px; line-height: 1.9; }
-[data-site="uniqlo"] .foot dl { margin: 0 0 18px; gap: 5px 18px; }
-[data-site="uniqlo"] .foot code {
-  background: var(--surface);
-  padding: 1px 5px;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 11px;
-}
 
 /* ======================== 三、迪卡侬专有 ========================
    所有尺寸、颜色都是从 decathlon.com.cn 的**计算样式**里读出来的，不是估的。
@@ -615,7 +602,7 @@ button {
      · 价格分三段：`￥` 14px、整数/小数 16px，整段 600 字重。原价那行三格都是 12px。
      · 商品名 16px/行高 24px、容器高 48px —— 正好两行，多的截掉。
 
-   这一站**没有内嵌字体**（`meta.fontNotice` 是 null）：官网的 Roboto / Decathlon
+   这一站**没有内嵌字体**（适配器的 `fonts` 是 null）：官网的 Roboto / Decathlon
    是品牌字体，不能内嵌，所以直接走系统字体栈 —— 这也是两家字号起点不同的原因
    （优衣库那份的 `body` 是 12px，照它官网的小字体系） */
 
@@ -801,8 +788,6 @@ html[data-site="decathlon"] {
   border-bottom: 1px solid var(--blue);
 }
 [data-site="decathlon"] .empty__reset:hover { background: none; color: var(--blue); }
-[data-site="decathlon"] .foot { font-size: 13px; line-height: 1.9; }
-[data-site="decathlon"] .foot dd { max-width: 92ch; }
 
 /* ============================ 窄屏 ============================
    两家在这一段的做法不一样，所以整段都在各自的作用域里：

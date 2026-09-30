@@ -47,7 +47,6 @@
 {
   "label": "优衣库",                    // 站点名，报头 eyebrow
   "pageTitle": "优衣库捡漏榜",           // <title> 与 aria-label 用
-  "source": "uniqlo.cn 公开搜索接口",    // 页脚那行数据来源
   "currency": { "sym": "¥", "zero": "¥ 0" },   // 货币符号；零值的写法（两家不同，见下）
   "imageAspect": "3/4",                 // '3/4' | '1/1'，商品图画框比例
   "searchPlaceholder": "搜商品名或吊牌编号",
@@ -80,13 +79,11 @@
   "tagLabels": { "time_doptimal": "限时特优", "concessional_rate": "超值精选" },
   "chipTags": ["endlife", "new_arrival"],   // 哪些标签画成 chip / 角标，顺序即显示顺序
 
-  "foot": {
-    "terms": [ { "t": "上市价", "d": "…" } ],   // 页脚名词解释 dl；没有就空数组
-    "source": "数据源 uniqlo.cn 公开搜索接口 · 价格以结账页为准 · 本工具与官方无关",
-    "notes": ["版面尺寸量自 uniqlo.cn；配色与价格排版跟迪卡侬那份报告统一…"]
-  },
-
-  "fontNotice": "Source Han Sans CN (思源黑体) — Copyright © 2014 Adobe …"  // 没有内嵌字体就 null
+  // 页脚整块撤了（2026-09-30）：foot / fontNotice / source 三个字段一起删。
+  // 理由：名词解释、数据来源、版面说明、字体署名那几段，用户不看。
+  // ⚠️ 内嵌字体的授权署名**不能删**（Apache-2.0），它现在落在内嵌 CSS 的注释里
+  //    （core/fonts.mjs 的 buildFontCss 把 fonts.notice 写成 /* … */）——页面上不显示，
+  //    但随文件一起分发出去了。
 }
 ```
 
@@ -99,7 +96,6 @@
 | `storagePrefix` | `uniql` | `deca` |
 | `filters` | 全部 / 限时特优 / 超值精选 / 待拔草 | 全部 / 尾货 / 新品 / 待拔草 |
 | `features` | `rankBoard`、`dealBarNumber` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip` |
-| `fontNotice` | 思源黑体子集声明 | `null` |
 
 ## 四、deals — 每件商品
 

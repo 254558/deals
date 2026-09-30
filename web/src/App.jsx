@@ -1,4 +1,4 @@
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Masthead } from './components/Masthead.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
@@ -103,11 +103,11 @@ function useIncremental(total, resetKey) {
   /**
    * 兜底：直接跳到页面最底部时，哨兵可能被**一步跨过去**。
    *
-   * 哨兵在列表末尾，而列表后面还有页脚（名词解释、数据来源，手机上七八百像素高）。
-   * 拖滚动条到底、按 End、或者猛甩一下，视口会一下落在页脚之后——此时哨兵在视口
-   * **上方**，IntersectionObserver 的 800px 提前量也够不着，于是它停在那儿不再往下补
-   * （实测踩到；那行小字当时还写着「已显示 10 / 878」，现在只写「继续下滑加载更多」）。
-   * 所以再加一条：离**文档**底部不足 400px 就补一批。
+   * 这条的来历：以前列表后面还跟着一屏页脚（名词解释、数据来源），拖滚动条到底、
+   * 按 End、或者猛甩一下，视口会一下落在页脚之后——此时哨兵在视口**上方**，
+   * IntersectionObserver 的 800px 提前量也够不着，于是它停在那儿不再往下补（实测踩到）。
+   * 页脚 2026-09-30 撤掉之后哨兵就在文档末尾，直达底部也能被 IO 看到，所以这条
+   * **现在是保险**（挡「视口落在文档最底部、而哨兵在视口上方」这一类情况），成本只有几行。
    *
    * 这条会不会失控？不会——前提是**关掉了滚动锚定**（`html { overflow-anchor: none }`，
    * 见 styles.css）。锚定开着的话，补完内容浏览器会把视口重新钉回底部，条件继续成立，
@@ -158,11 +158,9 @@ function More({ visible, total, sentinelRef }) {
 }
 
 /**
- * 页脚、空状态这些整块的文案都在 `META.foot` / `META` 里（契约第三节）：
- * 名词解释是 `foot.terms` 的数组（迪卡侬那份是空的，因为它的原价不是「上市价」
- * 这个概念，而是官网直接给的折扣价），数据来源是 `foot.source`，
- * 版面说明是 `foot.notes`（可能有多条），字体署名是单独的 `fontNotice`。
- * 组件只负责把数组摊开，一个字都不写死。
+ * 页面到商品网格就结束了：**没有页脚**（2026-09-30 应要求删掉——名词解释、数据来源、
+ * 版面说明、字体署名那几段用户都不看）。内嵌字体的授权署名仍然随文件走，但落在
+ * 内嵌 CSS 的注释里（`buildFontCss` 的 notice，见 core/fonts.mjs），页面上不显示。
  */
 export default function App() {
   const [filter, setFilter] = useState('all');
@@ -279,33 +277,6 @@ export default function App() {
         )}
       </div>
 
-      <div className="wrap">
-        <footer className="foot">
-          {/* 名词解释是 dl：dt 和 dd 必须**直接**是 dl 的孩子，
-              否则 .foot dl 那套两列 grid 就接不到它们身上。
-              迪卡侬那份的 terms 是空数组：旧迪卡侬报告本来就刻意不摆这一块名词解释，
-              页脚只有数据来源那一行；合并后也没给它补，所以整个 dl 直接不画。
-              （不是因为「上市价」这个概念在迪卡侬不成立 —— 两家的 launchPrice
-              取的是同一件事：历次 list_price 的最高值） */}
-          {META.foot.terms.length > 0 && (
-            <dl>
-              {META.foot.terms.map((t) => (
-                <Fragment key={t.t}>
-                  <dt>{t.t}</dt>
-                  <dd>{t.d}</dd>
-                </Fragment>
-              ))}
-            </dl>
-          )}
-          <div>{META.foot.source}</div>
-          {META.foot.notes.length > 0 && <div className="foot__note">{META.foot.notes.join(' ')}</div>}
-
-          {/* 内嵌字体是一站的事（优衣库内嵌思源黑体子集，迪卡侬走系统字体栈），
-              所以这条署名是 payload 里的 `fontNotice`，没有内嵌字体就是 null。
-              授权署名不能省：那份子集是 Apache-2.0 的 */}
-          {META.fontNotice && <div className="foot__note">{META.fontNotice}</div>}
-        </footer>
-      </div>
     </>
   );
 }

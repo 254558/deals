@@ -418,7 +418,6 @@ export default {
     // 报头只写「迪卡侬」：原来还带「· 中国官网」，又长又不带信息（数据源在页脚写着呢）
     label: '迪卡侬',
     pageTitle: '迪卡侬捡漏榜',
-    source: 'decathlon.com.cn 公开接口',
     currency: { sym: '￥', zero: '￥0' },
     imageAspect: '1/1',
     searchPlaceholder: '搜商品名、编号或品牌',
@@ -454,16 +453,6 @@ export default {
     tagLabels: TAGS,
     chipTags: ['endlife', 'new_arrival'],
 
-    foot: {
-      // 迪卡侬那份报告原来没有页脚，合并后补上数据来源与免责声明那两行
-      // —— 工具是同一个，署名与来源口径也该一致。
-      terms: [],
-      source: '数据源 decathlon.com.cn 公开接口 · 价格以结账页为准 · 本工具与迪卡侬官方无关',
-      notes: [
-        '版面尺寸（方图、列宽、卡片网格、字号、角标位置）量自 decathlon.com.cn 特惠专区；配色与价格排版跟优衣库那份报告统一（墨 #000f17、品牌蓝 #3643ba、降幅黄 #ffcd4e、上市价划线）。',
-      ],
-    },
 
-    fontNotice: null,
   },
 };

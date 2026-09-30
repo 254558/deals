@@ -260,9 +260,11 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 ### 6.3 许可与署名
 
-> 内嵌的是 Apache-2.0 的思源黑体，版权归 Adobe（Copyright © 2014 Adobe Systems Incorporated），许可与署名保留在报告页脚。品牌字体 `Uniqlo Pro` 没有内嵌。
+> 内嵌的是 Apache-2.0 的思源黑体，版权归 Adobe（Copyright © 2014 Adobe Systems Incorporated）。品牌字体 `Uniqlo Pro` 没有内嵌。
 
-这段声明由适配器写成 `fonts.notice`，随 `meta.fontNotice` 进 payload，只有**真的内嵌成功**时才写（`buildFontCss` 返回 null 就不写，报告退系统字体栈）。报告页脚最后一行就是它，署名不能省——那份子集是 Apache-2.0 的。
+这段声明由适配器写成 `fonts.notice`，交给 `buildFontCss` 写成 `@font-face` 旁边的一条 **CSS 注释**（`/* … */`），只有**真的内嵌成功**时才写（返回 null 就不写，报告退系统字体栈）。
+
+**署名不能省**——那份子集是 Apache-2.0 的，分发包里必须保留版权与许可文字。放在内嵌 CSS 的注释里就满足这一点（注释随同一个 HTML 文件发出去），所以 2026-09-30 撤掉页脚那行可见署名时，这条注释原地保留。
 
 想让西文也像官网那样是 `Uniqlo Pro`，只能在自己机器上装；装不到就退到 `Helvetica Neue`，中文仍然走内嵌的思源黑体。**中文这一侧不能将就**：macOS 上如果没有 PingFang，字体栈会掉到 Hiragino Sans GB（冬青黑体），和思源黑体的观感差别肉眼可见——整页会呈现出一种老 macOS 应用的味道，而不是现代中文网页。
 
@@ -295,7 +297,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 ---
 
-## 八、终端、页脚与刻意不做的事
+## 八、终端与刻意不做的事
 
 ### 8.1 终端那张表
 
@@ -305,16 +307,13 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 `list` 的排序口径：`--sort rate|saving|newest`；`--tag time_doptimal|concessional_rate`；默认门槛降幅 ≥30%。`track <编号>` 的编号可以输吊牌 6 位数，也可以直接贴商品页地址（`parseCode` 从里面抠 `\d{6}`）；手动盯的商品会按第一个命中的标签解释「这是什么性质的降价」——超值精选＝清仓，限时特优＝下周可能涨回原价。
 
-### 8.2 页脚
+### 8.2 页脚：已撤（2026-09-30）
 
-优衣库报告有页脚，内容全部来自 `meta.foot`，组件一个字不写死：
+报告**到商品网格就结束了**，没有页脚。原先那一块（名词解释五条、数据来源、版面说明两条、字体署名）全部来自 `meta.foot` / `meta.fontNotice`，应要求整块删掉——那几段没人看，页面上占着一屏。
 
-- `foot.terms` 五条名词解释：**上市价**、**限时特优**、**超值精选**、**收藏 / 不再出现**、**标尺怎么读**。每条都写成「因为 A，所以 B」，例如「上市价：官方原价只降不涨，所以工具取历次抓取中最高的原价」。
-- `foot.source`：`数据源 uniqlo.cn 公开搜索接口 · 价格以结账页为准 · 本工具与迅销集团及优衣库官方无关`。
-- `foot.notes` 两条：一条说版面量自 uniqlo.cn、配色与价格排版跟迪卡侬那份统一；一条说中文用思源黑体子集 + 许可 + 西文为什么退到 Helvetica Neue。
-- `fontNotice` 单独一格，见 6.3。
+连带删掉的是：payload 里的 `foot` / `fontNotice` / `source`（`source` 其实早就没人读了）、`App` 里的页脚块、`.foot` 那一套样式（共用 + 两家共 9 条）。副作用是内嵌字体的**子集变小了**（页脚那些独有汉字不再进子集），报告从 0.9MB 掉到 0.8MB。
 
-`terms` 是 `dl`，`dt`/`dd` 必须**直接**是 `dl` 的孩子，否则 `.foot dl` 那套两列 grid 接不到它们身上。
+字体署名是唯一不能跟着删的东西，见 6.3：它落在 `@font-face` 旁边那条 CSS 注释里，随文件走、页面上不显示。
 
 ### 8.3 报头行尾的兄弟报告入口
 

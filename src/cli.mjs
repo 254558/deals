@@ -440,7 +440,7 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     } else console.log(C.yellow('\n字体下载失败，报告改用系统字体栈（版面不受影响）。'));
   }
 
-  const payload = buildPayload(db, site, images, { fontNotice: fontCss ? site.fonts?.notice ?? null : null, crossLinkHref });
+  const payload = buildPayload(db, site, images, { crossLinkHref });
   writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, payload }), 'utf8');
 
   // 报告目录里放一份三行的 vercel.json（framework / installCommand / buildCommand 全置空）：
