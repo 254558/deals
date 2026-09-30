@@ -162,7 +162,22 @@ npx wrangler login                  # 只需一次（浏览器点一下 Allow）
 node src/cli.mjs all deploy --target cloudflare
 ```
 
-线上地址：**<https://deals.goodprices.online/uniqlo/>** 与 **<https://deals.goodprices.online/decathlon/>**（域名与项目名在 `src/sites/index.mjs` 的 `CLOUDFLARE` 里；`deals-pinouts.pages.dev` 是同一个部署的备用入口，也一直有效）。
+线上地址：**<https://goodprices.online/uniqlo/>** 与 **<https://goodprices.online/decathlon/>**（域名与项目名在 `src/sites/index.mjs` 的 `CLOUDFLARE` 里；`deals.goodprices.online` 与 `deals-pinouts.pages.dev` 是同一份部署的别名，也一直有效）。
+
+> **三个地址各是一本收藏账。** 收藏/不再出现存在 localStorage 里、按 origin 隔离，所以上面三个域名（加本地 `file://`）是四本互不相通的账。对外只提裸域那一个，别的当备用。
+
+域名在阿里云注册，DNS 也一直在阿里云（没动 NS）。加了两条 CNAME，都指向 `deals-pinouts.pages.dev`：
+
+| 主机记录 | 类型 | 记录值 | 说明 |
+| --- | --- | --- | --- |
+| `@` | CNAME | `deals-pinouts.pages.dev` | 裸域，正式入口 |
+| `deals` | CNAME | `deals-pinouts.pages.dev` | 子域别名 |
+
+Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成验证并签发证书（Google Trust Services）。**不需要 ICP 备案**——备案只针对服务器在中国大陆境内的网站。
+
+> **`@` 上放 CNAME 是非标准做法**（RFC 不允许 CNAME 与 SOA/NS 之外的记录共存），阿里云放行、公共解析器也会跟随，实测可用。代价是：将来这个域名若要收邮件（MX）或加 SPF/TXT，就得二选一，那时才需要把 NS 迁到 Cloudflare 用它的 CNAME flattening。
+>
+> 另外 Cloudflare 的文档写「裸域必须是 Cloudflare 上的 zone」，实测**不是硬要求**：用 API 直接挂裸域会被接受，验证方式走 HTTP、照样签发证书。这条是踩过之后记下来的——别照文档那句话就下结论（我一开始就下错了）。
 
 **根路径 `/` 默认进优衣库。** 部署上去的是整个 `reports/`，两份各占一个子目录，所以 `/` 本来什么都没有、打开是 404。生成报告时会顺手写两个小文件到部署根：
 
@@ -171,7 +186,7 @@ node src/cli.mjs all deploy --target cloudflare
 
 想换默认站点，改 `src/sites/index.mjs` 里的 `DEFAULT_SITE` 一行即可，重跑一次 `report` 就更新。
 
-域名是在阿里云注册的（`goodprices.online`），只加了一条 CNAME：`deals` → `deals-pinouts.pages.dev`，DNS 仍由阿里云托管，没动 NS。Cloudflare 侧自动完成验证并签发证书（Google Trust Services）。**不需要 ICP 备案**——备案只针对服务器在中国大陆境内的网站。
+
 
 和 Vercel 那边不一样，这里是**一个项目装两份报告**：命令会把两份都重新生成，再把整个 `reports/` 目录发上去，站点各占一个子目录。所以报头那个「另一家的报告」入口在 Cloudflare 上改成了**同域的相对路径**（`../decathlon/`、`../uniqlo/`），换域名、甚至本地双击都对。这个命令与「对哪个站点做」无关，从哪一站触发都一样。
 

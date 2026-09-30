@@ -37,7 +37,11 @@ export const SITES = [uniqlo, decathlon];
  */
 export const CLOUDFLARE = {
   project: 'deals-pinouts',
-  host: 'https://deals.goodprices.online',
+  // 正式入口用裸域（用户在阿里云给 @ 加了一条 CNAME 指过来）。
+  // 另外两个是同一份部署的别名，一直有效，但**各自是一本独立的浏览器收藏账**
+  // （localStorage 按 origin 隔离），所以对外只提这一个。
+  host: 'https://goodprices.online',
+  aliases: ['https://deals.goodprices.online', 'https://deals-pinouts.pages.dev'],
   pagesDev: 'https://deals-pinouts.pages.dev',
 };
 
