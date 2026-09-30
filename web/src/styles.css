@@ -237,6 +237,14 @@ button {
 .masthead__cross:first-of-type { margin-left: auto; }
 .masthead__cross:hover { text-decoration: underline; }
 
+  /* 手机上：入口**紧跟站点名**排，不推到行尾。
+     推到行尾（margin-left: auto）在窄屏上很脆：中文标签 + 两个入口一旦超出可用宽度，
+     flex 就会把它折到第二行（用户报的「优衣库比价、迪卡侬比价另起一行」）。
+     桌面版仍然推到行尾——那是用户 2026-09-30 明确要的「右对齐、间距不要太大」。 */
+  @media (max-width: 760px) {
+    .masthead__cross:first-of-type { margin-left: 0; }
+  }
+
 /* ---------------- 工具条 ---------------- */
 
 /* 整条粘在视口顶端，包住整页宽：外壳的父盒子得比它高才粘得住，
@@ -838,7 +846,7 @@ html[data-site="decathlon"] {
    要一档一档往下减（4 → 3 → 2 → 1），列表行也是一列一列往下撤 */
 
 @media (max-width: 1180px) {
-    html { --pad: 24px; }
+    :root { --pad: 24px; }
 
     /* 触屏平板（≤1180）上搜索框还看得见：输入框字号必须 ≥16px，否则 iOS 一聚焦
        就自动把整页放大一点（手机端搜索是隐藏的，见下面那条，所以这条只管平板）。 */
@@ -865,7 +873,7 @@ html[data-site="decathlon"] {
      迪卡侬那两行的前提不成立了，于是跟优衣库对齐——这也是用户明确要的。 */
   .search { display: none; }
 
-    html { --pad: 16px; }
+    :root { --pad: 16px; }
   .masthead { padding-top: 26px; }
   [data-site="uniqlo"] .topranks { padding: 18px 0 16px; }
   /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */

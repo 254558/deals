@@ -408,7 +408,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 | 间距 | 14px（`.masthead__eyebrow` 的 gap） |
 | 收尾 | 1px `--rule` 发丝线（`.wrap` 的内容宽度，不是视口宽度） |
 | 上间距 | 44px（≤760px 收到 26px） |
-| 行尾入口 | 只有第一个吃 `margin-left: auto`，其余紧跟 |
+| 行尾入口 | 桌面版：只有第一个吃 `margin-left: auto`，其余紧跟（用户 2026-09-30 要的「右对齐、间距不要太大」）。**手机版（≤760px）不推**：入口紧跟站点名排——推到行尾的话，中文标签 + 两个入口一旦超出可用宽度，flex 就折到第二行 |
 
 ⚠️ 报头里**不能用 `.label`**：那条是按站点定义的（优衣库 10px、迪卡侬 13px ink-2），
 用上就又不一致了。所以站点名和入口走 `.masthead__text`。
