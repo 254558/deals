@@ -54,6 +54,11 @@ jobs:
           key: assets-${{ github.run_id }}
           restore-keys: assets-
 
+      - name: 跑测试
+        # 那些「光看代码看不出对错」的规则（下架判定、谢绝名单、payload 契约、尺码映射）
+        # 都在 test/ 里，零依赖。挂了就早失败，别把坏数据推上线。
+        run: npm test
+
       - name: 抓价写库
         run: node src/cli.mjs all sync
 
