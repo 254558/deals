@@ -65,7 +65,15 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: node src/cli.mjs all deploy --target cloudflare
+        run: |
+          # 没配 Secret 时跳过部署，而不是让整轮失败——这样点一次「Run workflow」
+          # 就能先验证「抓取 + 生成报告」通不通（那也是这套东西最大的未知数：
+          # 优衣库前面挂着 EdgeOne 的 WAF，不知道它认不认 GitHub runner 的机房 IP）。
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::warning::没配 CLOUDFLARE_API_TOKEN，跳过部署；抓价与生成报告已经跑完了。"
+            exit 0
+          fi
+          node src/cli.mjs all deploy --target cloudflare
 
       - name: 把价格库提交回去
         # 这一步就是「备份」：git 里每次一条带日期的快照，比本机那份 VACUUM 快照更耐用

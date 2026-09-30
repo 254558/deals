@@ -155,7 +155,8 @@ src/sites/           站点适配器：只有「这家才这样」的东西
   uniqlo.mjs         优衣库：搜索接口、字段映射、标签文案、图片档位、字体、报告开关
   decathlon.mjs      迪卡侬：匿名令牌 + BFF 接口、model 选价、两个图床的缩放写法
 web/                 一套 React 报告源码（组件、样式、格式化）
-scripts/             每天那次定时任务：daily.sh（干活）+ install-launchd.sh（装/卸/改时间）
+.github/workflows/   每天定时跑的那一轮（抓价 → 报告 → 部署 → 提交库 → 提醒）
+scripts/             daily.sh（本机手动跑一轮）+ install-launchd.sh（本机定时的装/卸/改时间）
 docs/                REPORT-CONTRACT.md（报告契约）+ 两份站点设计说明
 data/deals.db        本地数据库（自动生成，不进版本管理）
 data/fonts/          思源黑体原件（首次自动下载，约 16MB）
@@ -259,41 +260,58 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 
 ## 自动化
 
-每天 09:00 跑一轮，装成 launchd 任务（已经在这台机器上装好了）：
+**每天 01:00 UTC（北京时间 09:00）由 GitHub Actions 跑一轮**，配置在 [.github/workflows/daily.yml](.github/workflows/daily.yml)。搬到 Actions 的原因很简单：本机那套只在「Mac 开着、你还登录着」时才跑，出差一周就断档。
 
-```bash
-bash scripts/install-launchd.sh              # 装（默认 09:00）
-bash scripts/install-launchd.sh --hour 21    # 想换时间
-bash scripts/install-launchd.sh --uninstall  # 卸
-launchctl kickstart -k gui/$(id -u)/com.$(whoami).deals.daily   # 立刻试跑一次
-```
-
-`scripts/daily.sh` 一轮做五件事，日志追加到 `logs/daily.log`（一天一段，带每步的退出码）：
+一轮做这几件事：
 
 | 步骤 | 为什么在 |
 | --- | --- |
 | `all sync` | 抓两家的最新价格写进历史库——**上市价就是靠这个一天一天攒出来的**，漏一天就少一天 |
-| `all report --no-open` | 生成两份报告（`sync` 只动数据库，报告是另一个文件） |
-| `all deploy --target cloudflare` | 把 `reports/` 推到 Cloudflare，**线上跟着当天更新**。这一步内部会把两份报告再生成一遍（交叉入口要改成同域相对路径），所以上一步可以理解成「保证本地一定有一份」——deploy 若在上传阶段失败，本地报告照样是新的，不会两头空 |
-| `backup` | 这个项目里**只有价格库不可再生**，而它开着 WAL、直接 `cp` 不安全，所以走 `VACUUM INTO`；有 iCloud 就同时写一份到机器之外 |
-| `alert` | 盯着的商品降价了、或数据断档（>36 小时没抓成功）就弹系统通知 |
+| `all report --no-open` | 生成两份报告（`sync` 只动数据库，报告是另一个文件）；缺的商品图/字体会在这一步现下 |
+| `all deploy --target cloudflare` | 把 `reports/` 推到 Cloudflare，**线上跟着当天更新** |
+| 提交 `data/deals.db` | **这一步就是备份**：每次一条带日期的快照，git 历史本身就是带版本的异地备份 |
+| `alert` → 开 Issue | 盯着的商品降价了、或数据断档（>36 小时没抓成功）就开一个 Issue——GitHub 会给仓库的 watch 邮箱发信（本机那套走的是 `osascript` 弹通知，Linux runner 上没这东西） |
 
-任何一步失败都会**主动弹一条失败通知**（只写进日志等于没人知道）。实测一轮约 70 秒，其中部署那步 **3 秒**（日常只改两个 HTML，素材已在 Cloudflare 上，`check-missing` 只补变化的文件）。
+### 一次性的设置：两个 Secret
 
-**为什么是 launchd 而不是 crontab**（两个都是实测出来的）：
+在仓库 **Settings → Secrets and variables → Actions** 里加两个，否则抓价与生成报告照跑、只有最后推 Cloudflare 那一步会失败：
 
-1. **cron 根本读不到项目。** `~/Desktop` 受 macOS 的 TCC 隐私保护，cron 跑起来是这样：
+| Secret | 值 |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare 控制台 → My Profile → API Tokens → 用 **Edit Cloudflare Workers** 模板，或自建一个带 `Account → Cloudflare Pages → Edit` 的令牌 |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare 控制台右侧栏（Workers & Pages 概览页）能抄到 |
 
-   ```
-   ===== 2026-09-30 14:53:01 =====
-   pwd=/Users/zhangshuai/Desktop/deals
-   目录前几项: ls: .: Operation not permitted      ← 目标目录能进，但读不了
-   ```
+### 价格库是「谁在跑」的主人
 
-   除非去「系统设置 → 隐私与安全 → 完全磁盘访问权限」里把 `/usr/sbin/cron` 加进去（要管理员密码，而且等于给系统 cron 开了很宽的权限），否则这条路走不通。项目现在在 `~/deals`，不在保护目录里，launchd 直接就能读写——同一台机器上换成 `~/deals-cron-probe` 实测就一切正常。
-2. **笔记本 9 点多半在睡觉。** cron 错过的时间点直接跳过；launchd 的 `StartCalendarInterval` 会在唤醒之后补跑一次。
+**`data/deals.db` 进了版本管理**（`.gitignore` 里只给它开了个口子，`data/` 下其余仍忽略）。原因是 runner 每次都是空的：库不进 git 的话，历史每次重置、上市价永远算不出来。
 
-`install-launchd.sh` 里的 plist 是**现生成**的：仓库路径、node 路径、用户名都取当前机器，所以换台机器、或者仓库改个目录名，重跑一遍这个脚本就行（`daily.sh` 自己也是按脚本位置定位仓库的，不写死路径）。
+由此带来一条规矩——**本机手动跑之前先拉一次，跑完把库提交回去**：
+
+```bash
+git pull                     # 先把 CI 昨天的库拉下来
+bash scripts/daily.sh        # 抓价 → 报告 → 部署 → 备份 → 提醒；脚本自己会 pull 一次并提交库
+```
+
+### 本机定时（备用，现在没开）
+
+`scripts/daily.sh` + `scripts/install-launchd.sh` 都还在，想退回本机定时就：
+
+```bash
+bash scripts/install-launchd.sh              # 装（默认 09:00）
+bash scripts/install-launchd.sh --hour 21    # 换时间
+bash scripts/install-launchd.sh --uninstall  # 卸
+launchctl kickstart -k gui/$(id -u)/com.$(whoami).deals.daily   # 立刻试跑一次
+```
+
+> ⚠️ **两条路只留一条**。都开着的话，两边各写各的库再互相推，会覆盖掉对方的抓取结果（本机那份现在也会 pull + commit 了，所以不至于丢数据，但会白抓两遍、还可能撞上推送冲突）。当前状态：**Actions 开着，本机 launchd 已卸载**。
+
+**为什么当初不用 crontab**（实测出来的）：`~/Desktop` 受 macOS 的 TCC 隐私保护，cron 跑起来连目录都读不了（`ls: .: Operation not permitted`），除非把 `/usr/sbin/cron` 加进「完全磁盘访问权限」；而且笔记本 9 点多半在睡觉，cron 错过就跳过、launchd 的 `StartCalendarInterval` 会在唤醒后补跑。
+
+**为什么不用 Cloudflare 的 Cron Triggers / Worker**：抓取、建库、生成报告这一整套是 Node 的（`node:sqlite`、文件读写、Vite 构建、字体子集化），Workers 里没有文件系统、SQLite 要换成 D1、构建与字体子集化都得重做——那是一次移植工程。Actions 则是在 runner 上**原样跑现在这套 CLI**。
+
+### 素材走缓存，不进 git
+
+商品图 168MB + 字体 16MB，都不进仓库（几年下来会把仓库拖到 GB 级），改用 `actions/cache` 缓存 `reports/*/img` 与 `data/fonts`；缓存没命中就现下（`ensureImages` 只补缺的，所以命中之后每天几乎不下载）。
 
 ## 注意
 

@@ -335,7 +335,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 ### 8.5 抓取节奏
 
-优衣库的降价节奏：**每周二**调整价格、**每周五**上新一期限时特优。所以建议每天 `sync` 一次攒历史（这台机器上已经装成每天 09:00 的 launchd 任务，见 [README.md](../README.md) 的「自动化」一节）。
+优衣库的降价节奏：**每周二**调整价格、**每周五**上新一期限时特优。所以建议每天 `sync` 一次攒历史（现在由 GitHub Actions 每天北京时间 09:00 自动跑一轮，见 [README.md](../README.md) 的「自动化」一节）。
 
 ---
 

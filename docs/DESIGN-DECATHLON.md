@@ -360,7 +360,7 @@ Roboto, Decathlon, 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino 
 
 ### 8.5 抓取节奏
 
-`sync` 每页之间 `sleep(200ms)`，14 页实测约 25 秒。合并后建议每天 `sync` 一次攒历史（这台机器上已经装成每天 09:00 的 launchd 任务，见 [README.md](../README.md) 的「自动化」一节）。
+`sync` 每页之间 `sleep(200ms)`，14 页实测约 25 秒。合并后建议每天 `sync` 一次攒历史（现在由 GitHub Actions 每天北京时间 09:00 自动跑一轮，见 [README.md](../README.md) 的「自动化」一节）。
 
 ---
 
