@@ -8,6 +8,9 @@ import { META } from '../lib/site.js';
  *
  * 这一行里的每个词都来自 `META`，组件里没有一处站点判断：
  *
+ * 报头的皮是**一套**（见 styles.css 的 .masthead 那段），不分站点——2026-10-01 之前两家各一套，
+ * 换个页面导航栏就换个样子。
+ *
  *   META.label         站点名（优衣库 / 迪卡侬 · 中国官网）—— 两家的写法不一样，
  *                      所以连「· 中国官网」这个后缀也归数据，不在这里拼
  *   META.links         行尾那组入口（数组）：另一家的报告 + 尾货市集。核心拼好，两家一样；
@@ -30,12 +33,12 @@ export function Masthead({ recorded }) {
     <header className="masthead">
       <div className="masthead__eyebrow">
         <span className="masthead__dot" />
-        <span className="label">{META.label}</span>
+        <span className="masthead__text">{META.label}</span>
         {META.showRecorded && <span className="label">共记录 {num(recorded)} 件</span>}
         {/* 行尾右对齐的入口：兄弟报告 + 尾货市集（靠 margin-left: auto 顶到行尾） */}
         {links.map((l) => (
           <a
-            className="label masthead__cross"
+            className="masthead__text masthead__cross"
             key={l.href}
             href={l.href}
             target="_blank"

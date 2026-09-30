@@ -45,6 +45,9 @@
   /* 红只剩一个色值：降价现价、标尺、榜单第一名序号、报头那颗小圆点；
      链接、hover、选中、收了用品牌蓝 */
   --red: #e20c18;
+
+  /* 页面外壳的左右内边距：报头、工具栏、内容全用它。1180 / 760 两档会收紧 */
+  --pad: 40px;
   --blue: #3643ba;
   --yellow: #ffcd4e;
   --badge-ink: #101010;
@@ -195,13 +198,34 @@ button {
 
 /* ---------------- 报头 ---------------- */
 
+/**
+ * 报头（最上面那条导航）。
+ *
+ * **一套皮，不分站点**：2026-10-01 之前优衣库和迪卡侬各有一套（11px vs 15px、有没有
+ * 底下那条细线、小方块 6px vs 10px、间距 14 vs 4/18），换个页面导航栏就换个样子。
+ * 现在这里就是唯一的规格：站点名和入口都是 10px + 0.12em 字距、方块 6px 红、
+ * 一条发丝线收尾。市集页与管理页是手写的，照着这段抄了一份（market/index.html 里
+ * 有注释指回来），改这里记得两边一起改。
+ */
+.masthead { padding: 44px 0 0; }
 .masthead__eyebrow {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
   color: var(--ink-4);
 }
-.masthead__dot { flex: none; background: var(--red); }
+.masthead__dot { flex: none; width: 6px; height: 6px; background: var(--red); }
+/* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
+   迪卡侬 13px ink-2），而报头必须两家一模一样。 */
+.masthead__text {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--ink-4);
+}
 /* 行尾那组入口（兄弟报告 + 尾货市集）。
    ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
    flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
@@ -418,7 +442,6 @@ button {
   --sans: "Uniqlo Pro", UniqloProRegular, "Helvetica Neue", Helvetica, Arial,
     "Source Han Sans CN", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
 
-  --pad: 40px;
 
 }
 
@@ -442,19 +465,21 @@ button {
   letter-spacing: 0.12em;
 }
 
-[data-site="uniqlo"] .wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }
+/**
+ * 页面外壳：**一套**。
+ *
+ * 2026-10-01 之前三家各一份（优衣库 1560/40、迪卡侬 1280/24、市集 1080/24），
+ * 于是换个页面导航栏的左边距和底下那条发丝线的长度都不一样——用户明确说不要这样。
+ * 现在宽度和内边距都由这里定，报头、工具栏、内容全跟着它。
+ * （迪卡侬那份原来的 1280 是照它官网的版心定的，并到 1560 之后四列卡片会略宽一点，
+ * 这是这一次统一要付的代价，见 docs/DESIGN-DECATHLON.md。）
+ *
+ * --pad 在共用骨架里定义（40 → 1180px 起 24 → 760px 起 16），不再按站点分。
+ */
+.wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }
 
 /* ---------------- 报头 ---------------- */
 
-[data-site="uniqlo"] .masthead { padding: 44px 0 0; }
-[data-site="uniqlo"] .masthead__eyebrow {
-  gap: 14px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--rule);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-}
-[data-site="uniqlo"] .masthead__dot { width: 6px; height: 6px; }
 
 /* ---------------- 榜单（页顶 RankBoard） ----------------
    本期降得最狠的几件排成榜，价格排版照 PDP 来。
@@ -633,7 +658,6 @@ button {
   --font: Roboto, Decathlon, 'Helvetica Neue', Helvetica, Arial, 'PingFang SC',
     'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 
-  --pad: 24px;
 
   /* 商品名固定两行：16px × 行高 24px × 2 = 48px（官网实测值） */
   --name-line: 24px;
@@ -659,17 +683,12 @@ html[data-site="decathlon"] {
 /* 名称下面那行小灰字（官网卡片里是 14px/#616161） */
 [data-site="decathlon"] .metaline { font-size: 14px; line-height: 24px; color: var(--ink-2); }
 
-[data-site="decathlon"] .wrap { max-width: 1280px; margin: 0 auto; padding: 0 var(--pad); }
 
 /* 键盘走查：整页直角，焦点框也只能是直角 */
 [data-site="decathlon"] :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
 /* ---------------- 报头 ---------------- */
 
-[data-site="decathlon"] .masthead { padding: 28px 0 20px; }
-[data-site="decathlon"] .masthead__eyebrow { gap: 4px 18px; }
-/* 那一小方块红：迪卡侬的视觉记忆点在角标上，报头借它一下 */
-[data-site="decathlon"] .masthead__dot { width: 10px; height: 10px; margin-right: 4px; }
 
 /* ---------------- 工具条 ---------------- */
 
@@ -819,7 +838,7 @@ html[data-site="decathlon"] {
    要一档一档往下减（4 → 3 → 2 → 1），列表行也是一列一列往下撤 */
 
 @media (max-width: 1180px) {
-  [data-site="uniqlo"] { --pad: 24px; }
+    html { --pad: 24px; }
   /* 五格还是五格，只是每格的内衬收一收——换列数会让格与格之间的竖线断在换行处 */
   [data-site="uniqlo"] .topranks { gap: 16px; }
 
@@ -842,8 +861,8 @@ html[data-site="decathlon"] {
      迪卡侬那两行的前提不成立了，于是跟优衣库对齐——这也是用户明确要的。 */
   .search { display: none; }
 
-  [data-site="uniqlo"] { --pad: 16px; }
-  [data-site="uniqlo"] .masthead { padding-top: 26px; }
+    html { --pad: 16px; }
+  .masthead { padding-top: 26px; }
   [data-site="uniqlo"] .topranks { padding: 18px 0 16px; }
   /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */
   [data-site="uniqlo"] .rank__row { grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; }

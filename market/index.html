@@ -28,6 +28,8 @@
     --red: #e20c18;
     --yellow: #ffcd4e;
     --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+    /* 页面外壳的左右内边距：**和两份报告同一套**（web/src/styles.css 的共用骨架） */
+    --pad: 40px;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
@@ -40,20 +42,34 @@
   a { color: inherit; text-decoration: none; }
   a:hover { color: var(--blue); }
   button, input, textarea { font: inherit; color: inherit; border-radius: 0; }
-  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  /* 外壳：和两份报告同一套（1560 + --pad），报头那条发丝线的长度才对得上 */
+  .wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }
+  @media (max-width: 1180px) { :root { --pad: 24px; } }
+  @media (max-width: 760px) { :root { --pad: 16px; } }
 
-  /* ---------- 报头 ---------- */
-  header.top { border-bottom: 1px solid var(--rule); padding: 18px 0 16px; margin-bottom: 26px; }
-  .top__row { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
-  .dot { width: 7px; height: 7px; background: var(--blue); display: inline-block; }
-  .top__title { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
-  .top__sub { color: var(--ink-2); font-size: 13px; }
-  .top__links { margin-left: auto; display: flex; gap: 14px; font-size: 13px; color: var(--blue); }
-  .top__links a:hover { text-decoration: underline; }
+  /* ---- 报头 ----
+     和两份报告**完全同一套**：规格抄自 web/src/styles.css 的 .masthead 那一段。
+     改那边记得改这里（两边都是这几行，注释互相指着）。 */
+  .masthead { padding: 44px 0 0; }
+  .masthead__eyebrow {
+    display: flex; align-items: center; flex-wrap: wrap; gap: 14px;
+    padding-bottom: 14px; border-bottom: 1px solid var(--rule); color: var(--ink-4);
+  }
+  .masthead__dot { flex: none; width: 6px; height: 6px; background: var(--red); }
+  .masthead__text { font-size: 10px; font-weight: 400; letter-spacing: 0.12em; color: var(--ink-4); }
+  .masthead__cross { color: var(--blue); text-decoration: none; }
+  .masthead__cross:first-of-type { margin-left: auto; }
+  .masthead__cross:hover { text-decoration: underline; }
+  @media (max-width: 760px) { .masthead { padding-top: 26px; } }
+
+  /* 报头下面那句说明。原来挤在报头里，报头要统一就只能请它下来单独一行 */
+  .lead { margin: 16px 0 22px; font-size: 13px; color: var(--ink-2); }
 
   /* ---------- 通用 ---------- */
-  h2 { font-size: 15px; margin: 0 0 14px; }
-  .card { border: 1px solid var(--rule); margin-bottom: 30px; }
+  /* 分区小标题：照报告里的 .label（10px + 0.12em 字距 + 灰） */
+  h2 { margin: 0 0 14px; font-size: 10px; font-weight: 400; letter-spacing: 0.12em; color: var(--ink-4); }
+  /* 表单卡自己限宽：外壳并到 1560 之后，一个横跨 1500px 的输入框没法看 */
+  .card { border: 1px solid var(--rule); margin-bottom: 30px; max-width: 940px; }
 
   /* 「我要出一件」平时就是一行字，点一下（整行都能点）才展开表单。
      箭头用两条边框旋转出来，不引图标字体/SVG。 */
@@ -63,8 +79,8 @@
   }
   .card__head:hover { color: var(--blue); }
   .card__head:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
-  .card__title { font-size: 15px; font-weight: 600; }
-  .card__hint { font-size: 13px; color: var(--ink-4); }
+  .card__title { font-size: 10px; font-weight: 400; letter-spacing: 0.12em; color: var(--ink); }
+  .card__hint { font-size: 10px; letter-spacing: 0.04em; color: var(--ink-4); }
   .card__arrow {
     margin-left: auto; width: 8px; height: 8px;
     border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
@@ -185,19 +201,19 @@
 </head>
 <body>
 
-<header class="top">
-  <div class="wrap top__row">
-    <span class="dot"></span>
-    <span class="top__title">尾货市集</span>
-    <span class="top__sub">你家附近店里的漏，拍照发上来，有人要就寄给他</span>
-    <span class="top__links">
-      <a href="/uniqlo/">优衣库比价</a>
-      <a href="/decathlon/">迪卡侬比价</a>
-    </span>
+<header class="masthead">
+  <div class="wrap">
+  <div class="masthead__eyebrow">
+    <span class="masthead__dot"></span>
+    <span class="masthead__text">尾货市集</span>
+    <a class="masthead__text masthead__cross" href="/uniqlo/" target="_blank" rel="noreferrer">优衣库比价</a>
+    <a class="masthead__text masthead__cross" href="/decathlon/" target="_blank" rel="noreferrer">迪卡侬比价</a>
+  </div>
   </div>
 </header>
 
 <div class="wrap">
+  <p class="lead">你家附近店里的漏，拍照发上来，有人要就寄给他</p>
 
   <div class="card">
     <button class="card__head" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">
