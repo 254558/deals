@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS products (
   first_seen_at     TEXT,
   last_seen_at      TEXT,
   tracked           INTEGER DEFAULT 0,  -- 1 = 手动 track 盯着的，不是抓特价抓来的
+  missed            INTEGER DEFAULT 0,  -- 连续几次成功抓取没再见到它（>=2 视为已不在特价）
   PRIMARY KEY (site, product_code)
 );
 
@@ -91,7 +92,26 @@ export function openDb(path) {
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL');
   db.exec(SCHEMA);
+  migrate(db);
   return db;
+}
+
+/**
+ * 给旧库补上后加的列。
+ *
+ * 这个工具的价值全在「攒了很久的历史」上，所以升级时**绝不能因为表少了一列就崩**，
+ * 也绝不重建表。`CREATE TABLE IF NOT EXISTS` 对已存在的表是空操作，加列得自己来。
+ * （合并前的迪卡侬那份有这个机制，合并时因为新库是空的就先省了；现在加 `missed`
+ * 就必须把它补回来——用户的库里已经有一整天的数据了。）
+ */
+function migrate(db) {
+  const have = new Set(db.prepare('PRAGMA table_info(products)').all().map((c) => c.name));
+  const added = [
+    // 连续几次成功抓取没再见到它。老库补齐时一律给 0：历史数据无从判断，
+    // 从下一次 sync 开始正常累计。
+    ['missed', 'ALTER TABLE products ADD COLUMN missed INTEGER DEFAULT 0'],
+  ];
+  for (const [col, sql] of added) if (!have.has(col)) db.exec(sql);
 }
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -135,16 +155,36 @@ export const discountRate = (originPrice, price) =>
 /**
  * 写入一次抓取结果，顺便算出跟上次相比发生了什么。
  *
+ * ── `missed`：这次没见到谁（用于「下架就跟着下架」）────────────────────
+ *
+ * 抓取池里消失的商品，以前是**永远留在榜上**的：`in_stock` 只在商品被抓到时才写，
+ * 所以一件下架的商品会带着「在售」这个旧标记一直挂着，用户点进去才发现官网早没了。
+ *
+ * 现在每轮成功抓取都会给「没见到的」累加 `missed`、给「见到的」清零，
+ * 榜单与报告默认排除 `missed >= 2`（连续两轮没见到）。
+ *
+ * 三个必须守住的边界（都是想清楚才写的，不是拍的）：
+ *
+ *  1. **只有整站抓取才算数**（`full: true`）。`deals <站点> track <编号>` 也是走
+ *     saveSnapshot 的，它只写一件商品——要是也参与计数，其余几百件每 track 一次
+ *     就被判「没见到」，几次下来全站都被误判成下架。
+ *  2. **基准是最后一次「成功的」抓取**，不是最后一次抓取。失败的运行（接口挂了、
+ *     翻页断在中途）如果参与对比，会把整站商品都算成没见到。
+ *  3. **安全阀**：这一轮抓到的件数比上一轮成功抓取暴跌（不到 60%）时，本轮**一件
+ *     都不标记**，只把 `bulkDrop` 报出去。一次半截的抓取不该让全站下架。
+ *
  * @param {object} db
  * @param {string} site 站点 id
  * @param {object[]} products 站点适配器归一化后的商品（见 sites/*.mjs 的 toCanonical）
- * @returns {{added: object[], dropped: object[], raised: object[], permanent: object[]}}
- *   added     第一次见到
- *   dropped   又降价了（现价比上次低）
- *   raised    涨回去了（限时活动结束）
- *   permanent 官方原价自己下调了 —— 比打折更值得出手
+ * @param {object} [opts]
+ * @param {boolean} [opts.tracked] 手动 track 的单件写入
+ * @param {boolean} [opts.full] 整站抓取（只有它会更新 missed 计数）
+ * @returns {{added, dropped, raised, permanent, missedOne, gone, bulkDrop}}
+ *   missedOne 本轮第一次没见到（还没到下架判定）
+ *   gone      本轮刚跨过 2 次、正式判为「已不在特价」的
+ *   bulkDrop  件数暴跌、本轮跳过下架判定（true 表示跳过了）
  */
-export function saveSnapshot(db, site, products, { tracked = false } = {}) {
+export function saveSnapshot(db, site, products, { tracked = false, full = false } = {}) {
   const now = new Date().toISOString();
   const on = today();
 
@@ -234,7 +274,28 @@ export function saveSnapshot(db, site, products, { tracked = false } = {}) {
     throw err;
   }
 
-  return { added, dropped, raised, permanent };
+  // ---- 谁这次没见到（只有整站抓取才更新，见函数头那三条边界）----
+  let missedOne = 0;
+  let gone = 0;
+  let bulkDrop = false;
+
+  if (full) {
+    // 安全阀：跟「上一次成功抓取」的件数比，暴跌就整轮跳过判定
+    const prevRun = db
+      .prepare('SELECT discounted FROM runs WHERE site = ? AND finished_at IS NOT NULL AND discounted > 0 ORDER BY id DESC LIMIT 1')
+      .get(site);
+    if (prevRun && products.length < prevRun.discounted * 0.6) {
+      bulkDrop = true;
+    } else {
+      const count = (where, ...args) => db.prepare(`SELECT COUNT(*) AS n FROM products WHERE site = ? AND ${where}`).get(site, ...args).n;
+      missedOne = count('last_seen_at < ? AND missed = 0', now);
+      gone = count('last_seen_at < ? AND missed = 1', now);
+      db.prepare('UPDATE products SET missed = 0 WHERE site = ? AND last_seen_at >= ?').run(site, now);
+      db.prepare('UPDATE products SET missed = missed + 1 WHERE site = ? AND last_seen_at < ? AND missed < 99').run(site, now);
+    }
+  }
+
+  return { added, dropped, raised, permanent, missedOne, gone, bulkDrop };
 }
 
 export function startRun(db, site, note = '') {
@@ -267,13 +328,15 @@ export function listDeals(db, site, { sort = 'rate', limit = 40, minRate = 0.2, 
       newest: 'first_seen_at DESC',
     }[sort] || 'max_discount DESC';
 
-  // 盯着的商品不设降幅门槛——盯的就是还没降的那些，降了才好通知
+  // 盯着的商品不设降幅门槛——盯的就是还没降的那些，降了才好通知；
+  // 也**不排除已不在特价的**：那正是你等它的意义，宁可让它留着并标出来
   const where = trackedOnly
     ? 'WHERE site = ? AND tracked = 1'
     : `WHERE site = ?
          AND origin_price > last_price
          AND origin_price > 0
          AND in_stock = 1
+         AND missed < 2
          AND (1.0 - last_price * 1.0 / origin_price) >= ?`;
   const params = trackedOnly ? [site] : [site, minRate];
 
@@ -314,6 +377,7 @@ export function listJustDropped(db, site, limit = 60) {
     FROM products
     WHERE site = ?
       AND prev_price IS NOT NULL AND last_price < prev_price AND origin_price > 0
+      AND missed < 2
     ORDER BY (prev_price - last_price) DESC
     LIMIT ?
   `)
@@ -351,7 +415,9 @@ export function stats(db, site, { extraStats = [] } = {}) {
     .prepare(`
     SELECT COUNT(*) AS total,
            SUM(CASE WHEN origin_price > last_price THEN 1 ELSE 0 END) AS discounted,
-           SUM(CASE WHEN tracked = 1 THEN 1 ELSE 0 END) AS tracked
+           SUM(CASE WHEN tracked = 1 THEN 1 ELSE 0 END) AS tracked,
+           SUM(CASE WHEN missed >= 2 THEN 1 ELSE 0 END) AS gone,
+           SUM(CASE WHEN missed = 1 THEN 1 ELSE 0 END) AS missing_once
     FROM products WHERE site = ?
   `)
     .get(site);

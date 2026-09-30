@@ -1,4 +1,4 @@
-import { priceParts, pct, tagLabel, chips } from '../lib/format.js';
+import { priceParts, pct, tagLabel, chips, goneNote } from '../lib/format.js';
 import { META } from '../lib/site.js';
 import { CardActions } from './CardActions.jsx';
 
@@ -33,6 +33,8 @@ export function ProductCard({ deal, index, onPick, onHide }) {
   const now = priceParts(deal.price);
   const was = priceParts(deal.launchPrice);
   const cut = deal.launchPrice > deal.price;
+  // 连续两轮没在抓取池里见到（只有手动 track 的商品会带着这个标记进来，见 db.mjs 的 missed）
+  const gone = deal.gone === true;
   const feats = META.features;
   const text = chips(tags);
 
@@ -89,13 +91,13 @@ export function ProductCard({ deal, index, onPick, onHide }) {
       {/* 价格三件套，右端跟着收藏 / 不再出现两个动作——动作挨着价格，
           不用单独再占一行，卡片下半截也就少一层 */}
       <div className="card__prices">
-        <span className={`card__now n${rate > 0 ? '' : ' card__now--flat'}`}>
+        <span className={`card__now n${rate > 0 && !gone ? '' : ' card__now--flat'}`}>
           <span className="now__sym">{now.sym}</span>
           <span className="now__int">{now.int}</span>
           <span className="now__dec">{now.dec}</span>
         </span>
         {/* 迪卡侬：官网把折扣写成「6.0折」，这里写降幅，和榜单、排序的口径一致 */}
-        {feats.priceOffBadge && rate > 0 && (
+        {feats.priceOffBadge && rate > 0 && !gone && (
           <span className="offbadge n">-{pct(rate)}</span>
         )}
         {cut && (
@@ -108,7 +110,11 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         <CardActions watched={tracked} onPick={onPick} onHide={onHide} />
       </div>
 
-      {rate > 0 ? (
+      {gone ? (
+        <div className={feats.dealBarNumber ? 'card__deal card__deal--flat' : 'card__deal--flat'}>
+          {goneNote(deal.lastSeenAt)}
+        </div>
+      ) : rate > 0 ? (
         META.features.dealBarNumber ? (
           /* 优衣库：比例条和降幅红字同行，红字贴在条尾，条占满剩余宽度 */
           <div className="card__deal">

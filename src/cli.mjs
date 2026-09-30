@@ -160,6 +160,27 @@ function cmdAlert() {
       });
     }
 
+    /**
+     * 盯着的商品**从抓取池里消失**了（连续两轮没见到）——这是最该告诉你的一种变化：
+     * 你等它降价，结果它先下架/退出活动了，再等也没用。
+     * 用 `missed = 2` 而不是 `>= 2`：2 是「刚跨过判定线」的那一次，只会命中一轮，
+     * 不会每天重复提醒同一件。
+     */
+    const gone = db
+      .prepare(`
+      SELECT code, name, last_price, last_seen_at FROM products
+      WHERE site = ? AND tracked = 1 AND missed = 2
+    `)
+      .all(site.id);
+    for (const g of gone) {
+      const on = g.last_seen_at ? new Date(g.last_seen_at).toLocaleDateString('zh-CN') : '—';
+      messages.push({
+        title: `${site.label}：盯着的商品已不在特价`,
+        body: `${g.name}　最后见到 ${on}（¥${g.last_price}）`,
+        log: `${site.id}  ${g.code}  ${g.name}  已不在特价，最后见到 ${on}`,
+      });
+    }
+
     const last = stats(db, site.id).lastRun?.finished_at;
     const hours = last ? (Date.now() - new Date(last).getTime()) / 3_600_000 : Infinity;
     if (hours > 36) {
@@ -239,7 +260,7 @@ async function cmdSync(site) {
   });
   clearLine();
 
-  const diff = saveSnapshot(db, site.id, products);
+  const diff = saveSnapshot(db, site.id, products, { full: true });
   finishRun(db, runId, { fetched, discounted: products.length });
 
   const copy = site.copy;
@@ -248,6 +269,18 @@ async function cmdSync(site) {
     `  ${C.green(copy.addedWord)} ${diff.added.length} 件　${C.red('又降价')} ${diff.dropped.length} 件　` +
       `${C.yellow(copy.raisedWord)} ${diff.raised.length} 件　${C.cyan(copy.permanentWord)} ${diff.permanent.length} 件\n`
   );
+
+  // 抓取池里消失的商品：以前它们会永远留在榜上（点进去官网早没了）。
+  // 现在连续两轮没见到就移出榜单，这里把那件事说清楚，别让它默默发生。
+  if (diff.bulkDrop) {
+    console.log(C.yellow(`  ⚠ 本轮只抓到 ${products.length} 件，比上一轮少太多，`));
+    console.log(C.yellow('    本轮跳过「不在特价」判定——一次半截的抓取不该让全站下架。\n'));
+  } else if (diff.missedOne || diff.gone) {
+    const parts = [];
+    if (diff.missedOne) parts.push(`${diff.missedOne} 件第一次没见到`);
+    if (diff.gone) parts.push(`${diff.gone} 件连续两轮没见到、已移出榜单`);
+    console.log(C.dim(`  抓取池里少了：${parts.join('，')}\n`));
+  }
 
   if (diff.dropped.length) {
     console.log(C.bold(C.red(`▍${copy.dropped}`)));
@@ -438,11 +471,14 @@ function cmdStats(site) {
   const hist = db.prepare('SELECT COUNT(*) AS n, MIN(observed_on) AS since FROM price_history WHERE site = ?').get(site.id);
 
   const extraLines = site.statsExtra.map((e) => `  ${e.label}      ${s.extras[e.tag]} 件\n`).join('');
+  // 「已不在特价」在报告里是**不说的**（用户要的是：榜上只剩现在真在卖的），
+  // 但终端这边要能看见——不然你会以为商品凭空消失了。
+  const goneLine = `  已不在特价        ${s.gone || 0} 件${s.missing_once ? C.dim(`（另有 ${s.missing_once} 件本轮没见到）`) : ''}\n`;
   console.log(`
   ${C.bold(`${site.label} · 本地数据`)}
   累计记录商品      ${s.total} 件
   当前有折扣        ${s.discounted} 件
-${extraLines}  手动关注          ${s.tracked} 件
+${goneLine}${extraLines}  手动关注          ${s.tracked} 件
   价格快照          ${hist.n} 条${hist.since ? C.dim(`（自 ${hist.since} 起）`) : ''}
   最近一次抓取      ${s.lastRun?.finished_at ? new Date(s.lastRun.finished_at).toLocaleString('zh-CN') : C.yellow(`还没抓过，先跑 deals ${site.id} sync`)}
   数据库            ${DB_PATH}

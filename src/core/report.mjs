@@ -54,6 +54,13 @@ function toDeal(row, images, remote) {
     saving: Math.max(0, launchPrice - price),
     rate: rateOf(launchPrice, price),
     tracked: row.tracked === 1,
+    // 连续两轮成功抓取都没见到它 = 已不在特价（下架 / 退出活动池）。
+    // 榜单本身已经不收它们了（db 里 missed >= 2 被排除），所以进 payload 的
+    // 只可能是**手动 track 盯着的**那些 —— 那正是要留着并标出来的。
+    gone: row.missed >= 2,
+    // 只有 gone 的才带这个日期（其他商品带了纯属浪费：878 件 × 30 字节）。
+    // 用来显示「最后见到 9/25」，免得把最后一次抓到的旧价当成现价看
+    lastSeenAt: row.missed >= 2 ? row.last_seen_at : null,
   };
   if (remote) {
     deal.remoteImage = row.image || null;

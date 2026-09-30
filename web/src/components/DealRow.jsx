@@ -1,4 +1,4 @@
-import { priceParts, price, num, sales, tagLabel, chips } from '../lib/format.js';
+import { priceParts, price, num, sales, tagLabel, chips, goneNote } from '../lib/format.js';
 import { META } from '../lib/site.js';
 import { PriceScale } from './PriceScale.jsx';
 import { CardActions } from './CardActions.jsx';
@@ -34,6 +34,8 @@ export function DealRow({ deal, index, onPick, onHide }) {
   const delay = Math.min(index, 14) * 45;
   const now = priceParts(deal.price);
   const cut = deal.launchPrice > deal.price;
+  // 连续两轮没在抓取池里见到（只有手动 track 的会带着这个标记进来，见 db.mjs 的 missed）
+  const gone = deal.gone === true;
   const feats = META.features;
   const cols = META.columns;
   /** 尾列（月销 / 运动）：数字列和文本列写法不一样，由列声明里的 format 决定 */
@@ -97,7 +99,7 @@ export function DealRow({ deal, index, onPick, onHide }) {
       </div>
 
       <div className="row__nowcell" role="cell">
-        <div className={`row__now n${deal.rate > 0 ? '' : ' row__now--flat'}`}>
+        <div className={`row__now n${deal.rate > 0 && !gone ? '' : ' row__now--flat'}`}>
           {/* 货币符号单独一格（字号小一档），数字留给 priceParts 补两位小数与千分位 */}
           <span className="now__sym">{now.sym}</span>
           <span className="now__int">{now.int}</span>
@@ -106,7 +108,11 @@ export function DealRow({ deal, index, onPick, onHide }) {
       </div>
 
       {/* 还没降价的（手动盯着的）商品画不出标尺，硬画就是一根 -0% 的空条 */}
-      {deal.rate > 0 ? (
+      {gone ? (
+        <div className="scale scale--flat" role="cell">
+          {goneNote(deal.lastSeenAt)}
+        </div>
+      ) : deal.rate > 0 ? (
         <PriceScale
           launch={deal.launchPrice}
           price={deal.price}
