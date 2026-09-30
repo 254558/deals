@@ -103,10 +103,17 @@ function fakeDB(seed = {}) {
         },
         async all() {
           calls.push(q);
-          if (/FROM comments\s+WHERE/.test(sql)) {
+          if (/SELECT c\.id/.test(sql)) {
+            // 带 listing_id 的那条（按件查）参数是 [listingId, limit]；批量那条没有参数
+            const only = /c\.listing_id = \?/.test(sql) ? q.args[0] : null;
+            const bySeller = (c) => {
+              const l = state.listings.find((x) => x.id === c.listing_id);
+              return !!(l && l.ip_hash && c.ip_hash && l.ip_hash === c.ip_hash);
+            };
             const rows = state.comments
-              .filter((c) => c.listing_id === q.args[0] && !c.hidden)
-              .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+              .filter((c) => !c.hidden && (only === null || c.listing_id === only))
+              .sort((a, b) => (a.created_at < b.created_at ? -1 : 1))
+              .map((c) => ({ id: c.id, listing_id: c.listing_id, created_at: c.created_at, body: c.body, by_seller: bySeller(c) ? 1 : 0 }));
             return { results: rows };
           }
           // 列表带评论数（对应线上那条子查询）

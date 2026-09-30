@@ -1,34 +1,62 @@
 import { json, fail, validateComment, checkCommentRate, ipHash, randomId, randomToken, SHA } from './_lib.mjs';
 
-/** 一件最多取多少条评论 */
+/** 一件最多取多少条评论；一次批量取的总上限 */
 const LIMIT = 100;
+const ALL_LIMIT = 800;
 
 /**
  * GET /api/comments?listingId=xxx —— 某一件的评论，**正序**（先说的在前，像聊天记录）。
+ * GET /api/comments            —— **全部**可见评论（带 listing_id），市集页默认展开时用。
  *
- * 只回可见的；不存在的商品给空数组（不是错误——商品被删了，评论跟着看不见就是了）。
- * 顺手标一下哪几条是**卖家自己**来答的：比对 ip_hash（只回布尔值，不暴露哈希）。
+ * 为什么要有第二种：市集页现在是**默认展开**评论的，如果照旧每张卡片各发一个请求，
+ * 一屏几十张卡就是几十个请求。改成一趟把全部评论取回来，前端按 listing_id 分组填进去。
+ * 个人市集这个量级（几百条）一趟完全够。
+ *
+ * 只回可见的；顺手标一下哪几条是**卖家自己**来答的——比 ip_hash（只回布尔值，不暴露哈希）。
  */
 export async function onRequestGet({ request, env }) {
   const url = new URL(request.url);
   const listingId = String(url.searchParams.get('listingId') || '').replace(/[^a-z0-9]/gi, '');
-  if (!listingId) return fail('缺少 listingId');
 
-  const owner = await env.DB.prepare('SELECT ip_hash FROM listings WHERE id = ?').bind(listingId).first();
+  if (!listingId) {
+    const { results } = await env.DB.prepare(
+      `SELECT c.id, c.listing_id, c.created_at, c.body,
+              (c.ip_hash = l.ip_hash) AS by_seller
+         FROM comments c LEFT JOIN listings l ON l.id = c.listing_id
+        WHERE c.hidden = 0 ORDER BY c.created_at ASC LIMIT ?`
+    )
+      .bind(ALL_LIMIT)
+      .all();
+    return json({
+      ok: true,
+      items: (results || []).map((r) => ({
+        id: r.id,
+        listingId: r.listing_id,
+        created_at: r.created_at,
+        body: r.body,
+        bySeller: !!r.by_seller,
+      })),
+    });
+  }
+
   const { results } = await env.DB.prepare(
-    `SELECT id, created_at, body, ip_hash FROM comments
-      WHERE listing_id = ? AND hidden = 0 ORDER BY created_at ASC LIMIT ?`
+    `SELECT c.id, c.created_at, c.body, (c.ip_hash = l.ip_hash) AS by_seller
+       FROM comments c LEFT JOIN listings l ON l.id = c.listing_id
+      WHERE c.listing_id = ? AND c.hidden = 0 ORDER BY c.created_at ASC LIMIT ?`
   )
     .bind(listingId, LIMIT)
     .all();
 
-  const items = (results || []).map((r) => ({
-    id: r.id,
-    created_at: r.created_at,
-    body: r.body,
-    bySeller: !!owner && !!r.ip_hash && r.ip_hash === owner.ip_hash,
-  }));
-  return json({ ok: true, items });
+  return json({
+    ok: true,
+    items: (results || []).map((r) => ({
+      id: r.id,
+      listingId,
+      created_at: r.created_at,
+      body: r.body,
+      bySeller: !!r.by_seller,
+    })),
+  });
 }
 
 /**

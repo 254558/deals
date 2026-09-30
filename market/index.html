@@ -431,6 +431,7 @@
       const data = await r.json();
       if (!data.ok) throw new Error(data.error || '读取失败');
       render(data.items || []);
+      loadAllComments();
     } catch (e) {
       $('loading').textContent = '读不出来了：' + e.message;
       return;
@@ -460,14 +461,14 @@
           <div class="item__meta">联系：<b>${esc(it.contact)}</b></div>
           <div class="item__foot">
             <span>${ago(it.created_at)}</span>
-            <button class="btn btn--ghost btn--sm" type="button" data-comments="${esc(it.id)}">评论${it.comments ? ' ' + it.comments : ''}</button>
+            <button class="btn btn--ghost btn--sm" type="button" data-comments="${esc(it.id)}" aria-expanded="true">收起评论${it.comments ? '（' + it.comments + '）' : ''}</button>
             <span style="margin-left:auto"></span>
             ${mine
               ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
               : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
           </div>
           </div>
-          <div class="cmts" data-cmts="${esc(it.id)}" hidden>
+          <div class="cmts" data-cmts="${esc(it.id)}">
             <div class="cmts__list"></div>
             <div class="cmts__form">
               <input type="text" maxlength="200" placeholder="说点什么…（别人也看得到）" aria-label="评论">
@@ -588,6 +589,29 @@
     }).join("");
   }
 
+  /**
+   * 进页面时**一趟**把全部可见评论取回来，按 listing_id 分组填进各张卡片。
+   * 默认展开之后如果还按卡片各发一个请求，一屏几十张卡就是几十个请求。
+   */
+  async function loadAllComments() {
+    const boxes = document.querySelectorAll('.cmts');
+    if (!boxes.length) return;
+    boxes.forEach((b) => { b.querySelector('.cmts__list').innerHTML = '<div class="cmts__empty">加载中…</div>'; });
+    try {
+      const r = await fetch('/api/comments');
+      const data = await r.json();
+      const byListing = {};
+      for (const c of data.items || []) (byListing[c.listingId] ||= []).push(c);
+      for (const box of boxes) {
+        const id = box.getAttribute('data-cmts');
+        renderComments(box, byListing[id] || []);
+        box.dataset.loaded = '1';
+      }
+    } catch (err) {
+      boxes.forEach((b) => { b.querySelector('.cmts__list').innerHTML = '<div class="cmts__empty">读不出来了</div>'; });
+    }
+  }
+
   async function loadComments(box, id) {
     const list = box.querySelector(".cmts__list");
     list.innerHTML = '<div class="cmts__empty">加载中…</div>';
@@ -603,9 +627,10 @@
 
   function bumpCount(id, delta) {
     const btn = document.querySelector('[data-comments="' + id + '"]');
-    if (!btn) return;
-    const n = Math.max(0, (parseInt((btn.textContent.match(/\d+/) || ["0"])[0], 10) || 0) + delta);
-    btn.textContent = n ? "评论 " + n : "评论";
+    const box = document.querySelector('[data-cmts="' + id + '"]');
+    if (!btn || !box) return;
+    const n = Math.max(0, box.querySelectorAll(".cmt").length + delta);
+    btn.textContent = (box.hidden ? "展开评论" : "收起评论") + (n ? "（" + n + "）" : "");
   }
 
   // ---- 下架 / 举报 ----
@@ -620,6 +645,9 @@
       const id = cmtBtn.getAttribute("data-comments");
       const box = document.querySelector('[data-cmts="' + id + '"]');
       box.hidden = !box.hidden;
+      cmtBtn.setAttribute("aria-expanded", String(!box.hidden));
+      const n = (box.querySelectorAll(".cmt").length) || 0;
+      cmtBtn.textContent = (box.hidden ? "展开评论" : "收起评论") + (n ? "（" + n + "）" : "");
       if (!box.hidden && box.dataset.loaded !== "1") loadComments(box, id);
       return;
     }

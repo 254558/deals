@@ -36,6 +36,7 @@ goodprices.online/
 | `POST` | `/api/listings` | 发一件。`{title, price, size, contact, note, image}`，`image` 是 data URL。（`store` 这一栏 2026-10-01 从表单里删了，接口仍兼容，老数据照常显示） |
 | `GET` | `/api/img/<id>` | 商品图（`Cache-Control: immutable`，id 随机、内容永不改） |
 | `GET` | `/api/comments?listingId=<id>` | 某一件的评论，**正序**（先说的在前），只回可见的 |
+| `GET` | `/api/comments`（不带参数） | **全部**可见评论（带 `listingId`）。市集页默认展开评论，靠这一趟取回，避免每张卡各发一个请求 |
 | `POST` | `/api/comments` | 发评论。`{listingId, body, website?}`，≤200 字 |
 | `POST` | `/api/comment-delete` | 发评论的人删自己那条。`{id, token}` |
 | `POST` | `/api/edit` | 发帖人自己改。`{id, token, title, price, size, contact, note, image?}`，**不带 `image` 就沿用库里那张** |
@@ -107,8 +108,10 @@ goodprices.online/
 
 ## 二点六、评论（2026-10-01 加）
 
-谁都能评论别人发的尾货。页面上一张卡片底部有「评论 N」，点开才去取（**懒加载**——
-不点就不请求，列表页不为几百条评论买单）；发完那条凭据存在浏览器里，自己那条下面有「删除」。
+谁都能评论别人发的尾货。评论**默认就展开**（2026-10-01 用户要求：不要点一下才看得见）；
+为了不因此变成几十个请求，进页面时**一趟**把全部评论取回来（`GET /api/comments` 不带参数），
+前端按 `listingId` 分组填进各张卡片——实测一屏 4 张卡只有 1 个请求。卡片底部那个按钮
+变成「收起评论（N）」的开关。发完凭据存在浏览器里，自己那条下面有「删除」。
 同一 IP 发的评论会标一个「**卖家**」——买家一眼能看出卖家有没有回话。
 
 几个取舍：
