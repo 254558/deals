@@ -7,6 +7,7 @@ import { onRequestPost as deleteListing } from '../functions/api/delete.js';
 import { onRequestPost as reportListing } from '../functions/api/report.js';
 import { onRequestGet as adminList } from '../functions/api/admin/list.js';
 import { onRequestPost as adminAct } from '../functions/api/admin/act.js';
+import { onRequestPost as editListing } from '../functions/api/edit.js';
 
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
@@ -62,6 +63,17 @@ function fakeDB(seed = {}) {
           }
           if (/UPDATE listings SET hidden = 1/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.hidden = 1; }
           if (/UPDATE listings SET reports = 0/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.reports = 0; }
+          // 编辑：带图（9 个参数，最后是 id）与不带图（7 个参数）两条
+          if (/UPDATE listings SET title=\?, price=\?, size=\?, store=\?, contact=\?, note=\?,\s*image_mime=\?, image_bytes=\? WHERE id=\?/.test(sql)) {
+            const [title, price, size, store, contact, note, , image_bytes, id] = q.args;
+            const r = state.listings.find((l) => l.id === id);
+            if (r) Object.assign(r, { title, price, size, store, contact, note, image_bytes });
+          }
+          if (/UPDATE listings SET title=\?, price=\?, size=\?, store=\?, contact=\?, note=\? WHERE id=\?/.test(sql)) {
+            const [title, price, size, store, contact, note, id] = q.args;
+            const r = state.listings.find((l) => l.id === id);
+            if (r) Object.assign(r, { title, price, size, store, contact, note });
+          }
           if (/UPDATE listings SET reports/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[3]); if (r) { r.reports = q.args[0]; if (q.args[1] >= q.args[2]) r.hidden = 1; } }
           return { success: true };
         },
@@ -232,4 +244,75 @@ test('管理动作：下架 / 放回（顺带清举报数）/ 真删', async () 
     env,
   });
   assert.equal(noAuth.status, 401, '不带口令的动作一律挡住');
+});
+
+test('编辑：凭据对就改内容，不换图时图片原样保留', async () => {
+  const { db, state } = fakeDB();
+  const env = { DB: db };
+  const made = await (await createListing({ request: req({ ...good }), env })).json();
+  const { id, token } = made;
+  const before = state.listings[0].image_bytes;
+
+  const edit = (body) =>
+    editListing({
+      request: new Request('https://x/api/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, token, ...body }),
+      }),
+      env,
+    });
+
+  // 不带 image：只改文字，图沿用
+  const r1 = await edit({ title: '改过的名字', price: 66, contact: 'wx: new', note: '改过了' });
+  assert.equal(r1.status, 200);
+  assert.equal((await r1.json()).imageChanged, false);
+  const row = state.listings[0];
+  assert.equal(row.title, '改过的名字');
+  assert.equal(row.price, 66);
+  assert.equal(row.contact, 'wx: new');
+  assert.equal(row.image_bytes, before, '没带图就沿用库里那张');
+  assert.equal(row.created_at, state.listings[0].created_at, '不改时间，免得靠反复编辑往上刷');
+
+  // 带 image：换图（120 个 base64 字符 → 90 字节）
+  const r2 = await edit({ ...good, image: 'data:image/png;base64,' + 'B'.repeat(120) });
+  assert.equal(r2.status, 200);
+  assert.equal((await r2.json()).imageChanged, true);
+  assert.equal(state.listings[0].image_bytes.length, 90);
+});
+
+test('编辑：凭据不对 / 找不到 / 字段不合法都要挡住', async () => {
+  const { db, state } = fakeDB();
+  const env = { DB: db };
+  const { id, token } = await (await createListing({ request: req({ ...good }), env })).json();
+  const edit = (body) =>
+    editListing({
+      request: new Request('https://x/api/edit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, token, ...body }),
+      }),
+      env,
+    });
+
+  assert.equal((await edit({ token: 'wrong', title: '正常的名字', price: 10, contact: 'wx: ok' })).status, 403, '凭据不对');
+  assert.equal((await edit({ title: '短', price: 10, contact: 'wx: ok' })).status, 400, '商品名只有一个字，太短');
+  assert.equal((await edit({ title: '正常的名字', price: 0, contact: 'wx: ok' })).status, 400, '价格不对');
+  assert.equal((await edit({ title: '正常的名字', price: 10, contact: 'x' })).status, 400, '联系方式太短');
+  assert.equal(
+    (await edit({ title: '正常的名字', price: 10, contact: 'wx: ok', image: 'data:image/gif;base64,AAA' })).status,
+    400,
+    '给了图就必须合法'
+  );
+  assert.equal(state.listings[0].title, good.title, '被挡住的那几次一个字都没改到');
+
+  const gone = await editListing({
+    request: new Request('https://x/api/edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'nope', token, title: '正常的名字', price: 10, contact: 'wx: ok' }),
+    }),
+    env,
+  });
+  assert.equal(gone.status, 404, '不存在的 id');
 });

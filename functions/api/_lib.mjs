@@ -68,8 +68,13 @@ export async function checkRate(env, hash, now = new Date()) {
   return null;
 }
 
-/** 校验一条待发布的商品；返回 { ok:true, value } 或 { ok:false, error } */
-export function validate(input) {
+/**
+ * 校验一条待发布的商品；返回 { ok:true, value } 或 { ok:false, error }。
+ *
+ * `imageOptional` 给「编辑」用：编辑时可以不换图（沿用库里那张），所以 image 允许缺失；
+ * 但**给了就必须是合法的**——不能指望前端一定压过。
+ */
+export function validate(input, { imageOptional = false } = {}) {
   const title = clean(input.title, 60);
   const contact = clean(input.contact, 80);
   const size = clean(input.size, 24);
@@ -84,7 +89,10 @@ export function validate(input) {
   if (price > 99999) return { ok: false, error: '价格超出范围' };
   if (len(contact) < 2) return { ok: false, error: '留个联系方式吧，不然没人找得到你（微信 / 手机号都行）' };
   if (len(note) > 240) return { ok: false, error: '说明太长了' };
-  if (!m) return { ok: false, error: '图片格式不对（只收 jpg / png / webp）' };
+  if (!m) {
+    if (imageOptional && !image) return { ok: true, value: { title, price, size, store, note, contact, mime: null, b64: null } };
+    return { ok: false, error: '图片格式不对（只收 jpg / png / webp）' };
+  }
 
   const approxBytes = Math.floor((m[2].length * 3) / 4);
   if (approxBytes > MAX_IMAGE_BYTES) return { ok: false, error: `图片太大了（${Math.round(approxBytes / 1024)}KB，上限 400KB）` };

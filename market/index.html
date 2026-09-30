@@ -284,6 +284,7 @@
 
         <div class="submit-row">
           <button class="btn" type="submit" id="submit">发布</button>
+          <button class="btn btn--ghost" type="button" id="cancelEdit" hidden>取消编辑</button>
           <div class="msg" id="msg"></div>
         </div>
       </div>
@@ -315,8 +316,10 @@
 (() => {
   const $ = (id) => document.getElementById(id);
   const MAX_BYTES = 400 * 1024;
-  let image = null;      // data URL（已压过）
+  let image = null;      // 新选的图（data URL，已压过）。编辑时为 null 表示「沿用库里那张」
   let posting = false;
+  let editing = null;    // 正在编辑哪一件：{ id }；null = 新发一件
+  let lastItems = [];    // 最近一次载入的列表（编辑时按 id 取回内容）
 
   /** 把照片压到 400KB 以内：最长边 1200px，质量从 0.72 往下退 */
   async function compress(file) {
@@ -390,6 +393,11 @@
     // 不自动聚焦「商品名」：手机上会立刻弹出键盘、还会把页面顶一下，展开就是展开
   });
 
+  $('cancelEdit').addEventListener('click', () => {
+    stopEdit();
+    $('msg').textContent = '已取消编辑';
+  });
+
   // ---- 选图 / 拖图 ----
   $('photo').addEventListener('change', (e) => takeFile(e.target.files?.[0]));
   $('swap').addEventListener('click', () => { clearPhoto(); $('photo').click(); });
@@ -419,6 +427,7 @@
   }
 
   function render(items) {
+    lastItems = items;
     const list = $('list');
     list.innerHTML = '';
     $('empty').style.display = items.length ? 'none' : 'block';
@@ -441,7 +450,7 @@
             <span>${ago(it.created_at)}</span>
             <span style="margin-left:auto"></span>
             ${mine
-              ? `<button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
+              ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
               : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
           </div>
         </div>`;
@@ -449,33 +458,84 @@
     }
   }
 
+  // ---- 编辑：把这一件填回表单，提交时走 /api/edit ----
+  function openForm() {
+    $('postToggle').setAttribute('aria-expanded', 'true');
+    $('postBody').hidden = false;
+  }
+
+  function startEdit(id) {
+    const it = lastItems.find((x) => x.id === id);
+    if (!it) return;
+    editing = { id };
+    openForm();
+    $('title').value = it.title || '';
+    $('price').value = it.price ?? '';
+    $('size').value = it.size || '';
+    $('contact').value = it.contact || '';
+    $('note').value = it.note || '';
+    // 不换图：image 留 null，预览直接显示库里那张，提交时后端沿用
+    image = null;
+    $('previewImg').src = '/api/img/' + encodeURIComponent(id);
+    $('previewImg').hidden = false;
+    $('pick').hidden = true;
+    $('swap').hidden = false;
+    $('photoBox').classList.add('photo--has');
+    $('submit').textContent = '保存修改';
+    $('cancelEdit').hidden = false;
+    const msg = $('msg');
+    msg.className = 'msg';
+    msg.textContent = '正在修改：' + it.title;
+    $('form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function stopEdit() {
+    editing = null;
+    $('submit').textContent = '发布';
+    $('cancelEdit').hidden = true;
+    $('form').reset();
+    clearPhoto();
+    $('msg').className = 'msg';
+    $('msg').textContent = '';
+  }
+
   // ---- 发布 ----
   $('form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (posting) return;
     const msg = $('msg');
-    if (!image) { msg.className = 'msg msg--err'; msg.textContent = '先选一张照片'; return; }
+    // 编辑时 image 为 null 是正常的（= 沿用库里那张），只有新发才必须要图
+    if (!image && !editing) { msg.className = 'msg msg--err'; msg.textContent = '先选一张照片'; return; }
     posting = true;
     $('submit').disabled = true;
     msg.className = 'msg';
     msg.textContent = '发布中…';
     try {
-      const r = await fetch('/api/listings', {
+      const editingId = editing?.id || null;
+      const r = await fetch(editingId ? '/api/edit' : '/api/listings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: $('title').value, price: $('price').value, size: $('size').value,
           contact: $('contact').value, note: $('note').value,
-          image, website: $('website').value,   // website 是蜜罐
+          // 编辑时不换图就别带 image：后端沿用库里那张（不用重传一遍图）
+          ...(editingId && !image ? {} : { image }),
+          ...(editingId ? { id: editingId, token: tokens.get(editingId) } : { website: $('website').value }),
         }),
       });
       const data = await r.json();
-      if (!data.ok) throw new Error(data.error || '发布失败');
-      if (data.token && data.id) tokens.set(data.id, data.token);
-      msg.className = 'msg msg--ok';
-      msg.textContent = '发出去了。要下架就点这件下面的「下架」（凭据存在这个浏览器里）。';
-      $('form').reset();
-      clearPhoto();
+      if (!data.ok) throw new Error(data.error || (editingId ? '保存失败' : '发布失败'));
+      if (editingId) {
+        stopEdit();
+        msg.className = 'msg msg--ok';
+        msg.textContent = '改好了。';
+      } else {
+        if (data.token && data.id) tokens.set(data.id, data.token);
+        msg.className = 'msg msg--ok';
+        msg.textContent = '发出去了。要改要删，点这件下面的按钮（凭据存在这个浏览器里）。';
+        $('form').reset();
+        clearPhoto();
+      }
       load();
     } catch (err) {
       msg.className = 'msg msg--err';
@@ -488,8 +548,10 @@
 
   // ---- 下架 / 举报 ----
   $('list').addEventListener('click', async (e) => {
+    const edit = e.target.closest('[data-edit]');
     const del = e.target.closest('[data-del]');
     const rep = e.target.closest('[data-report]');
+    if (edit) startEdit(edit.getAttribute('data-edit'));
     if (del) {
       const id = del.getAttribute('data-del');
       if (!confirm('下架这件？凭据丢了就找不回来了。')) return;
