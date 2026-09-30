@@ -18,4 +18,7 @@ web/public/font.css
 web/public/img
 
 logs/
+
+# wrangler pages dev / d1 execute --local 的本地状态（本地 D1 的 sqlite 等等）
+.wrangler/
 .DS_Store
