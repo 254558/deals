@@ -211,16 +211,17 @@ bash scripts/install-launchd.sh --uninstall  # 卸
 launchctl kickstart -k gui/$(id -u)/com.$(whoami).deals.daily   # 立刻试跑一次
 ```
 
-`scripts/daily.sh` 一轮做四件事，日志追加到 `logs/daily.log`（一天一段，带每步的退出码）：
+`scripts/daily.sh` 一轮做五件事，日志追加到 `logs/daily.log`（一天一段，带每步的退出码）：
 
 | 步骤 | 为什么在 |
 | --- | --- |
 | `all sync` | 抓两家的最新价格写进历史库——**上市价就是靠这个一天一天攒出来的**，漏一天就少一天 |
 | `all report --no-open` | 生成两份报告（`sync` 只动数据库，报告是另一个文件） |
+| `all deploy --target cloudflare` | 把 `reports/` 推到 Cloudflare，**线上跟着当天更新**。这一步内部会把两份报告再生成一遍（交叉入口要改成同域相对路径），所以上一步可以理解成「保证本地一定有一份」——deploy 若在上传阶段失败，本地报告照样是新的，不会两头空 |
 | `backup` | 这个项目里**只有价格库不可再生**，而它开着 WAL、直接 `cp` 不安全，所以走 `VACUUM INTO`；有 iCloud 就同时写一份到机器之外 |
 | `alert` | 盯着的商品降价了、或数据断档（>36 小时没抓成功）就弹系统通知 |
 
-抓取或生成失败时会**主动弹一条失败通知**（只写进日志等于没人知道），想顺便把线上也更新了，在 `daily.sh` 里加一行 `"$NODE" src/cli.mjs all deploy --target cloudflare` 即可——日常只改两个 HTML，实测 2 秒传完。
+任何一步失败都会**主动弹一条失败通知**（只写进日志等于没人知道）。实测一轮约 70 秒，其中部署那步 **3 秒**（日常只改两个 HTML，素材已在 Cloudflare 上，`check-missing` 只补变化的文件）。
 
 **为什么是 launchd 而不是 crontab**（两个都是实测出来的）：
 
