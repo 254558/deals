@@ -103,28 +103,22 @@ export function ProductCard({ deal, index, onPick, onHide }) {
           </a>
         </p>
       ) : (
-        /* 优衣库：整行是链接。**这一行显示的不是商品名，而是「还剩什么尺码」**——
-           用户说图片已经看得够清楚，他关心的是自己的码还在不在（2026-09-30 改）。
-           商品名没丢：留在 aria-label 里（无障碍、悬停也能看到），
-           搜索框也仍然按名字搜——那是数据层的事，跟这一行显示什么无关。 */
-        <a
-          className="card__name"
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          aria-label={sizeLine ? `${name}　${sizeLine}` : name}
-        >
-          {sizeLine ? (
-            <>
-              {!sizes.full && sizes.labels.length > 0 && <span className="cardsizes__lead">剩余：</span>}
-              <span className={`cardsizes__list${sizes.full ? ' cardsizes__list--full' : ''}`}>
-                {sizeLine.replace('剩余：', '')}
-              </span>
-            </>
-          ) : (
-            name
-          )}
+        /* 优衣库：名称自己就是链接（整行可点），两行截断由 CSS 兜住 */
+        <a className="card__name" href={url} target="_blank" rel="noreferrer">
+          {name}
         </a>
+      )}
+
+      {/* 「还剩什么尺码」**另起一行**，跟在名字下面（2026-09-30：先做过一版把名字整个
+          换成尺码，用户看过之后要名字回来、尺码单独一行）。整块只在适配器算得出尺码时
+          才挂上去——算不出来的（睡衣/帽子/手套那类接口没给尺码的）就只少这一行。 */}
+      {sizeLine && (
+        <p className="card__sizes">
+          {!sizes.full && sizes.labels.length > 0 && <span className="cardsizes__lead">剩余：</span>}
+          <span className={`cardsizes__list${sizes.full ? ' cardsizes__list--full' : ''}`}>
+            {sizeLine.replace('剩余：', '')}
+          </span>
+        </p>
       )}
 
       {/* 价格三件套，右端跟着收藏 / 不再出现两个动作——动作挨着价格，

@@ -559,8 +559,15 @@ button {
   background: var(--white);
 }
 [data-site="uniqlo"] .card__img--none { background: var(--surface); }
-/* 名称行现在显示「还剩什么尺码」。字号跟着名称走（15px），
-   「剩余：」这个前缀压暗一档，真正要看的是后面那几档尺码 */
+/* 「还剩什么尺码」那一行：比商品名小一档，是**详情行**不是标题。
+   名字回到上面之后，这一行贴着价格，扫榜时「我的码还在不在」也一眼能看到 */
+[data-site="uniqlo"] .card__sizes {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+/* 「剩余：」再压暗一档，真正要看的是后面那几档 */
 [data-site="uniqlo"] .cardsizes__lead { color: var(--ink-4); }
 [data-site="uniqlo"] .cardsizes__list { color: var(--ink); letter-spacing: 0.02em; }
 /* all（该款码全）是个「没什么可说的」状态，压暗，别抢注意力 */
