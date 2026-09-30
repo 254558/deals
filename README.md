@@ -226,6 +226,8 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 - `reports/index.html` → 一份 meta refresh 落地页，**相对路径** `uniqlo/`。相对路径的好处是网页上解析成 `/uniqlo/`、本地双击解析成旁边的 `reports/uniqlo/`，两边都对；而且不依赖托管方特性，将来搬到阿里云 OSS 也一样用
 - `reports/404.html` → 不存在的路径的兜底页。**这个必须有**：部署根上放了 `index.html` 之后，Cloudflare Pages 会把**任何**不存在的路径都回成 `200 + 落地页`（实测 `/zzz-不存在`、`/uniqlo/nope`、`/favicon.ico` 全是那份 718 字节的落地页）——站点于是永远不 404，打错地址会被悄悄送到优衣库，爬虫也能把任意垃圾路径收成 200。放上 `404.html` 之后 Pages 才回 404 状态码
 
+**根目录还能放一次性的验证文件。** 例如微信站长认证要求在站点根放一个指定名字的 txt、内容是一串令牌——直接丢进 `reports/` 根目录就行：生成器从不清 `reports/`，所以它一直在，下次 `deploy` 也会把它带上（`check-missing` 会发现它是新的）。两点注意：`reports/` 不进 git，所以**换机器或重新克隆要再放一次**；证明归属的令牌只在你自己后台生成的才安全——别人给的令牌等于把域名绑到别人的账号上。
+
 想换默认站点，改 `src/sites/index.mjs` 里的 `DEFAULT_SITE` 一行即可，重跑一次 `report` 就更新。
 
 
