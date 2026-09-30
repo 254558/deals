@@ -391,9 +391,20 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 字体署名是唯一不能跟着删的东西，见 6.3：它落在 `@font-face` 旁边那条 CSS 注释里，随文件走、页面上不显示。
 
-### 8.3 报头行尾的兄弟报告入口
+### 8.3 报头行尾那组入口
 
-`meta.crossLink` 在优衣库这份是开着的，指向 <https://decathlon-deals.vercel.app>，标题「迪卡侬比价报告（新标签打开）」。合并后迪卡侬那份也补了一个指向这份的入口——两份报告互认是一家工具做的。
+`meta.links`（数组）排的就是行尾那一组：
+
+1. **另一家的报告**（来自适配器的 `report.crossLink`）——两份报告互认是一家工具做的，
+   指向 <https://goodprices.online/decathlon/> 与 <https://goodprices.online/uniqlo/>。
+2. **尾货市集**（`https://goodprices.online/market/`）——全站共用，由核心在
+   `buildPayload` 里补进来，适配器不用管；只有 Cloudflare 那条部署路径给 `marketHref` 时才加
+   （Vercel 上没有这一页）。见 [MARKET.md](MARKET.md)。
+
+⚠️ **只有第一个入口**能写 `margin-left: auto`。两个都写的话，flex 会把剩余空白**平分**给它们，
+两个链接之间就空出一大块——2026-09-30 加了第二个入口之后露出来的，改成
+`.masthead__cross:first-of-type { margin-left: auto }`（实测两个入口之间 14px、
+最后一个的右边缘正好贴住行尾）。
 
 ### 8.4 刻意不做的事（汇总）
 

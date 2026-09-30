@@ -202,13 +202,15 @@ button {
   color: var(--ink-4);
 }
 .masthead__dot { flex: none; background: var(--red); }
-/* 行尾右对齐的兄弟报告入口，靠 margin-left: auto 顶到行尾。
-   只有优衣库那份有（迪卡侬那份 meta.crossLink 是 null），但这条规则本身是通用的 */
+/* 行尾那组入口（兄弟报告 + 尾货市集）。
+   ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
+   flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
+   之后露出来的）。后面的紧挨着排，间距就是 eyebrow 的 gap。 */
 .masthead__cross {
-  margin-left: auto;
   color: var(--blue);
   text-decoration: none;
 }
+.masthead__cross:first-of-type { margin-left: auto; }
 .masthead__cross:hover { text-decoration: underline; }
 
 /* ---------------- 工具条 ---------------- */
