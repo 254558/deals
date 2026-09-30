@@ -28,7 +28,8 @@
 {
   "site": "uniqlo",                       // 'uniqlo' | 'decathlon'
   "generatedAt": "2026-09-27T10:00:00.000Z",
-  "recorded": 1234,                       // 数据库里这件商品的累计记录数（deca 报头用）
+  "recorded": 1234,                       // 数据库里的累计记录数。当前两家都不显示它
+                                          // （`meta.showRecorded` 都是 false），留着是数据
   "meta": { /* 见下节，站点描述符 */ },
   "deals": [ /* 见第四节 */ ]
 }
@@ -51,7 +52,7 @@
   "storagePrefix": "uniql",             // localStorage 键前缀，见第五节
   "showRecorded": false,                // 报头是否显示「共记录 N 件」
   "crossLink": {                        // 报头行尾另一个站点的入口；不需要就 null
-    "href": "https://decathlon-deals.vercel.app",
+    "href": "https://goodprices.online/decathlon/",
     "label": "迪卡侬",
     "title": "迪卡侬比价报告（新标签打开）"
   },
@@ -103,7 +104,6 @@
 | `currency` | `{sym:'¥', zero:'¥ 0'}` | `{sym:'￥', zero:'￥0'}` |
 | `imageAspect` | `3/4` | `1/1` |
 | `storagePrefix` | `uniql` | `deca` |
-| `showRecorded` | `false` | `true` |
 | `filters` | 全部 / 限时特优 / 超值精选 / 待拔草 | 全部 / 尾货 / 新品 / 待拔草 |
 | `sorts` | 商品 / 上市价 / 现价 / 降幅 | 商品 / 上市价 / 现价 / 降幅 / 运动 |
 | `features` | `rankBoard`、`dealBarNumber` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip` |

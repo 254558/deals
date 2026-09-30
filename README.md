@@ -196,7 +196,7 @@ node src/cli.mjs uniqlo deploy      # 生成最新报告，再 vercel deploy rep
 node src/cli.mjs decathlon deploy   # 同理，项目 decathlon-deals
 ```
 
-线上地址：优衣库 <https://uniql-tau.vercel.app>、迪卡侬 <https://decathlon-deals.vercel.app>。
+这两个 Vercel 项目是合并前后留下来的旧入口，**早就不是线上地址了**：正式入口是 Cloudflare 上的 <https://goodprices.online>（见下面那节）。留着这段是因为 `deploy` 命令还能用，真要重新捡起来也就一条命令。
 
 挑 `reports/<站点>/` 而不是仓库根目录来部署是刻意的：那个目录里没有 `package.json`，**不会跑依赖安装、也没有 `build` 脚本可跑**——Vercel 只负责原样收下这些文件。生成报告时会顺手在目录里放一份三行的 `vercel.json`（`framework` / `installCommand` / `buildCommand` 全置空），把「这是静态文件」这件事写死，免得被识别成 Vite 预设白跑一遍构建；生成器从不清 `reports/`，所以这份配置不会被下次生成冲掉。
 

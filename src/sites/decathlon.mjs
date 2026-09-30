@@ -415,7 +415,8 @@ export default {
 
   /** 报告的文案与开关（`docs/REPORT-CONTRACT.md` 第三节那份 meta） */
   report: {
-    label: '迪卡侬 · 中国官网',
+    // 报头只写「迪卡侬」：原来还带「· 中国官网」，又长又不带信息（数据源在页脚写着呢）
+    label: '迪卡侬',
     pageTitle: '迪卡侬捡漏榜',
     source: 'decathlon.com.cn 公开接口',
     currency: { sym: '￥', zero: '￥0' },
@@ -424,7 +425,9 @@ export default {
     searchLabel: '名称、编号或品牌',
     // 两个旧报告里的收藏/隐藏存在这两个前缀下（deca.picks 等），沿用即可原样保留
     storagePrefix: 'deca',
-    showRecorded: true,
+    // 报头不显示「共记录 N 件」了（2026-09-30 应要求去掉）。开关留着：它是 payload
+    // 里的按站点配置，跟 rankBoard: false 一个性质，想显示回来改这一行即可
+    showRecorded: false,
     crossLink: {
       href: 'https://goodprices.online/uniqlo/',
       label: '优衣库',
