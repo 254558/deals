@@ -119,6 +119,31 @@ const safeJs = (code) => code.replace(/<\/script/gi, '<\\/script');
  * `data-site` 是两家共用一个 bundle 的唯一开关：版面差异全挂在
  * `[data-site="…"]` 选择器下（见 docs/REPORT-CONTRACT.md）。
  */
+/**
+ * React 挂载之前那块加载指示的标记（样式在 styles.css 的 `#boot`）。
+ *
+ * 为什么非要在 HTML 里手写一块、而不是用 React 组件：白屏就是 React 还没跑起来的
+ * 那段时间，用 React 做加载动画逻辑上盖不住。这块必须纯 CSS、并且**排在 #root
+ * 后面、两段大脚本前面**——排后面是因为 CSS 那条 `#root:not(:empty) ~ #boot`
+ * 用的是「后面的兄弟」选择器。
+ *
+ * 25 个点的相位写在 `--i` 上，值取 (行 + 列)：同一条对角线一起亮，看起来就是
+ * 一道斜着扫过去的波。
+ */
+function renderBoot(iso) {
+  const d = new Date(iso ?? Date.now());
+  const dots = [];
+  for (let row = 0; row < 5; row += 1) {
+    for (let col = 0; col < 5; col += 1) dots.push(`<i style="--i:${row + col}"></i>`);
+  }
+  return (
+    `<div id="boot">` +
+    `<div class="boot__dots" aria-hidden="true">${dots.join('')}</div>` +
+    `<div class="boot__note">正在加载 ${d.getMonth() + 1} 月 ${d.getDate()} 日的榜单</div>` +
+    `</div>\n`
+  );
+}
+
 export function renderHtml({ js, css, fontCss, payload }) {
   const when = new Date(payload.generatedAt ?? Date.now()).toLocaleString('zh-CN');
   return `<!DOCTYPE html>
@@ -132,6 +157,7 @@ ${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
 </head>
 <body>
 <div id="root"></div>
+${renderBoot(payload.generatedAt)}
 <script>window.__DEALS_DATA__ = ${safeJson(payload)};</script>
 <script>${safeJs(js)}</script>
 </body>

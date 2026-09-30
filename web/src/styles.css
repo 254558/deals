@@ -83,6 +83,77 @@ html, body { margin: 0; padding: 0; }
  */
 html { overflow-anchor: none; }
 
+/* ---------------- 首屏加载：React 挂载之前的那一段 ---------------- */
+
+/**
+ * 白屏其实是两段，得分开看（实测：390 宽 + 4 倍 CPU 降速，线上）：
+ *
+ *   等第一个字节        约 525ms  ← 页内没有任何东西可画，谁也盖不住
+ *   HTML 到了之后到首次绘制 约 500ms  ← 解析 + React 挂载，**这一段能盖**
+ *
+ * 所以要盖住的是第二段，而它恰恰发生在 React 跑起来**之前**——用 React 组件
+ * 做加载动画在逻辑上就盖不住（等它渲染出来，白屏已经结束了）。因此这块必须是
+ * 纯 CSS、写在 `#root` 之后、两段大脚本之前：浏览器解析到它就能画，不用等
+ * 500KB 的 payload 和 160KB 的 React 跑完。
+ *
+ * 点阵的相位由生成器写在每个点的 `--i` 上（值 = 行 + 列），所以同一条对角线
+ * 同时点亮，读起来是一道斜着扫过去的波。形状不是随手挑的：这份报告的招牌就是
+ * 「降价标尺」，点阵被一格一格填满，和标尺被填满是同一个动作。
+ */
+#boot {
+  position: fixed;
+  inset: 0;
+  z-index: 9;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: var(--bg);
+  /* 关键：**不能有延迟**。浏览器只在「解析到这块、脚本还没跑完」的那一次机会里
+     画一帧（实测 firstPaint − htmlDone = 41ms）；等 100ms 过去，React 早就挂载完
+     并把它摘掉了——手机上实测一次都没画出来（FCP 720ms 直接就是挂载后的画面）。
+     所以改成不延迟、120ms 淡入：慢的时候（手机上从绘制到挂载约 230ms）能到满不透明度，
+     快到只有 36ms 的时候（这台 Mac）它只到三成，一闪而过几乎看不见。 */
+  opacity: 0;
+  animation: boot-in 120ms linear forwards;
+}
+@keyframes boot-in {
+  to { opacity: 1; }
+}
+/* React 往 #root 里画出东西的那一刻，这块自己让位——不用 JS 去摘它
+   （所以 #boot 必须排在 #root **后面**：`~` 只往后找兄弟） */
+#root:not(:empty) ~ #boot { display: none; }
+
+.boot__dots {
+  display: grid;
+  grid-template-columns: repeat(5, 7px);
+  gap: 6px;
+}
+.boot__dots i {
+  width: 7px;
+  height: 7px;
+  background: var(--blue);
+  opacity: 0.14;
+  animation: boot-wave 1.5s linear infinite;
+  animation-delay: calc(var(--i, 0) * 55ms);
+}
+.boot__note {
+  font-size: 13px;
+  color: var(--ink-3);
+}
+/* 一道斜波扫过整块点阵：9 条对角线 × 55ms 加一个波峰，约 0.6s 扫完，
+   剩下 0.9s 让画面静一下再开始，免得像卡住一样一直闪 */
+@keyframes boot-wave {
+  0%, 52%, 100% { opacity: 0.14; }
+  13% { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* 点阵不扫了，但**仍然要出现**——它是有用的信息，不是装饰 */
+  .boot__dots i { animation: none; opacity: 0.55; }
+}
+
+
 body {
   background: var(--white);
   color: var(--ink);

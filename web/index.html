@@ -19,6 +19,12 @@
 </head>
 <body>
 <div id="root"></div>
+<!-- 首屏加载那块和正式报告里一样（见 src/core/report.mjs 的 renderBoot 与
+     styles.css 的 #boot）。dev 页加载极快，它只闪一下，但排版改动要在这儿看得到 -->
+<div id="boot">
+  <div class="boot__dots" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i></div>
+  <div class="boot__note">正在加载今天的榜单</div>
+</div>
 <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
