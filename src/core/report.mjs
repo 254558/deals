@@ -9,7 +9,7 @@
  * 输出的 payload 结构是 `docs/REPORT-CONTRACT.md` 里那份契约，改这里必须同时改那份文档。
  */
 
-import { writeFileSync, mkdirSync, existsSync, statSync, readdirSync, copyFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { listDeals, listTracked, listBlocked, loadSizeVocab, stats, discountRate } from './db.mjs';
@@ -85,6 +85,22 @@ function toDeal(row, images, remote, site, vocab) {
  *   Cloudflare 上两份在同一个域名的兄弟目录，改成相对路径 `../<站点>/` ——
  *   相对路径换域名、换本地双击都对。
  */
+/**
+ * Cloudflare Web Analytics 的 beacon。
+ *
+ * **只注入部署产物**：这份报告是单文件、能双击离线打开的（`file://`），本地和 CI 生成的
+ * reports/*.html 里不该出现任何外部请求，所以 beacon 由部署那条路径显式传进来
+ * （见 cli.mjs 的 cmdDeployCloudflare）。市集页是手写的，由 writeDeployRoot 拷贝时插入；
+ * 管理页不加——那是私人的。
+ *
+ * 用的是 Cloudflare 的 beacon（不用 cookie、不跟踪个人、也不用改 DNS），只需在面板里
+ * 打开 Web Analytics 并拿到这个 token。
+ */
+const BEACON_TOKEN = 'ce871d155ea74738a3e57cd8cd037837';
+export const BEACON =
+  '<!-- Cloudflare Web Analytics：只统计访问量，不用 cookie，也不跟踪个人 -->\n' +
+  `<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${BEACON_TOKEN}"}'></script>`;
+
 export function buildPayload(db, site, images, { remote = false, crossLinkHref = null, marketHref = null } = {}) {
   const deals = listDeals(db, site.id, { limit: 5000, minRate: 0.15 });
   const tracked = listTracked(db, site.id);
@@ -210,7 +226,7 @@ function renderBoot() {
   );
 }
 
-export function renderHtml({ js, css, fontCss, payload }) {
+export function renderHtml({ js, css, fontCss, payload, beacon = null }) {
   const when = new Date(payload.generatedAt ?? Date.now()).toLocaleString('zh-CN');
 
   /**
@@ -243,7 +259,7 @@ ${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
 <style>${css}</style>
 <script>window.__DEALS_DATA__ = ${safeJson(payload)};</script>
 <script>${safeJs(js)}</script>
-</body>
+${beacon ? beacon + '\n' : ''}</body>
 </html>
 `;
 }
@@ -352,7 +368,11 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
     for (const rel of htmlUnder(marketSrc)) {
       const out = join(dir, 'market', rel);
       mkdirSync(dirname(out), { recursive: true });
-      copyFileSync(join(marketSrc, rel), out);
+      // 部署产物里给市集页插一份访问统计；管理页不加（私人的）。
+      // 源码 market/index.html 保持干净——本地 wrangler pages dev 不该往线上报数据。
+      const src = readFileSync(join(marketSrc, rel), 'utf8');
+      const isAdmin = rel.includes('admin');
+      writeFileSync(out, isAdmin || !src.includes('</body>') ? src : src.replace('</body>', BEACON + '\n</body>'), 'utf8');
     }
   }
 
