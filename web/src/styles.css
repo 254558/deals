@@ -71,6 +71,18 @@
 
 html, body { margin: 0; padding: 0; }
 
+/**
+ * 关掉滚动锚定（scroll anchoring）。
+ *
+ * 报告改成「先渲染 10 件、下滑再补」之后，锚定会帮倒忙：补进来的卡片插在页脚**上面**，
+ * 锚定会把视口重新拽回底部（它觉得该让页面底部保持可见），于是「离文档底部很近」这个
+ * 条件一直成立，一批接一批地补——实测一次「直达底部」连补了 12 批（10 → 130 张），
+ * 等于把刚省下来的渲染成本又花回去。
+ * 关掉之后，补进来的新卡片会直接落到视口里，人自然离开底部，一次到底只补一批。
+ * 图片用的是 `aspect-ratio` 固定画框，不会因为图加载完而改变高度，所以本来也不需要锚定。
+ */
+html { overflow-anchor: none; }
+
 body {
   background: var(--white);
   color: var(--ink);
@@ -440,7 +452,7 @@ button {
 }
 .card__deal--flat { font-size: 12px; color: var(--ink-4); }
 
-/* ---------------- 空状态 / 页脚 ---------------- */
+/* ---------------- 空状态 / 加载更多 / 页脚 ---------------- */
 
 .empty { padding: 80px 0; text-align: center; }
 .empty__title { font-size: 15px; font-weight: 700; }
@@ -453,6 +465,17 @@ button {
   cursor: pointer;
 }
 .empty__reset:hover { background: var(--blue); }
+
+/* 「已显示 N / M · 继续下滑加载更多」那行：要安静——它不是内容，是给
+   「往下滑还有东西吗」这个问题一个答复。所以最淡的灰、居中、不占太多高度 */
+.more {
+  padding: 30px 0 10px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 20px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
 
 .foot {
   padding: 30px 0 60px;

@@ -1,10 +1,11 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Masthead } from './components/Masthead.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
 import { RankBoard } from './components/RankBoard.jsx';
 import { ColumnHeader } from './components/ColumnHeader.jsx';
 import { DealRow } from './components/DealRow.jsx';
 import { ProductCard } from './components/ProductCard.jsx';
+import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
@@ -80,6 +81,106 @@ function useStickyHeadOffset(view) {
 }
 
 /**
+ * 首屏只渲染前 INITIAL 件，往下滑到哨兵再一批一批补上（无限滚动）。
+ *
+ * 为什么需要：报告是自包含单文件，数据全在内存里，但**卡片是整批建的**。
+ * 手机上实测（390 宽 + 4 倍 CPU 降速，2026-09-30）：
+ *
+ *   优衣库 877 件 → DOM 24,705 个节点，主线程长任务合计 1250ms
+ *   迪卡侬 1307 件 → DOM 40,916 个节点，长任务合计 1515ms
+ *
+ * 而图片本来就是懒加载的（首屏只请求 3～4 张），网络也不是瓶颈（gzip 后
+ * 377KB / 124KB）——慢的是**一次性建出几万个 DOM 节点**。本地双击打开（无网络）
+ * 测得的长任务时间和线上几乎一样，正好说明这一点。
+ *
+ * 每批 10 件是用户指定的。桌面屏幕高，10 件填不满一屏，哨兵会连着触发几次
+ * ——这不是问题：每次只多建 10 张卡片，比一次建 1300 张便宜得多。`rootMargin`
+ * 给 800px，意思是「还没滑到底就先把下一批准备好」，滚起来才是连续的。
+ */
+const INITIAL = 10;
+const STEP = 10;
+
+/**
+ * @param {number} total 当前筛选/搜索/排序之后的总数
+ * @param {string} resetKey 这个值一变就回到第一批（筛选、搜索、排序、视图）
+ */
+function useIncremental(total, resetKey) {
+  const [visible, setVisible] = useState(INITIAL);
+  const sentinelRef = useRef(null);
+
+  const grow = useCallback(() => {
+    // 只增不减、且封顶：哨兵停留可见时会被反复回调，setVisible 拿到同一个值
+    // 就不再触发重渲染，天然收敛
+    setVisible((v) => Math.min(v + STEP, total));
+  }, [total]);
+
+  // 换了筛选/搜索/排序就从头看：回到第一批，并滚回顶部——否则你还停在
+  // 「上一批结果」的滚动位置上，而列表已经换人了
+  const mounted = useRef(false);
+  useEffect(() => {
+    setVisible(INITIAL);
+    // 挂载时不要强制回顶：浏览器自己会恢复上次的滚动位置
+    if (mounted.current) window.scrollTo(0, 0);
+    mounted.current = true;
+  }, [resetKey]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) grow();
+      },
+      // 提前 800px 就补——不等到真看见底，滚起来才是连续的
+      { rootMargin: '800px 0px' }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [grow, total]);
+
+  /**
+   * 兜底：直接跳到页面最底部时，哨兵可能被**一步跨过去**。
+   *
+   * 哨兵在列表末尾，而列表后面还有页脚（名词解释、数据来源，手机上七八百像素高）。
+   * 拖滚动条到底、按 End、或者猛甩一下，视口会一下落在页脚之后——此时哨兵在视口
+   * **上方**，IntersectionObserver 的 800px 提前量也够不着，于是「已显示 10 / 878」
+   * 就停在那儿不动了（实测踩到）。所以再加一条：离**文档**底部不足 400px 就补一批。
+   *
+   * 这条会不会失控？不会——前提是**关掉了滚动锚定**（`html { overflow-anchor: none }`，
+   * 见 styles.css）。锚定开着的话，补完内容浏览器会把视口重新钉回底部，条件继续成立，
+   * 实测一次「直达底部」连补 12 批（10 → 130 张）。关掉之后，补进来的新卡片会直接
+   * 落到视口里，人也就离开底部了，条件自然不成立。这一条链路上三个东西缺一不可：
+   * 哨兵管「滑到附近就提前补」，这一条管「一步跳到最底也补」，`overflow-anchor` 管
+   * 「补完别把人钉在原地」。
+   */
+  useEffect(() => {
+    const onScroll = () => {
+      const doc = document.documentElement;
+      if (doc.scrollHeight - (window.scrollY + window.innerHeight) <= 400) grow();
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [grow]);
+
+  return { visible: Math.min(visible, total), sentinelRef };
+}
+
+/**
+ * 列表末尾那行小字：还没到底就说清「已显示多少 / 共多少」，
+ * 到底了就说一句「到底了」——不然往下滑到没有新内容时，用户会以为卡住了。
+ * 总件数本来就少（不超过一批）时不画，那种情况下一句「到底了」只是噪音。
+ */
+function More({ visible, total, sentinelRef }) {
+  if (total <= INITIAL) return null;
+  const done = visible >= total;
+  return (
+    <div className="more" ref={sentinelRef}>
+      {done ? `已经到底了 · 共 ${num(total)} 件` : `已显示 ${num(visible)} / ${num(total)} 件 · 继续下滑加载更多`}
+    </div>
+  );
+}
+
+/**
  * 页脚、空状态这些整块的文案都在 `META.foot` / `META` 里（契约第三节）：
  * 名词解释是 `foot.terms` 的数组（迪卡侬那份是空的，因为它的原价不是「上市价」
  * 这个概念，而是官网直接给的折扣价），数据来源是 `foot.source`，
@@ -147,6 +248,10 @@ export default function App() {
     );
   }, [deals, filter, query, sort, asc]);
 
+  // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
+  // resetKey 里放的是「会让结果换一批」的五个状态：筛选、搜索、排序、升降序、视图。
+  const { visible, sentinelRef } = useIncremental(rows.length, `${filter}|${query}|${sort}|${asc}|${view}`);
+
   function handleSort(key) {
     if (key === sort) setAsc((v) => !v);
     // 切到一个新列时：文本列升序读起来顺（拼音序），数字列降序才有意义（先看降得最狠的）
@@ -200,23 +305,27 @@ export default function App() {
           {rows.length === 0 ? (
             <Empty query={query} filter={filter} onReset={reset} />
           ) : (
-            <div className="grid" role="list" aria-label={META.pageTitle}>
-              {rows.map((deal, i) => (
-                <ProductCard
-                  key={deal.id}
-                  deal={deal}
-                  index={i}
-                  onPick={() => pick(deal)}
-                  onHide={() => hideDeal(deal)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid" role="list" aria-label={META.pageTitle}>
+                {rows.slice(0, visible).map((deal, i) => (
+                  <ProductCard
+                    key={deal.id}
+                    deal={deal}
+                    index={i}
+                    onPick={() => pick(deal)}
+                    onHide={() => hideDeal(deal)}
+                  />
+                ))}
+              </div>
+              <More visible={visible} total={rows.length} sentinelRef={sentinelRef} />
+            </>
           )}
         </div>
       ) : (
         /* 表头和数据行必须在同一个 rowgroup 里：一是 role="columnheader"/aria-sort
            需要有 table 祖先，二是 sticky 表头只有在父容器比它高时才能粘住。
-           `.table` 那层只是 ARIA 容器（迪卡侬那份顺手给了它一点下边距），没有版面 */
+           `.table` 那层只是 ARIA 容器（迪卡侬那份顺手给了它一点下边距），没有版面。
+           「加载更多」那行放在 rowgroup **外面**：rowgroup 里只该有 row */
         <div className="table" role="table" aria-label={META.pageTitle}>
           <div className="wrap" role="rowgroup">
             {rows.length > 0 && <ColumnHeader sort={sort} asc={asc} onSort={handleSort} />}
@@ -224,7 +333,7 @@ export default function App() {
             {rows.length === 0 ? (
               <Empty query={query} filter={filter} onReset={reset} />
             ) : (
-              rows.map((deal, i) => (
+              rows.slice(0, visible).map((deal, i) => (
                 <DealRow
                   key={deal.id}
                   deal={deal}
@@ -235,6 +344,11 @@ export default function App() {
               ))
             )}
           </div>
+          {rows.length > 0 && (
+            <div className="wrap">
+              <More visible={visible} total={rows.length} sentinelRef={sentinelRef} />
+            </div>
+          )}
         </div>
       )}
 
