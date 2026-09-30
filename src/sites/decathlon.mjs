@@ -450,7 +450,6 @@ export default {
         kind: 'cell',
         headCls: 'head__sports',
         cellCls: 'row__sports',
-        format: 'text',
       },
     ],
     textKeys: ['name', 'sports'],

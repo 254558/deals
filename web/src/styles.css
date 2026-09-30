@@ -593,8 +593,10 @@ button {
   --pic-w: 84px;
   --pic-h: 112px;
 
-  /* 榜单列宽：图片 / 商品 / 上市价 / 现价 / 降价标尺 / 月销 */
-  --cols: calc(var(--pic-w) + 4px) minmax(200px, 1.7fr) 104px 104px 190px 80px;
+  /* 榜单列宽：图片 / 商品 / 上市价 / 现价 / 降价标尺。标尺那一档是 270 而不是
+     190：月销列撤掉后腾出的 80px 全给弹性列的话，商品名后面会空出一大块，
+     行看着比原来散；给标尺既能吃掉这 80px，又让签名元素更好读 */
+  --cols: calc(var(--pic-w) + 4px) minmax(200px, 1.7fr) 104px 104px 270px;
   --gap: 16px;
 }
 
@@ -774,16 +776,6 @@ button {
 /* 信息块底下只剩那两个动作（原来是标签行，标签撤掉后这一格就是动作位） */
 [data-site="uniqlo"] .row__acts { margin-top: 5px; display: flex; align-items: center; }
 [data-site="uniqlo"] .row__now { color: var(--red); }
-
-/* 优衣库那份的尾列是月销（`format: 'compact'`）：一个要横着扫的数字列。
-   迪卡侬那份的尾列是运动，样式在第三段（.row__sports） */
-[data-site="uniqlo"] .row__sales {
-  text-align: right;
-  color: var(--ink-2);
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-}
-[data-site="uniqlo"] .head__sales { color: var(--ink-4); }
 
 /* ---------------- 签名元素：红色降价标尺 ----------------
    'inline' 布局：条和降幅红字同行，条占满剩余宽度，红字贴在条尾。
@@ -1216,8 +1208,6 @@ html[data-site="decathlon"] {
 
 @media (max-width: 1180px) {
   [data-site="uniqlo"] { --pad: 24px; --pic-w: 72px; --pic-h: 96px; --cols: calc(var(--pic-w) + 4px) minmax(0, 1.6fr) 96px 96px 160px; }
-  [data-site="uniqlo"] .head__sales,
-  [data-site="uniqlo"] .row__sales { display: none; }
   /* 五格还是五格，只是每格的内衬收一收——换列数会让格与格之间的竖线断在换行处 */
   [data-site="uniqlo"] .topranks { gap: 16px; }
 

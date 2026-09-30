@@ -64,17 +64,6 @@ export const num = (n) => (Number(n) || 0).toLocaleString('zh-CN');
 /** 降幅按整数百分比显示（排序仍然用精确值，见 App 的 compare） */
 export const pct = (r) => `${Math.round((Number(r) || 0) * 100)}%`;
 
-/**
- * 月销：优衣库官网的紧凑写法 —— 10 万以上取整（489737 → `48.9万`），
- * 1 万到 10 万留一位小数（16284 → `1.6万`），不到 1 万就写原数。
- * 没有销量（0）写破折号，不要写成一个 0 让人以为是「卖出 0 件」。
- *
- * 这个写法是优衣库那一站专有的（迪卡侬的尾列是「运动」，纯文本），
- * 但它由 `META.columns[].format === 'compact'` 选中，组件里没有站点判断。
- */
-export const sales = (n) =>
-  n ? (n >= 10000 ? `${(n / 10000).toFixed(n >= 100000 ? 0 : 1)}万` : num(n)) : '—';
-
 /** 抓取时间：`2026-09-26 15:49`，报头那行用 */
 export function stamp(iso) {
   if (!iso) return '—';

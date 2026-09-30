@@ -1,4 +1,4 @@
-import { priceParts, price, num, sales, tagLabel, chips, goneNote } from '../lib/format.js';
+import { priceParts, price, num, tagLabel, chips, goneNote } from '../lib/format.js';
 import { META } from '../lib/site.js';
 import { PriceScale } from './PriceScale.jsx';
 import { CardActions } from './CardActions.jsx';
@@ -38,7 +38,7 @@ export function DealRow({ deal, index, onPick, onHide }) {
   const gone = deal.gone === true;
   const feats = META.features;
   const cols = META.columns;
-  /** 尾列（月销 / 运动）：数字列和文本列写法不一样，由列声明里的 format 决定 */
+  /** 尾列（迪卡侬是「运动」）：纯文本，空的写破折号 */
   const tailCol = cols.find((c) => c.kind === 'cell');
 
   return (
@@ -126,14 +126,13 @@ export function DealRow({ deal, index, onPick, onHide }) {
         </div>
       )}
 
-      {/* 尾列：优衣库是月销（`format: 'compact'`，489737 写成 `48.9万`），
-          迪卡侬是运动（纯文本，空的写破折号）。同一格代码，靠列声明分叉。
-          cellCls 是窄屏下整列撤掉用的钩子（迪卡侬的 `.row__sports`）。 */}
+      {/* 尾列（迪卡侬是「运动」，纯文本，空的写破折号）。
+          cellCls 是窄屏下整列撤掉用的钩子（`.row__sports`）。 */}
       <div
         className={`n${tailCol?.cellCls ? ` ${tailCol.cellCls}` : ''}`}
         role="cell"
       >
-        {tailCol.format === 'compact' ? sales(deal[tailCol.key]) : deal[tailCol.key] || '—'}
+        {tailCol ? deal[tailCol.key] || '—' : null}
       </div>
     </div>
   );

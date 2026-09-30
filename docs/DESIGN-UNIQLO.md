@@ -82,13 +82,23 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 | `originPrice` | `originPrice` → `origin_price` / `launch_price` | 官方原价。优衣库原价只降不涨，所以历史最高原价 ≈ 上市价 |
 | `minPrice` | `price` → `last_price` | 现价（多色/多码中的最低价） |
 | `maxPrice` | `extra.maxPrice` | 最贵那档。报告不渲，只留档 |
-| `monthlySales` | `monthlySales` → `monthly_sales` | 月销。这是优衣库独有的尾列，迪卡侬那一列是「运动」 |
-| `sales` | `extra.totalSales` | 累计销量。不进报告 |
+| `monthlySales` | `monthlySales` → `monthly_sales` | 抓下来存库，**不进报告**——这个字段不能当销量读，依据见本节末 |
+| `sales` | `extra.totalSales` | 接口里另一个销量字段。同样**不进报告**：语义未证实，只留档 |
 | `season4zhCN` | `season` | 报顶榜单那行小灰字用 |
 | `minSize/maxSize4zhCN` | `sizeRange` | 同上，拼成 `S ~ XL` |
 | `sex4zhCN` / `material4zhCN` / `styleText4zhCN` / `stock` / `productStoreStockFlag` / `timeLimitedEnd` | `extra.*` | 报告的卡片和列表都不渲染，但留在库里 |
 | `identity` | `tags` | 标签数组，页签筛选和卡片 chip 的匹配语义都靠它 |
 | `productCode` / `code` | `product_code` / `code` | 前者是主键、也是 localStorage 的键；后者是吊牌号 |
+
+**为什么撤掉了「月销」那一列（2026-09-30 查证）**
+
+报告里原先有一列照抄接口字段名的「月销」，用户会读成「这件商品一个月卖了多少」。查证后发现这个说法站不住：
+
+- **不是我们存错了。** 同一个 `productCode` 对质：库里 `monthly_sales=25911608`，接口当时返回 `monthlySales=25911608`，逐字节一致；写入时的列顺序也逐个核过（`monthly_sales ← p.monthlySales`，25 个参数没有错位）。
+- **接口这个字段自相矛盾。** 同一个款、三个颜色：`monthlySales` 分别是 25,911,608 / 133,791 / 77,271，**差 300 倍**。
+- **两种可能的解释都被数据打脸。** 若它是月销量（`sales` 是累计），则不该出现「月销 > 累计」——实测 **762/886 件（86%）**都是这样；若它是浏览量（`sales` 是成交量），则不该出现「浏览 < 成交」——实测 **124/886 件（14%）**如此。无论怎么解释都解释不通。
+
+结论不是「它是什么」，而是**它不能当销量读**。假不在数据，在我们**照抄了接口的字段名、替它背书**。这一列因此撤掉；库里的 `monthly_sales` 仍然保留（历史数据，将来要重新研究还在）。
 
 **`extra` 这袋字段是刻意不进 payload 的**：报告的 payload 是上千份商品结构的复制，多一个字段就是上千份。`extra` 只在数据库里；`toCanonical` 把它装满，`buildPayload` 一个不带。
 
@@ -291,11 +301,11 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 ### 8.1 终端那张表
 
-优衣库那份的列（`tableColumns`，由站点声明、共享核心只负责画）：`编号 | 商品 | 上市价 | 现价 | 降幅 | 省 | 月销 | 标签`。
+优衣库那份的列（`tableColumns`，由站点声明、共享核心只负责画）：`编号 | 商品 | 上市价 | 现价 | 降幅 | 省 | 标签`。
 
-第 7 列是**月销**，没有品牌列——这是和迪卡侬那份最直观的差别（迪卡侬是品牌、没有销量）。终端这张表里的月销直接用 `toLocaleString`（`489,737`），0 写 `-`；网页报告里那一格才用官网的紧凑写法（[web/src/lib/format.js](../web/src/lib/format.js) 的 `sales()`：10 万以上取整 `489737` → `48.9万`，1 万到 10 万留一位小数，不到 1 万写原数，0 写 `—`，不要写成一个 `0` 让人以为是「卖出 0 件」）。标签列滤掉 `pickUp`，其余按 `TAGS` 译名。
+没有品牌列也没有销量列，第 7 列就是标签——这是和迪卡侬那份最直观的差别（迪卡侬第 7 列是品牌）。标签列滤掉 `pickUp`，其余按 `TAGS` 译名。（原先第 7 列的「月销」已按上面查证的结论撤掉；列表视图那一列的 CSS 轨道也跟着从 6 条减到 5 条，否则后面的格子会整体错位一格。）
 
-`list` 的排序口径：`--sort rate|saving|sales|newest`（`sales` 是这一站独有的排序键）；`--tag time_doptimal|concessional_rate`；默认门槛降幅 ≥30%。`track <编号>` 的编号可以输吊牌 6 位数，也可以直接贴商品页地址（`parseCode` 从里面抠 `\d{6}`）；手动盯的商品会按第一个命中的标签解释「这是什么性质的降价」——超值精选＝清仓，限时特优＝下周可能涨回原价。
+`list` 的排序口径：`--sort rate|saving|newest`；`--tag time_doptimal|concessional_rate`；默认门槛降幅 ≥30%。`track <编号>` 的编号可以输吊牌 6 位数，也可以直接贴商品页地址（`parseCode` 从里面抠 `\d{6}`）；手动盯的商品会按第一个命中的标签解释「这是什么性质的降价」——超值精选＝清仓，限时特优＝下周可能涨回原价。
 
 ### 8.2 页脚
 

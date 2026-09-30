@@ -220,7 +220,7 @@ const FONTS = {
     '本报告内嵌的是按实际用字裁剪后的子集（subset）。',
 };
 
-/** 报告里那张表：优衣库那份的第 7 列是月销，没有品牌列 */
+/** 报告里那张表：优衣库那份没有品牌列（迪卡侬那一列是品牌，我们这一列是标签） */
 const tableColumns = [
   { head: '编号', w: 8, align: 'l', get: (r) => r.code },
   { head: '商品', w: 30, align: 'l', get: (r) => r.name, trunc: true },
@@ -228,7 +228,6 @@ const tableColumns = [
   { head: '现价', w: 8, align: 'r', get: (r) => `¥${r.last_price}` },
   { head: '降幅', w: 7, align: 'r', get: (r) => `-${Math.round(r.rate * 100)}%` },
   { head: '省', w: 7, align: 'r', get: (r) => `¥${r.origin_price - r.last_price}` },
-  { head: '月销', w: 7, align: 'r', get: (r) => (r.monthly_sales ? r.monthly_sales.toLocaleString('zh-CN') : '-') },
   {
     head: '标签',
     w: 16,
@@ -288,7 +287,7 @@ export default {
       { tag: 'concessional_rate', text: '超值精选（清仓，会继续降，但容易断码）' },
       { tag: 'time_doptimal', text: '限时特优（下周可能涨回原价）' },
     ],
-    sortHint: 'rate|saving|sales|newest',
+    sortHint: 'rate|saving|newest',
     tagHint: 'time_doptimal|concessional_rate',
     sourceNote: '数据源：uniqlo.cn 公开搜索接口。价格以结账页为准。',
   },
@@ -326,15 +325,6 @@ export default {
       { key: 'launchPrice', label: '上市价', align: 'r', kind: 'was' },
       { key: 'price', label: '现价', align: 'r', kind: 'now' },
       { key: 'rate', label: '降幅', align: 'l', kind: 'scale' },
-      {
-        key: 'monthlySales',
-        label: '月销',
-        align: 'r',
-        kind: 'cell',
-        headCls: 'head__sales',
-        cellCls: 'row__sales',
-        format: 'compact',
-      },
     ],
     textKeys: ['name'],
 

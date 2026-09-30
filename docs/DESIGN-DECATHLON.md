@@ -334,7 +334,7 @@ Roboto, Decathlon, 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino 
 
 迪卡侬那份的列（`tableColumns`，由站点声明、共享核心只负责画）：`编号 | 商品 | 上市价 | 现价 | 降幅 | 省 | 品牌 | 标签`。
 
-第 7 列是**品牌**，没有月销/销量列——这是和优衣库那份最直观的差别（优衣库是月销、没有品牌）。「省」按整数写（`toFixed(0)`）。标签列滤掉 `discount_zone`，其余按 `TAGS` 译名。
+第 7 列是**品牌**，没有销量列——这是和优衣库那份最直观的差别（优衣库没有品牌列；它原先那列「月销」因为接口字段数值自相矛盾，已于 2026-09-30 撤掉）。「省」按整数写（`toFixed(0)`）。标签列滤掉 `discount_zone`，其余按 `TAGS` 译名。
 
 `list` 的排序口径：`--sort rate|saving|price|newest`（`price` 是这一站独有的排序键，看绝对低价）；`--tag endlife|new_arrival`；默认门槛降幅 ≥30%。`track <编号>` 的编号是商品页地址里的 `dsm_code`（也可以直接贴地址，`parseCode` 从里面抠 `\d{5,9}`）；手动盯的商品按第一个命中的标签解释性质——尾货＝清仓会继续降但容易断码，新品＝刚上架就在打折。
 

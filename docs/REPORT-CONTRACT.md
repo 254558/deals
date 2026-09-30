@@ -69,9 +69,7 @@
     { "key": "name",         "label": "商品",   "align": "l", "kind": "name"  },
     { "key": "launchPrice",  "label": "上市价", "align": "r", "kind": "was"   },
     { "key": "price",        "label": "现价",   "align": "r", "kind": "now"   },
-    { "key": "rate",         "label": "降幅",   "align": "l", "kind": "scale" },
-    { "key": "monthlySales", "label": "月销",   "align": "r", "kind": "cell",
-      "headCls": "head__sales", "cellCls": "row__sales", "format": "compact" }
+    { "key": "rate",         "label": "降幅",   "align": "l", "kind": "scale" }
   ],
   "textKeys": ["name"],                 // 排序时按中文 localeCompare 的列，其余按数字
 
@@ -111,7 +109,7 @@
 | `storagePrefix` | `uniql` | `deca` |
 | `showRecorded` | `false` | `true` |
 | `filters` | 全部 / 限时特优 / 超值精选 / 待拔草 | 全部 / 尾货 / 新品 / 待拔草 |
-| 尾列 | `monthlySales` → 月销（compact） | `sports` → 运动（text） |
+| 尾列 | 无（原先的「月销」已撤：接口字段数值自相矛盾，见 [DESIGN-UNIQLO](DESIGN-UNIQLO.md)） | `sports` → 运动 |
 | `features` | `rankBoard`、`dealBarNumber`、`scaleLayout:'inline'` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip`、`rowMetaLine`、`rowChips`、`flatWasDash`、`scaleLayout:'top'` |
 | `fontNotice` | 思源黑体子集声明 | `null` |
 
@@ -133,7 +131,6 @@
   "url": "https://www.uniqlo.cn/product-detail.html?productCode=…",
   "image": "img/u0000000072656@561.jpg",   // 本地缓存相对路径；没下到图是 null
   "tags": ["concessional_rate"],
-  "monthlySales": 489737,   // uniqlo 有；deca 0
   "launchPrice": 249,
   "price": 59,
   "saving": 190,

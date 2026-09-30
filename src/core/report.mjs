@@ -48,7 +48,6 @@ function toDeal(row, images, remote) {
     // `image` 是本地缓存好的相对路径；没下到图的商品为 null，页面留灰占位框
     image: images?.get(row.product_code) ?? null,
     tags: row.tags || [],
-    monthlySales: row.monthly_sales || 0,
     launchPrice,
     price,
     saving: Math.max(0, launchPrice - price),
