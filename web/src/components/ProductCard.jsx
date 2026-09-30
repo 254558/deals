@@ -34,8 +34,8 @@ export function ProductCard({ deal, index, onPick, onHide }) {
    *
    * 尺码是适配器算好的（见 src/sites/uniqlo.mjs 的 sizeInfo）：接口给的是**有货的
    * 内部码**，翻译成人话才到这儿。三种情况：
-   *   sizes=null        → 这件商品的尺码翻译不出来（袜子、内衣、腰围码那些家族），
-   *                       回退显示商品名——至少不能空着
+   *   sizes=null        → 这件商品的尺码翻译不出来（睡衣、帽子、手套那些接口没给尺码的），
+   *                       卡片上就不画这一行（名字照旧在上面）
    *   sizes.full=true   → 该款所有档位都有货，只写一个 all
    *   sizes.labels=[]   → 翻译不出来的多档商品：只报个数（宁可不说是哪几档，也不瞎猜）
    */

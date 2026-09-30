@@ -300,7 +300,7 @@ function codesOf(row) {
  * 这件商品还剩哪些尺码。
  * @param {object} row    库里的一行（或已经 hydrate 过的）
  * @param {Map}    vocab  code → {label, grp, ord}
- * @returns {{full:boolean, labels:string[], count:number}|null} 翻译不出来就 null（卡片回退显示商品名）
+ * @returns {{full:boolean, labels:string[], count:number}|null} 翻译不出来就 null（卡片上不画这一行）
  */
 function sizeInfo(row, vocab) {
   const codes = codesOf(row);
