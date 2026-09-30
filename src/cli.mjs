@@ -27,7 +27,8 @@
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { execFile, spawnSync } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, statSync, symlinkSync, lstatSync, readlinkSync, unlinkSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, statSync, symlinkSync, lstatSync, readlinkSync, unlinkSync, readdirSync, mkdirSync } from 'node:fs';
+import { homedir } from 'node:os';
 
 import { C, pad, printTable, truncate } from './core/terminal.mjs';
 import { openDb, saveSnapshot, listDeals, listTracked, listJustDropped, historyOf, startRun, finishRun, stats, discountRate } from './core/db.mjs';
@@ -61,7 +62,128 @@ const flag = (name, def) => {
 };
 const has = (name) => cliArgs.includes(`--${name}`);
 
-const COMMANDS = new Set(['sync', 'list', 'new', 'track', 'report', 'stats', 'history', 'dev', 'deploy', 'sites', 'help']);
+const COMMANDS = new Set(['sync', 'list', 'new', 'track', 'report', 'stats', 'history', 'dev', 'deploy', 'sites', 'backup', 'alert', 'help']);
+
+/**
+ * 这个项目里唯一**不可再生**的东西就是 data/deals.db：
+ * 图片、字体、HTML 都能重新抓/重新生成，价格历史丢了就永远没有。
+ * 而它开着 WAL（旁边有 -wal / -shm），**直接 cp 出来的副本可能是残缺的**，
+ * 所以用 SQLite 官方的一致快照写法 `VACUUM INTO`。
+ *
+ * 本机那份备份挡不住硬盘挂掉，所以只要 iCloud Drive 在，就同时写一份进去
+ * （零配置、自动同步到机器之外）。Dropbox 之类的同理，找到了也会写。
+ */
+const BACKUP_DIR = join(ROOT, 'data', 'backups');
+const CLOUD_DIRS = [
+  join(homedir(), 'Library', 'Mobile Documents', 'com~apple~CloudDocs'),
+  join(homedir(), 'Dropbox'),
+].filter((d) => existsSync(d) && statSync(d).isDirectory());
+
+function cmdBackup() {
+  const keep = Number(flag('keep', 14));
+  const db = openDb(DB_PATH);
+
+  const stamp = new Date().toISOString().slice(0, 19).replace('T', '-').replace(/:/g, '');
+  const name = `deals-${stamp}.db`;
+  const targets = [BACKUP_DIR, ...CLOUD_DIRS.map((d) => join(d, 'deals-backups'))];
+
+  console.log(C.bold('\n备份价格库'));
+  const size = (statSync(DB_PATH).size / 1024 / 1024).toFixed(1);
+  console.log(C.dim(`  源：${DB_PATH}（${size} MB，${orderCount(db)} 条价格快照）\n`));
+
+  for (const dir of targets) {
+    mkdirSync(dir, { recursive: true });
+    const out = join(dir, name);
+    // 路径里的单引号要转义：SQL 字面量
+    db.exec(`VACUUM INTO '${out.replace(/'/g, "''")}'`);
+    const mb = (statSync(out).size / 1024 / 1024).toFixed(1);
+    console.log(`  ${mb} MB  ${out}`);
+
+    // 只留最近 keep 份。删除范围严格限定在这个目录里、且文件名必须完全长成
+    // 我们自己生成的样子（`deals-<YYYY>-<MM>-<DD>-<HHMMSS>.db`）——
+    // 正则写成 `\d{8}-\d{6}` 是错的：实际文件名里日期带横线，那样一条都匹配不上，
+    // 于是「保留策略」会安静地失效、备份无限堆积（写完先测一遍就是这么发现的）。
+    const olds = readdirSync(dir)
+      .filter((f) => /^deals-\d{4}-\d{2}-\d{2}-\d{6}\.db$/.test(f))
+      .sort()
+      .reverse()
+      .slice(keep);
+    for (const f of olds) {
+      const p = join(dir, f);
+      if (dirname(p) !== dir) continue; // 双保险：绝不动这个目录以外的东西
+      unlinkSync(p);
+    }
+    if (olds.length) console.log(C.dim(`  （清掉 ${olds.length} 份旧的，保留最近 ${keep} 份）`));
+  }
+
+  if (CLOUD_DIRS.length === 0) {
+    console.log(C.yellow('\n  注意：没找到 iCloud / Dropbox，备份只在这一块硬盘上，硬盘挂了就一起没了。'));
+  }
+  console.log();
+}
+
+const orderCount = (db) => db.prepare('SELECT COUNT(*) AS n FROM price_history').get().n;
+
+/** macOS 通知。launchd 那个任务跑在用户的图形会话里，所以能弹出来 */
+function notify(title, body) {
+  if (process.platform !== 'darwin') return;
+  const esc = (s) => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  spawnSync('osascript', ['-e', `display notification "${esc(body)}" with title "${esc(title)}"`]);
+}
+
+/**
+ * 每天跑完之后该不该吱一声。两类事情值得打断你：
+ *
+ *  1. **盯着的商品降价了**（`track` 的全部意义就在这一条）。判定直接查库，
+ *     不去解析 `new` 的输出：`prev_price` 是上一次抓到的现价，比现在低就是降了。
+ *  2. **数据不新鲜**（超过 36 小时没抓成功）。这台机器是笔记本，launchd 只在
+ *     开机且登录时跑；万一抓取连续失败、或者你出差一周，历史就断档了——
+ *     而断档这件事在看报告时是看不出来的，只会觉得「怎么最近没降价」。
+ */
+function cmdAlert() {
+  const db = openDb(DB_PATH);
+  const messages = [];
+
+  for (const site of SITES) {
+    const drops = db
+      .prepare(`
+      SELECT code, name, prev_price, last_price FROM products
+      WHERE site = ? AND tracked = 1 AND prev_price IS NOT NULL AND last_price < prev_price
+      ORDER BY (prev_price - last_price) DESC
+    `)
+      .all(site.id);
+    for (const d of drops) {
+      messages.push({
+        title: `${site.label}：盯着的商品降价了`,
+        body: `${d.name}　¥${d.prev_price} → ¥${d.last_price}`,
+        log: `${site.id}  ${d.code}  ${d.name}  ¥${d.prev_price} → ¥${d.last_price}`,
+      });
+    }
+
+    const last = stats(db, site.id).lastRun?.finished_at;
+    const hours = last ? (Date.now() - new Date(last).getTime()) / 3_600_000 : Infinity;
+    if (hours > 36) {
+      const how = last ? `${Math.floor(hours / 24)} 天没抓到新数据了` : '还从来没抓成功过';
+      messages.push({
+        title: 'deals：数据断档了',
+        body: `${site.label} ${how}`,
+        log: `${site.id}  最后一次成功抓取：${last ? new Date(last).toLocaleString('zh-CN') : '无'}`,
+      });
+    }
+  }
+
+  if (messages.length === 0) {
+    console.log(C.dim('\n没有需要提醒的：盯着的商品没降价，数据也是新的。\n'));
+    return;
+  }
+
+  console.log(C.bold(`\n▍要提醒的 ${messages.length} 条`));
+  for (const m of messages) {
+    console.log(`  ${m.title}　${C.dim(m.body)}`);
+    notify(m.title, m.body);
+  }
+  console.log();
+}
 
 /**
  * 位置参数有两种写法，都认：
@@ -532,6 +654,11 @@ ${C.bold('deals')} —— 比价与捡漏工具（${siteList()}）
 
   ${C.bold('deals sites')}               有哪些站点、各攒了多少
   ${C.bold('deals all sync')}            两家一起抓
+  ${C.bold('deals backup')}              把价格库做一份一致性快照（默认留最近 14 份）
+        --keep 30                         改保留份数
+                                          有 iCloud / Dropbox 就同时写一份进去
+  ${C.bold('deals alert')}               盯着的商品降价了、或数据断档了，弹系统通知
+                                          （每天的定时任务跑完会自己调它）
 
 ${site ? C.dim(s.copy.sourceNote) : C.dim('站点：' + SITES.map((x) => `${x.id}（${x.aliases.join('/')}）`).join('　'))}
 `);
@@ -554,6 +681,10 @@ try {
     cmdHelp(null);
   } else if (cmd === 'sites') {
     cmdSites();
+  } else if (cmd === 'backup') {
+    cmdBackup(); // 与站点无关：一个库装两家，备份就是备份整个库
+  } else if (cmd === 'alert') {
+    cmdAlert(); // 同上，它自己遍历两家
   } else {
     if (!target) {
       if (SINGLE.has(cmd)) {

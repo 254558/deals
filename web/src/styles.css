@@ -1146,25 +1146,22 @@ html[data-site="decathlon"] {
 }
 
 @media (max-width: 760px) {
-  /* 工具条在这一档要不要粘住，**拿高度说话，不拿站点说话**。
-     这一档两家都把搜索/排序/视图/计数撤了，所以此刻的高度由页签行数决定：
-       优衣库  只剩页签一行 → 57px（手机的 7%）。钉着才有用：877 件商品，
-               滚到中段想换个页签，不该一路滚回顶部
-       迪卡侬  页签 + 一行搜索/排序 → 104px（13%）。常驻就太占地，让它滚走
-     这是两家的旧版各自量过之后的分法，合并时不要一刀切。
-     （优衣库那一档旧版也在撤样式，但它从来没把 .toolbar 改成 static；
-     迪卡侬旧版是 static，因为它那一行真占地方。） */
-  [data-site="decathlon"] .toolbar { position: static; }
-  /* 表头也放开，节奏跟着工具条走：工具条不粘了，表头单独粘在顶上会很突兀 */
-  [data-site="decathlon"] .head { position: static; }
+  /* 手机端两家都只留页签这一行，而且**这一行钉住**（.toolbar 的 sticky 来自共用骨架）。
+     搜索/排序/视图/计数全撤：屏幕金贵，而这些在手机上各有替代——
+     排序默认就是最该看的「降幅」，视图在窄屏本来也只剩一种能看。
+     撤完工具条就是一行 57px（手机的 7%），钉着才划算：877 / 1302 件商品，
+     滚到中段想换个页签「只看尾货」，不该一路滚回顶部。
+     「已隐藏 N 件 · 放回」不受影响——它只在真藏了商品时出现，是回头的路。
+
+     合并时这里曾经按「拿高度说话」分成两家两种做法（优衣库 57px 钉住、
+     迪卡侬 104px 滚走），依据是两家的旧版各自量过的高度。后来统一成一行之后，
+     迪卡侬那两行的前提不成立了，于是跟优衣库对齐——这也是用户明确要的。 */
+  .search,
+  .sortctl,
+  .viewtabs,
+  .toolbar__count { display: none; }
 
   [data-site="uniqlo"] { --pad: 16px; --pic-w: 64px; --pic-h: 85px; }
-  /* 手机端只留页签这一行（排序/视图/搜索/计数都撤，屏幕金贵）；
-     「已隐藏 N 件 · 放回」不受影响——它只在真藏了商品时出现，是回头的路 */
-  [data-site="uniqlo"] .search,
-  [data-site="uniqlo"] .sortctl,
-  [data-site="uniqlo"] .viewtabs,
-  [data-site="uniqlo"] .toolbar__count { display: none; }
   [data-site="uniqlo"] .masthead { padding-top: 26px; }
   [data-site="uniqlo"] .topranks { padding: 18px 0 16px; }
   /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */
@@ -1190,10 +1187,8 @@ html[data-site="decathlon"] {
   [data-site="uniqlo"] .row__now .now__int,
   [data-site="uniqlo"] .row__now .now__dec { font-size: 16px; }
   [data-site="uniqlo"] .scale { grid-area: scale; margin-top: 12px; }
-  [data-site="uniqlo"] .search { width: 100%; }
-  [data-site="uniqlo"] .toolbar__count { margin-left: 0; }
 
-  /* 迪卡侬：表头在这一档也放开，别再粘着 */
+  /* 迪卡侬：表头在这一档放开，别再粘着（工具条钉住就够了，表头也钉会占两层） */
   [data-site="decathlon"] .head { position: static; }
 }
 

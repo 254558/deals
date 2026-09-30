@@ -44,6 +44,8 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 | `deals <站点> dev` | 起 Vite 开发服务器调报告页面（热更新），数据来自当前数据库 |
 | `deals <站点> deploy` | 生成最新报告并推上去。默认 Vercel（每站一个项目）；`--target cloudflare` 改推 Cloudflare Pages（一个项目装两份） |
 | `deals sites` | 有哪些站点、各攒了多少 |
+| `deals backup` | 给价格库做一份一致性快照（`VACUUM INTO`，默认留最近 14 份）。有 iCloud / Dropbox 就同时写一份到机器之外 |
+| `deals alert` | 盯着的商品降价了、或数据超过 36 小时没抓成功，就弹 macOS 通知（每日任务跑完会自己调它） |
 
 站点别名：`uniqlo` / `uniql` / `u`，`decathlon` / `deca` / `d`。也认 `--site uniqlo`。
 
@@ -63,6 +65,8 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 两边都有的东西：
 
 **两种视图。** 工具栏右上角切换。大图是分类页那种卡片墙；列表是一张**门店价签**——左边小图、中间名称、右边价格从上市价坍缩到现价，最右是那根**降价标尺**：横轴就是价格轴，左端上市价、右端零，墨条从上市价铺到现价，所以墨条长度直接等于降了多少。两个视图共用同一套筛选与搜索，切换视图不丢状态。
+
+**窄屏（≤760）工具栏只留页签一行，并且钉在顶上。** 搜索/排序/视图/计数那一档全撤（屏幕金贵，而排序默认就是最该看的「降幅」），剩下的一行 `57px` 常驻——1302 件商品，滚到中段想「只看尾货」，不该一路滚回顶部。两家行为一致。
 
 **商品图都是本地缓存。** 优衣库的图片 CDN 返回 `application/octet-stream`，Chrome 的 ORB 会拦掉跨域引用，报告里会是一片空白；两家的商品下架后图也会 404/410。所以图一律下到 `reports/<站点>/img/`，文件名带档位（优衣库是 `u0000000072656@561.jpg`、迪卡侬是 `346498@800.jpg`），换档位不会把旧档当缓存命中。
 
@@ -174,7 +178,7 @@ node src/cli.mjs all deploy --target cloudflare
 
 ## 自动化
 
-每天 09:00 抓一次价、生成两份报告，装成 launchd 任务（已经在这台机器上装好了）：
+每天 09:00 跑一轮，装成 launchd 任务（已经在这台机器上装好了）：
 
 ```bash
 bash scripts/install-launchd.sh              # 装（默认 09:00）
@@ -183,7 +187,16 @@ bash scripts/install-launchd.sh --uninstall  # 卸
 launchctl kickstart -k gui/$(id -u)/com.$(whoami).deals.daily   # 立刻试跑一次
 ```
 
-干活的脚本是 `scripts/daily.sh`：`all sync` → `all report --no-open`，日志追加到 `logs/daily.log`（一天一段，带退出码）。两条命令里任何一条失败，launchd 那边也会留下记录。想顺便把线上也更新了，在 `daily.sh` 里加一行 `"$NODE" src/cli.mjs all deploy --target cloudflare` 即可。
+`scripts/daily.sh` 一轮做四件事，日志追加到 `logs/daily.log`（一天一段，带每步的退出码）：
+
+| 步骤 | 为什么在 |
+| --- | --- |
+| `all sync` | 抓两家的最新价格写进历史库——**上市价就是靠这个一天一天攒出来的**，漏一天就少一天 |
+| `all report --no-open` | 生成两份报告（`sync` 只动数据库，报告是另一个文件） |
+| `backup` | 这个项目里**只有价格库不可再生**，而它开着 WAL、直接 `cp` 不安全，所以走 `VACUUM INTO`；有 iCloud 就同时写一份到机器之外 |
+| `alert` | 盯着的商品降价了、或数据断档（>36 小时没抓成功）就弹系统通知 |
+
+抓取或生成失败时会**主动弹一条失败通知**（只写进日志等于没人知道），想顺便把线上也更新了，在 `daily.sh` 里加一行 `"$NODE" src/cli.mjs all deploy --target cloudflare` 即可——日常只改两个 HTML，实测 2 秒传完。
 
 **为什么是 launchd 而不是 crontab**（两个都是实测出来的）：
 
