@@ -132,14 +132,29 @@ ${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
 `;
 }
 
-/** web/ 下最新的源文件时间，用来判断构建产物是不是过期了 */
+/**
+ * web/ 下最新的源文件时间，用来判断构建产物是不是过期了。
+ *
+ * **软链要跳过**：`web/public/img` 是 `deals <站点> dev` 建的软链，指向
+ * `reports/<站点>/img`。dirent 对软链来说 `isDirectory()` 是 false，于是会走到
+ * `statSync` —— 而 statSync 是**跟随**软链的，目标不存在就抛 ENOENT。仓库一搬家，
+ * 那条软链就指向旧路径成了断链，报告从此生成不了（实测踩过：
+ * `ENOENT: no such file or directory, stat '/…/web/public/img'`）。
+ * 它只是开发服务器的暂存物、不是源码，跳过即可；顺带把 stat 失败也兜住，
+ * 别让一个读不到的文件把整份报告拦下。
+ */
 function latestSourceMtime(root) {
   let newest = 0;
   const walk = (dir) => {
     for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isSymbolicLink()) continue;
       const p = join(dir, e.name);
-      if (e.isDirectory()) walk(p);
-      else newest = Math.max(newest, statSync(p).mtimeMs);
+      try {
+        if (e.isDirectory()) walk(p);
+        else newest = Math.max(newest, statSync(p).mtimeMs);
+      } catch {
+        // 读不到就当它不存在：这个时间只是个「要不要重新构建」的优化
+      }
     }
   };
   walk(join(root, 'web'));

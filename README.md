@@ -97,6 +97,7 @@ src/sites/           站点适配器：只有「这家才这样」的东西
   uniqlo.mjs         优衣库：搜索接口、字段映射、标签文案、图片档位、字体、报告开关
   decathlon.mjs      迪卡侬：匿名令牌 + BFF 接口、model 选价、两个图床的缩放写法
 web/                 一套 React 报告源码（组件、样式、格式化）
+scripts/             每天那次定时任务：daily.sh（干活）+ install-launchd.sh（装/卸/改时间）
 docs/                REPORT-CONTRACT.md（报告契约）+ 两份站点设计说明
 data/deals.db        本地数据库（自动生成，不进版本管理）
 data/fonts/          思源黑体原件（首次自动下载，约 16MB）
@@ -173,13 +174,31 @@ node src/cli.mjs all deploy --target cloudflare
 
 ## 自动化
 
-想让它每天自动抓一次，加个 crontab：
+每天 09:00 抓一次价、生成两份报告，装成 launchd 任务（已经在这台机器上装好了）：
 
 ```bash
-# 每天早上 9 点抓两家，周五下午 3 点生成报告（优衣库周二调价、周五上活动）
-0 9 * * *   cd ~/Desktop/deals && /usr/bin/env node src/cli.mjs all sync    >> logs/sync.log 2>&1
-0 15 * * 5  cd ~/Desktop/deals && /usr/bin/env node src/cli.mjs all report --no-open >> logs/sync.log 2>&1
+bash scripts/install-launchd.sh              # 装（默认 09:00）
+bash scripts/install-launchd.sh --hour 21    # 想换时间
+bash scripts/install-launchd.sh --uninstall  # 卸
+launchctl kickstart -k gui/$(id -u)/com.$(whoami).deals.daily   # 立刻试跑一次
 ```
+
+干活的脚本是 `scripts/daily.sh`：`all sync` → `all report --no-open`，日志追加到 `logs/daily.log`（一天一段，带退出码）。两条命令里任何一条失败，launchd 那边也会留下记录。想顺便把线上也更新了，在 `daily.sh` 里加一行 `"$NODE" src/cli.mjs all deploy --target cloudflare` 即可。
+
+**为什么是 launchd 而不是 crontab**（两个都是实测出来的）：
+
+1. **cron 根本读不到项目。** `~/Desktop` 受 macOS 的 TCC 隐私保护，cron 跑起来是这样：
+
+   ```
+   ===== 2026-09-30 14:53:01 =====
+   pwd=/Users/zhangshuai/Desktop/deals
+   目录前几项: ls: .: Operation not permitted      ← 目标目录能进，但读不了
+   ```
+
+   除非去「系统设置 → 隐私与安全 → 完全磁盘访问权限」里把 `/usr/sbin/cron` 加进去（要管理员密码，而且等于给系统 cron 开了很宽的权限），否则这条路走不通。项目现在在 `~/deals`，不在保护目录里，launchd 直接就能读写——同一台机器上换成 `~/deals-cron-probe` 实测就一切正常。
+2. **笔记本 9 点多半在睡觉。** cron 错过的时间点直接跳过；launchd 的 `StartCalendarInterval` 会在唤醒之后补跑一次。
+
+`install-launchd.sh` 里的 plist 是**现生成**的：仓库路径、node 路径、用户名都取当前机器，所以换台机器、或者仓库改个目录名，重跑一遍这个脚本就行（`daily.sh` 自己也是按脚本位置定位仓库的，不写死路径）。
 
 ## 注意
 

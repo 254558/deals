@@ -23,7 +23,7 @@
 
 ### 合并后改掉的那些
 
-| 旧仓库（`~/Desktop/decathlon`） | 合并后（`~/Desktop/deals`） |
+| 旧仓库（`~/Desktop/decathlon`） | 合并后（`~/deals`） |
 | --- | --- |
 | `deca sync` / `deca report` … | `deals decathlon sync` / `deals decathlon report`（`deca` / `d` 也认，`--site decathlon` 也认） |
 | `data/deca.db`（列名 `dsm_code`） | `data/deals.db`，一张库靠 `site` 列分区，主键 `(site, product_code)`；`dsm_code` 统一成 `product_code`，报告里叫 `id` |
@@ -367,7 +367,7 @@ Roboto, Decathlon, 'Helvetica Neue', Helvetica, Arial, 'PingFang SC', 'Hiragino 
 
 ### 8.5 抓取节奏
 
-`sync` 每页之间 `sleep(200ms)`，14 页实测约 25 秒。合并后建议每天 `sync` 一次攒历史（两家的定时任务写法见 [README.md](../README.md) 的「自动化」一节）。
+`sync` 每页之间 `sleep(200ms)`，14 页实测约 25 秒。合并后建议每天 `sync` 一次攒历史（这台机器上已经装成每天 09:00 的 launchd 任务，见 [README.md](../README.md) 的「自动化」一节）。
 
 ---
 
