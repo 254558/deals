@@ -83,11 +83,16 @@
      右边字段那一列跨三行。手机版（≤820）整个退回块流——DOM 顺序就是
      照片 → 规矩 → 字段 → 发布，按钮自然落在最后（早先包一层 .left 时，
      手机上按钮跑到字段前面去了）。 */
-  .photo { grid-area: 1 / 1 / 2 / 2; align-self: stretch; min-height: 240px; }
+  /* 照片那一格：标签在上，虚线框吃掉剩下的高度（和右边那摞字段等高，不空着） */
+  .field--photo {
+    grid-area: 1 / 1 / 2 / 2; align-self: stretch;
+    display: flex; flex-direction: column; min-height: 240px;
+  }
+  .field--photo .photo { flex: 1 1 auto; min-height: 200px; }
   /* 桌面版要它撑满列高，就得关掉 1:1——留着宽高比的话，高度被撑到多少、宽度就跟到多少，
-     盒子会溢出一列（实测 339 宽挤在 240 的列里）。选择器多一层 .poster 是为了压过
+     盒子会溢出一列（实测 339 宽挤在 240 的列里）。选择器多两层是为了压过
      下面那条 `.photo { aspect-ratio: 1/1 }`（它在本文件里更靠后） */
-  @media (min-width: 821px) { .poster .photo { aspect-ratio: auto; } }
+  @media (min-width: 821px) { .poster .field--photo .photo { aspect-ratio: auto; } }
   .poster .hint { grid-area: 2 / 1 / 3 / 2; margin: 0; }
   .submit-row { grid-area: 3 / 1 / 4 / 2; }
   .fields { grid-area: 1 / 2 / 4 / 3; }
@@ -170,16 +175,22 @@
     <h2>我要出一件</h2>
     <form id="form" autocomplete="off">
       <div class="poster">
-        <!-- 照片。原生 file 输入藏在框里，看得见的是这块虚线区 -->
-        <div class="photo" id="photoBox">
-          <input type="file" id="photo" accept="image/*">
-          <label class="photo__pick" for="photo" id="pick">
-            <span class="photo__icon">＋</span>
-            <span class="photo__text">选择照片</span>
-            <span class="photo__hint">也可以把图片拖进来</span>
-          </label>
-          <img id="previewImg" alt="预览" hidden>
-          <button class="photo__swap" type="button" id="swap" hidden>换一张</button>
+        <!-- 照片也是一个「字段」：**有标签**，标签和右边「商品名」并排，
+             框于是正好和「商品名」下面那个输入框的上边框对齐（之前照片没标签，
+             它跟的是对方的标签，看着就是错位的）。
+             原生 file 输入藏在框里，看得见的是这块虚线区 -->
+        <div class="field field--photo">
+          <label for="photo">商品照片</label>
+          <div class="photo" id="photoBox">
+            <input type="file" id="photo" accept="image/*">
+            <label class="photo__pick" for="photo" id="pick">
+              <span class="photo__icon">＋</span>
+              <span class="photo__text">选择照片</span>
+              <span class="photo__hint">也可以把图片拖进来</span>
+            </label>
+            <img id="previewImg" alt="预览" hidden>
+            <button class="photo__swap" type="button" id="swap" hidden>换一张</button>
+          </div>
         </div>
         <p class="hint">照片请自己拍，别用官网图——盗图被举报就下架。</p>
 
