@@ -75,8 +75,24 @@ export function useWatch() {
     });
   }, []);
 
-  const hide = useCallback((code) => {
-    setWatch((w) => ({ ...w, hidden: new Set(w.hidden).add(code) }));
+  /**
+   * 闭眼：**按款**永久隐藏。写进名单的是两个键——`product_code`（这张卡片）和
+   * `code`（吊牌号，同一个款）。
+   *
+   * 为什么要两个：优衣库一个款有多个颜色，各自一个 productCode，**名字一模一样**。
+   * 只按 product_code 删的话，同款另一个颜色照旧在榜上，用户会以为「删了怎么还在」
+   * （实测 84 组吊牌号下挂着 2~3 件）。带上吊牌号，点一次这个款的全部颜色一起消失。
+   * 迪卡侬那边 code 本来就一件一个，两个键等价，没有副作用。
+   *
+   * 旧版本只存过 product_code，那些记录照样有效——过滤时两个键都比。
+   */
+  const hide = useCallback((id, code) => {
+    setWatch((w) => {
+      const hidden = new Set(w.hidden);
+      hidden.add(id);
+      if (code && code !== id) hidden.add(code);
+      return { ...w, hidden };
+    });
   }, []);
 
   /**

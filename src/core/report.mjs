@@ -12,7 +12,7 @@
 import { writeFileSync, mkdirSync, existsSync, statSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { listDeals, listTracked, stats, discountRate } from './db.mjs';
+import { listDeals, listTracked, listBlocked, stats, discountRate } from './db.mjs';
 
 const rateOf = discountRate;
 
@@ -103,7 +103,14 @@ export function buildPayload(db, site, images, { remote = false, fontNotice = si
    * 这不是「下架」：商品仍留在库里、终端 `list` 里仍然看得到，只是不进报告。
    * ensureImages 只补缺的图，所以哪天图下到了，它下一轮自动回到榜上。
    */
-  const shown = images ? rows.filter((r) => images.get(r.product_code)) : rows;
+  /**
+   * 两道过滤：
+   *   ① 谢绝名单里的不上榜（按吊牌号，同款所有颜色一起）——**这一道两趟都过**：
+   *      第一趟（remote，给 ensureImages 用）也没必要再去下它的图；
+   *   ② 没图的不上榜（只在 images 传进来那一趟判断，理由见上）。
+   */
+  const blocked = new Set(listBlocked(db, site.id).map((b) => b.code));
+  const shown = rows.filter((r) => !blocked.has(r.code) && (!images || images.get(r.product_code)));
 
   const meta = { ...site.report, fontNotice };
   if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };

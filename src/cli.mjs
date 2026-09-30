@@ -31,7 +31,22 @@ import { existsSync, readFileSync, writeFileSync, statSync, symlinkSync, lstatSy
 import { homedir } from 'node:os';
 
 import { C, pad, printTable, truncate } from './core/terminal.mjs';
-import { openDb, saveSnapshot, listDeals, listTracked, listJustDropped, historyOf, startRun, finishRun, stats, discountRate } from './core/db.mjs';
+import {
+  openDb,
+  saveSnapshot,
+  listDeals,
+  listTracked,
+  listJustDropped,
+  historyOf,
+  startRun,
+  finishRun,
+  stats,
+  discountRate,
+  blockCode,
+  unblockCode,
+  listBlocked,
+  resolveBlockTarget,
+} from './core/db.mjs';
 import { buildPayload, writeData, ensureBuild, renderHtml, writeDeployRoot } from './core/report.mjs';
 import { ensureFontFiles, buildFontCss } from './core/fonts.mjs';
 import { ensureImages } from './core/images.mjs';
@@ -62,7 +77,7 @@ const flag = (name, def) => {
 };
 const has = (name) => cliArgs.includes(`--${name}`);
 
-const COMMANDS = new Set(['sync', 'list', 'new', 'track', 'report', 'stats', 'history', 'dev', 'deploy', 'sites', 'backup', 'alert', 'help']);
+const COMMANDS = new Set(['sync', 'list', 'new', 'track', 'report', 'stats', 'history', 'dev', 'deploy', 'sites', 'backup', 'alert', 'help', 'block', 'unblock', 'blocked']);
 
 /**
  * 这个项目里唯一**不可再生**的东西就是 data/deals.db：
@@ -465,6 +480,82 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   }
 }
 
+/**
+ * 谢绝名单：按**吊牌号**屏蔽一个款。
+ *
+ * 和报告里那个闭眼的区别：闭眼只能写那台浏览器的 localStorage，换设备、换域名
+ * （goodprices.online 与 deals-pinouts.pages.dev 是两个 origin）、清缓存就都不作数；
+ * 名单进了库，生成报告时直接不发出去，哪儿都看不到。
+ */
+function cmdBlock(site, arg) {
+  if (!arg) {
+    throw new Error(
+      `用法：deals ${site.id} block <吊牌号 | 商品编号 | 商品名>。进名单的款在报告里永久不出现。`
+    );
+  }
+  const db = openDb(DB_PATH);
+  const r = resolveBlockTarget(db, site.id, arg);
+
+  if (!r.ok && r.reason === 'notfound') {
+    throw new Error(`没找到「${arg}」。可以给吊牌号（如 488089）、商品编号（如 u0000000072656）或商品名的一部分。`);
+  }
+  if (!r.ok && r.reason === 'ambiguous') {
+    console.log(C.yellow(`\n「${arg}」命中 ${r.candidates.length} 个款，换个更准的名字、或直接给吊牌号：\n`));
+    for (const c of r.candidates.slice(0, 12)) {
+      console.log(`  ${c.code}  ${c.name}${c.n > 1 ? C.dim(`　（${c.n} 个颜色）`) : ''}`);
+    }
+    if (r.candidates.length > 12) console.log(C.dim(`  …另外 ${r.candidates.length - 12} 个`));
+    console.log();
+    throw new Error('名字有歧义，什么都没改。');
+  }
+
+  blockCode(db, site.id, r.code, r.name);
+  console.log(`
+  ${C.bold(r.name || r.code)}${r.name ? '  ' + C.dim(r.code) : ''}${r.ids.length > 1 ? C.dim(`　（这个款有 ${r.ids.length} 个颜色，一起屏蔽）`) : ''}
+  ${C.green('已加入谢绝名单')}——生成报告时直接不发出去，换设备、换域名、清缓存都看不到。
+  ${C.dim(`想让它回来：deals ${site.id} unblock ${r.code}`)}
+`);
+}
+
+/** 从谢绝名单里去掉一个款 */
+function cmdUnblock(site, arg) {
+  if (!arg) throw new Error(`用法：deals ${site.id} unblock <吊牌号>`);
+  const db = openDb(DB_PATH);
+  const q = String(arg).trim();
+  let n = unblockCode(db, site.id, q);
+
+  // 也允许给商品编号或名字：解析出吊牌号再删
+  if (!n) {
+    const r = resolveBlockTarget(db, site.id, q);
+    if (r.ok) n = unblockCode(db, site.id, r.code);
+  }
+  if (!n) {
+    const list = listBlocked(db, site.id);
+    if (!list.length) throw new Error(`${site.label} 的谢绝名单是空的，没有 ${q} 可删。`);
+    console.log(C.yellow(`\n名单里没有 ${q}。现在名单上是：\n`));
+    for (const b of list.slice(0, 20)) console.log(`  ${b.code}  ${b.name || ''}`);
+    if (list.length > 20) console.log(C.dim(`  …另外 ${list.length - 20} 个`));
+    console.log();
+    throw new Error('什么都没改。');
+  }
+  console.log(`\n  已从谢绝名单里去掉 ${q}，下次生成报告它就回来了。\n`);
+}
+
+/** 列出现在屏蔽了哪些款 */
+function cmdBlocked(site) {
+  const db = openDb(DB_PATH);
+  const list = listBlocked(db, site.id);
+  if (!list.length) {
+    console.log(C.dim(`\n  ${site.label} 的谢绝名单是空的。加一个：deals ${site.id} block <吊牌号>\n`));
+    return;
+  }
+  console.log(`\n  ${C.bold(`${site.label} 的谢绝名单`)}　${list.length} 个款。这些不会出现在报告里：\n`);
+  for (const b of list) {
+    console.log(`  ${b.code}  ${b.name || C.dim('（库里没有这个名字）')}　${C.dim((b.blocked_at || '').slice(0, 10))}`);
+  }
+  console.log(C.dim(`\n  去掉一个：deals ${site.id} unblock <吊牌号>\n`));
+}
+
 function cmdStats(site) {
   const db = openDb(DB_PATH);
   const s = stats(db, site.id, { extraStats: site.statsExtra });
@@ -474,11 +565,12 @@ function cmdStats(site) {
   // 「已不在特价」在报告里是**不说的**（用户要的是：榜上只剩现在真在卖的），
   // 但终端这边要能看见——不然你会以为商品凭空消失了。
   const goneLine = `  已不在特价        ${s.gone || 0} 件${s.missing_once ? C.dim(`（另有 ${s.missing_once} 件本轮没见到）`) : ''}\n`;
+  const blockedLine = `  谢绝名单          ${s.blocked || 0} 个款\n`;
   console.log(`
   ${C.bold(`${site.label} · 本地数据`)}
   累计记录商品      ${s.total} 件
   当前有折扣        ${s.discounted} 件
-${goneLine}${extraLines}  手动关注          ${s.tracked} 件
+${goneLine}${blockedLine}${extraLines}  手动关注          ${s.tracked} 件
   价格快照          ${hist.n} 条${hist.since ? C.dim(`（自 ${hist.since} 起）`) : ''}
   最近一次抓取      ${s.lastRun?.finished_at ? new Date(s.lastRun.finished_at).toLocaleString('zh-CN') : C.yellow(`还没抓过，先跑 deals ${site.id} sync`)}
   数据库            ${DB_PATH}
@@ -669,6 +761,10 @@ ${C.bold('deals')} —— 比价与捡漏工具（${siteList()}）
   ${C.bold(`deals ${id} new`)}               只看最近一次抓取里新降价的
   ${C.bold(`deals ${id} track <编号>`)}       盯一件商品，降价了在报告里标出来
   ${C.bold(`deals ${id} history <编号>`)}     看一件商品的价格快照，一天一条
+  ${C.bold(`deals ${id} block <编号>`)}       把一个款加进谢绝名单：报告里永久不出现
+                             吊牌号 / 商品编号 / 商品名 都收
+  ${C.bold(`deals ${id} unblock <吊牌号>`)}   从谢绝名单里去掉
+  ${C.bold(`deals ${id} blocked`)}           看看现在屏蔽了哪些款
   ${C.bold(`deals ${id} report`)}            生成 HTML 报告并打开浏览器
        --no-images                       不缓存商品图（更快，但报告里没图）
        --no-font                         不内嵌中文字体（用系统字体栈）
@@ -697,7 +793,7 @@ ${site ? C.dim(s.copy.sourceNote) : C.dim('站点：' + SITES.map((x) => `${x.id
 const { target, cmd, rest } = parseInvocation();
 
 /** 一次只对一个站点的命令 */
-const SINGLE = new Set(['list', 'new', 'track', 'stats', 'history', 'dev']);
+const SINGLE = new Set(['list', 'new', 'track', 'stats', 'history', 'dev', 'block', 'unblock', 'blocked']);
 /** 可以 all 的命令 */
 const MULTI = new Set(['sync', 'report', 'deploy']);
 
@@ -771,6 +867,9 @@ try {
               });
               break;
             case 'stats': cmdStats(site); break;
+            case 'block': cmdBlock(site, rest[0] || flag('code')); break;
+            case 'unblock': cmdUnblock(site, rest[0] || flag('code')); break;
+            case 'blocked': cmdBlocked(site); break;
             case 'history': cmdHistory(site, rest[0] || flag('code')); break;
             case 'dev': await cmdDev(site); break;
             case 'deploy': await cmdDeployVercel(site); break;

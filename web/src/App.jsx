@@ -179,7 +179,9 @@ export default function App() {
    */
   const deals = useMemo(
     () =>
-      DEALS.filter((d) => !watch.hidden.has(d.id)).map((d) => ({
+      // 名单里可能存着两张键：product_code（这一张卡片）和吊牌号（整个款）。
+      // 两个都要比——详见 lib/watch.js 里 hide() 那段
+      DEALS.filter((d) => !watch.hidden.has(d.id) && !watch.hidden.has(d.code)).map((d) => ({
         ...d,
         // 终端 track 是单向的（CLI 里还没有 untrack），报告里要取消它，
         // 得在 dropped 里记一笔才压得住，否则刷新又从数据库冒回来
@@ -190,7 +192,7 @@ export default function App() {
   );
 
   const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
-  const hideDeal = useCallback((d) => hide(d.id), [hide]);
+  const hideDeal = useCallback((d) => hide(d.id, d.code), [hide]);
 
   /** 每个页签各挂一个计数（只算没被闭眼的那批） */
   const counts = useMemo(

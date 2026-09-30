@@ -84,6 +84,21 @@ CREATE TABLE IF NOT EXISTS runs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_discount ON products(site, max_discount);
+
+-- 谢绝名单：按**吊牌号**屏蔽一个款（同款所有颜色一起消失）。
+-- 为什么放在库里而不是只放浏览器：报告里的闭眼只能写那台浏览器的 localStorage，
+-- 换设备 / 换域名（goodprices.online 与 deals-pinouts.pages.dev 是两个 origin）/
+-- 清缓存就都不作数；名单进了库，生成报告时就直接不发出去。
+-- 为什么是吊牌号而不是 product_code：优衣库一个款有多个颜色（各一个 productCode），
+-- 实测 84 组吊牌号下挂着 2~3 件、名字一模一样——按颜色屏蔽时用户分不清
+-- 「怎么删了还在」。
+CREATE TABLE IF NOT EXISTS blocked (
+  site        TEXT NOT NULL,
+  code        TEXT NOT NULL,          -- 吊牌号
+  name        TEXT,                   -- 记下名字，列名单时看得懂
+  blocked_at  TEXT,
+  PRIMARY KEY (site, code)
+);
 CREATE INDEX IF NOT EXISTS idx_history_code ON price_history(site, product_code, observed_on);
 `;
 
@@ -298,6 +313,60 @@ export function saveSnapshot(db, site, products, { tracked = false, full = false
   return { added, dropped, raised, permanent, missedOne, gone, bulkDrop };
 }
 
+/** 把一个款加进谢绝名单（幂等） */
+export function blockCode(db, site, code, name = '') {
+  db.prepare(
+    `INSERT INTO blocked (site, code, name, blocked_at) VALUES (?,?,?,?)
+     ON CONFLICT(site, code) DO UPDATE SET name = excluded.name`
+  ).run(site, String(code), name, new Date().toISOString());
+}
+
+/** 从谢绝名单里去掉一个款 */
+export function unblockCode(db, site, code) {
+  return db.prepare('DELETE FROM blocked WHERE site = ? AND code = ?').run(site, String(code)).changes;
+}
+
+/** 谢绝名单（按加入时间倒序） */
+export function listBlocked(db, site) {
+  return db.prepare('SELECT code, name, blocked_at FROM blocked WHERE site = ? ORDER BY blocked_at DESC').all(site);
+}
+
+/**
+ * 把用户敲的一个参数解析成「要屏蔽的吊牌号」。三种都收：
+ *   吊牌号        488089
+ *   product_code  u0000000072656（优衣库）
+ *   商品名        抽褶裙（只在**唯一命中一个款**时才认，歧义就让你挑）
+ *
+ * @returns {{ok:true, code:string, name:string, ids:string[]}
+ *          |{ok:false, reason:'notfound'}
+ *          |{ok:false, reason:'ambiguous', candidates:{code:string,name:string,n:number}[]}}
+ */
+export function resolveBlockTarget(db, site, query) {
+  const q = String(query || '').trim();
+  if (!q) return { ok: false, reason: 'notfound' };
+
+  const idsOf = (code) =>
+    db.prepare('SELECT product_code FROM products WHERE site = ? AND code = ?').all(site, code).map((r) => r.product_code);
+  const nameOf = (code) =>
+    db.prepare('SELECT name FROM products WHERE site = ? AND code = ? LIMIT 1').get(site, code)?.name || '';
+
+  // 1) 直接是 product_code
+  const byProduct = db.prepare('SELECT code FROM products WHERE site = ? AND product_code = ?').get(site, q);
+  if (byProduct) return { ok: true, code: byProduct.code, name: nameOf(byProduct.code), ids: idsOf(byProduct.code) };
+
+  // 2) 直接是吊牌号。名下 0 件也认——名单允许先记下，商品以后才回来
+  const exists = db.prepare('SELECT 1 AS x FROM products WHERE site = ? AND code = ? LIMIT 1').get(site, q);
+  if (exists) return { ok: true, code: q, name: nameOf(q), ids: idsOf(q) };
+
+  // 3) 当成商品名（子串）
+  const hits = db
+    .prepare('SELECT code, MIN(name) AS name, COUNT(*) AS n FROM products WHERE site = ? AND name LIKE ? GROUP BY code')
+    .all(site, '%' + q + '%');
+  if (hits.length === 0) return { ok: false, reason: 'notfound' };
+  if (hits.length === 1) return { ok: true, code: hits[0].code, name: hits[0].name, ids: idsOf(hits[0].code) };
+  return { ok: false, reason: 'ambiguous', candidates: hits };
+}
+
 export function startRun(db, site, note = '') {
   const r = db.prepare('INSERT INTO runs (site, started_at, note) VALUES (?,?,?)').run(site, new Date().toISOString(), note);
   return r.lastInsertRowid;
@@ -430,5 +499,6 @@ export function stats(db, site, { extraStats = [] } = {}) {
   }
 
   const lastRun = db.prepare('SELECT * FROM runs WHERE site = ? ORDER BY id DESC LIMIT 1').get(site);
-  return { ...row, extras, lastRun };
+  const blocked = db.prepare('SELECT COUNT(*) AS n FROM blocked WHERE site = ?').get(site).n;
+  return { ...row, extras, lastRun, blocked };
 }
