@@ -39,16 +39,15 @@ export function ProductCard({ deal, index, onPick, onHide }) {
   const { url, image, name, brand, tags, tracked, rate, sizes } = deal;
 
   /**
-   * 「还剩什么尺码」那一行。
+   * 名字那一行**二选一**（2026-09-30 用户定的）：
+   *   码全 / 没有尺码信息 → 显示**商品名**（绝大多数商品，名字是它唯一的身份）
+   *   断码                → 显示**剩下哪些尺码**，不显示名字（图片已经看得够清楚，
+   *                         这时真正决定买不买的是「我的码还在不在」）
    *
    * 尺码是适配器算好的（见 src/sites/uniqlo.mjs 的 sizeInfo）：接口给的是**有货的
-   * 内部码**，翻译成人话才到这儿。三种情况：
-   *   sizes=null        → 这件商品的尺码翻译不出来（睡衣、帽子、手套那些接口没给尺码的），
-   *                       卡片上就不画这一行（名字照旧在上面）
-   *   sizes.full=true   → 该款所有档位都有货，只写一个 all
-   *   sizes.labels=[]   → 翻译不出来的多档商品：只报个数（宁可不说是哪几档，也不瞎猜）
+   * 内部码**，翻译成人话才到这儿。名字没丢——它在链接的 title / aria-label 上，
+   * 鼠标停一下就能看到。
    */
-  // 都有货就**不写**（用户要求：all 不用显示）。这一行留白但不写字的判断在下面渲染处。
   const sizeLine = !sizes || sizes.full
     ? null
     : sizes.labels.length > MAX_SIZE_LABELS
@@ -113,27 +112,26 @@ export function ProductCard({ deal, index, onPick, onHide }) {
           </a>
         </p>
       ) : (
-        /* 优衣库：名称自己就是链接（整行可点），两行截断由 CSS 兜住 */
-        <a className="card__name" href={url} target="_blank" rel="noreferrer">
-          {name}
-        </a>
-      )}
-
-      {/* 「还剩什么尺码」**另起一行**，跟在名字下面（2026-09-30：先做过一版把名字整个
-          换成尺码，用户看过之后要名字回来、尺码单独一行）。
-          **都有货就不写字**（用户要求 all 不用显示）——但这一行的高度照留：同一行里
-          这一行**永远画**（优衣库靠 features.cardSizes 开），算不出尺码的那些空着，
-          所以同一行卡片的高度一致。唯一会破坏对齐的是尺码特别多的（剩 10 档以上，
-          实测 19 件），那行会折成两行——少到可以不管。 */}
-      {feats.cardSizes && (
-        <p className="card__sizes">
-          {sizeLine && (
+        /* 优衣库：整行是链接（两行截断由 CSS 兜住）。
+           断码时这一行显示剩下的尺码、不显示名字——名字留给 title / aria-label
+           （鼠标停一下就能看到，读屏也读得到）。 */
+        <a
+          className="card__name"
+          href={url}
+          target="_blank"
+          rel="noreferrer"
+          title={sizeLine ? name : undefined}
+          aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.text}` : undefined}
+        >
+          {sizeLine ? (
             <>
               {sizeLine.lead && <span className="cardsizes__lead">{sizeLine.lead}</span>}
               <span className="cardsizes__list">{sizeLine.text}</span>
             </>
+          ) : (
+            name
           )}
-        </p>
+        </a>
       )}
 
       {/* 价格三件套，右端跟着收藏 / 不再出现两个动作——动作挨着价格，

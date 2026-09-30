@@ -438,8 +438,6 @@ export default {
     ],
 
     features: {
-    // 卡片上「还剩什么尺码」那一行（含没有内容时占位，保证同一行卡片价格对齐）
-    cardSizes: true,
       rankBoard: true, // 页顶「本期降得最狠的五件」（优衣库独有）
       stickerTags: false,
       brandMark: false,

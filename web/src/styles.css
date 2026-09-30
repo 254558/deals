@@ -559,17 +559,9 @@ button {
   background: var(--white);
 }
 [data-site="uniqlo"] .card__img--none { background: var(--surface); }
-/* 「还剩什么尺码」那一行：比商品名小一档，是**详情行**不是标题。
-   名字回到上面之后，这一行贴着价格，扫榜时「我的码还在不在」也一眼能看到 */
-[data-site="uniqlo"] .card__sizes {
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.6;
-  color: var(--ink-2);
-  /* 都有货的那一版不写字，但高度照占着，同一行卡片的「价格线」才对得齐 */
-  min-height: 19px;
-}
-/* 「剩余：」再压暗一档，真正要看的是后面那几档 */
+/* 断码时名字那一行显示的是尺码（见 ProductCard 的 sizeLine）。
+   字号跟着名字走（15px），所以两行的高度、跟价格的间距都不变；
+   「剩余：」压暗一档，真正要看的是后面那几档。 */
 [data-site="uniqlo"] .cardsizes__lead { color: var(--ink-4); }
 [data-site="uniqlo"] .cardsizes__list { color: var(--ink); letter-spacing: 0.02em; }
 
