@@ -110,6 +110,7 @@
   </div>
 
   <div id="box"></div>
+  <div id="boxComments"></div>
   <div id="empty" class="empty" hidden>还没有人发东西。</div>
 
   <footer>
@@ -136,11 +137,26 @@
     return { status: r.status, body: await r.json().catch(() => null) };
   };
 
-  function render(items, counts) {
+  function renderComments(list) {
+    const box = $('boxComments');
+    if (!list.length) { box.innerHTML = ''; return; }
+    box.innerHTML = '<h2 style="margin:26px 0 10px;font-size:10px;font-weight:400;letter-spacing:.12em;color:var(--ink-4)">评论（' + list.filter((c) => !c.hidden).length + ' 条）</h2>' +
+      '<table><thead><tr><th>评论</th><th>在哪件</th><th>状态</th><th>时间</th><th>操作</th></tr></thead><tbody>' +
+      list.map((c) => '<tr class="' + (c.hidden ? 'is-hidden' : '') + '"><td>' + esc(c.body) + '</td><td>' + esc(c.listing_title || '（商品没了）') + '</td><td>' +
+        (c.hidden ? '<span class="tag tag--hidden">已下架</span>' : '<span class="tag">在</span>') + '</td><td class="id">' + when(c.created_at) + '</td><td><div class="acts">' +
+        (c.hidden
+          ? '<button class="btn btn--ghost btn--sm" data-act="unhideComment" data-id="' + esc(c.id) + '">放回</button>'
+          : '<button class="btn btn--ghost btn--sm" data-act="hideComment" data-id="' + esc(c.id) + '">下架</button>') +
+        '<button class="btn btn--danger btn--sm" data-act="removeComment" data-id="' + esc(c.id) + '">真删</button>' +
+        '</div></td></tr>').join('') + '</tbody></table>';
+  }
+
+  function render(items, counts, comments) {
     $('counts').textContent = items.length
       ? `在售 ${counts.live} · 已下架 ${counts.hidden} · 被举报 ${counts.reported}`
       : '';
     $('empty').hidden = items.length > 0;
+    renderComments(comments || []);
     if (!items.length) { $('box').innerHTML = ''; return; }
     $('box').innerHTML = `<table>
       <thead><tr><th>图</th><th>商品</th><th>价格 / 尺码</th><th>店 / 联系</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
@@ -181,7 +197,7 @@
     }
     $('msg').className = 'msg msg--ok';
     $('msg').textContent = '已载入';
-    render(body.items || [], body.counts || {});
+    render(body.items || [], body.counts || {}, body.comments || []);
   }
 
   $('load').addEventListener('click', load);
@@ -197,6 +213,8 @@
     const btn = e.target.closest('[data-act]');
     if (!btn) return;
     const { act, id } = btn.dataset;
+    if (act === 'removeComment' && !confirm('真删这条评论？不可恢复。')) return;
+    if (act === 'hideComment' && !confirm('下架这条评论？（能放回）')) return;
     if (act === 'remove' && !confirm('真删？连图一起没了，不可恢复。')) return;
     if (act === 'hide' && !confirm('下架这件？市集里就不显示了（能放回）。')) return;
     btn.disabled = true;

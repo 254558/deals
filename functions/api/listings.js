@@ -5,8 +5,10 @@ const LIMIT = 200;
 
 /** GET /api/listings —— 在售列表，最新在前（不含图片数据，图片走 /api/img/<id>） */
 export async function onRequestGet({ env }) {
+  // 顺手带上评论数（卡片上要显示「评论 N」）——子查询，别为这个再开一趟请求
   const { results } = await env.DB.prepare(
-    `SELECT id, created_at, title, price, size, store, note, contact, reports
+    `SELECT id, created_at, title, price, size, store, note, contact, reports,
+            (SELECT COUNT(*) FROM comments c WHERE c.listing_id = listings.id AND c.hidden = 0) AS comments
        FROM listings WHERE hidden = 0 ORDER BY created_at DESC LIMIT ?`
   )
     .bind(LIMIT)

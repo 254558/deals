@@ -8,6 +8,9 @@ import { onRequestPost as reportListing } from '../functions/api/report.js';
 import { onRequestGet as adminList } from '../functions/api/admin/list.js';
 import { onRequestPost as adminAct } from '../functions/api/admin/act.js';
 import { onRequestPost as editListing } from '../functions/api/edit.js';
+import { onRequestGet as listComments, onRequestPost as createComment } from '../functions/api/comments.js';
+import { onRequestPost as deleteComment } from '../functions/api/comment-delete.js';
+import { onRequestGet as list } from '../functions/api/listings.js';
 
 const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
 
@@ -18,7 +21,7 @@ const PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJA
  */
 function fakeDB(seed = {}) {
   const calls = [];
-  const state = { posts: [], listings: [], ...seed };
+  const state = { posts: [], listings: [], comments: [], ...seed };
   const db = {
     calls,
     prepare(sql) {
@@ -29,6 +32,22 @@ function fakeDB(seed = {}) {
           calls.push(q);
           if (/FROM posts WHERE ip_hash/.test(sql)) return { n: state.posts.filter((p) => p.ip_hash === q.args[0]).length };
           if (/FROM posts WHERE at LIKE/.test(sql)) return { n: state.posts.length };
+          if (/SELECT ip_hash FROM listings/.test(sql)) {
+            const row = state.listings.find((l) => l.id === q.args[0]);
+            return row ? { ip_hash: row.ip_hash } : null;
+          }
+          if (/SELECT id FROM listings WHERE id = \? AND hidden = 0/.test(sql)) {
+            const row = state.listings.find((l) => l.id === q.args[0] && !l.hidden);
+            return row ? { id: row.id } : null;
+          }
+          if (/SELECT token_hash FROM comments/.test(sql)) {
+            const row = state.comments.find((c) => c.id === q.args[0]);
+            return row ? { token_hash: row.token_hash } : null;
+          }
+          if (/FROM comments WHERE ip_hash = \? AND created_at > \?/.test(sql)) {
+            return { n: state.comments.filter((c) => c.ip_hash === q.args[0] && c.created_at > q.args[1]).length };
+          }
+          if (/FROM comments WHERE created_at LIKE/.test(sql)) return { n: state.comments.length };
           if (/SELECT token_hash FROM listings/.test(sql)) {
             const row = state.listings.find((l) => l.id === q.args[0]);
             return row ? { token_hash: row.token_hash } : null;
@@ -57,9 +76,14 @@ function fakeDB(seed = {}) {
           if (/INSERT INTO posts/.test(sql)) state.posts.push({ ip_hash: q.args[0], at: q.args[1] });
           // INSERT 的列顺序：id, created_at, title, price, size, store, contact, note,
           //                   image_mime, image_bytes, ip_hash, token_hash
+          if (/INSERT INTO comments/.test(sql)) {
+            const [id, listing_id, created_at, body, ip_hash, token_hash] = q.args;
+            state.comments.push({ id, listing_id, created_at, body, ip_hash, token_hash, hidden: 0 });
+          }
+          if (/UPDATE comments SET hidden = 1/.test(sql)) { const c = state.comments.find((x) => x.id === q.args[0]); if (c) c.hidden = 1; }
           if (/INSERT INTO listings/.test(sql)) {
-            const [id, created_at, title, price, size, store, contact, note, , image_bytes, , token_hash] = q.args;
-            state.listings.push({ id, created_at, title, price, size, store, contact, note, image_bytes, token_hash, reports: 0, hidden: 0 });
+            const [id, created_at, title, price, size, store, contact, note, , image_bytes, ip_hash, token_hash] = q.args;
+            state.listings.push({ id, created_at, title, price, size, store, contact, note, image_bytes, ip_hash, token_hash, reports: 0, hidden: 0 });
           }
           if (/UPDATE listings SET hidden = 1/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.hidden = 1; }
           if (/UPDATE listings SET reports = 0/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.reports = 0; }
@@ -77,7 +101,25 @@ function fakeDB(seed = {}) {
           if (/UPDATE listings SET reports/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[3]); if (r) { r.reports = q.args[0]; if (q.args[1] >= q.args[2]) r.hidden = 1; } }
           return { success: true };
         },
-        async all() { calls.push(q); return { results: state.listings.filter((l) => !l.hidden).map((l) => ({ ...l, image_bytes: undefined })) }; },
+        async all() {
+          calls.push(q);
+          if (/FROM comments\s+WHERE/.test(sql)) {
+            const rows = state.comments
+              .filter((c) => c.listing_id === q.args[0] && !c.hidden)
+              .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+            return { results: rows };
+          }
+          // 列表带评论数（对应线上那条子查询）
+          return {
+            results: state.listings
+              .filter((l) => !l.hidden)
+              .map((l) => ({
+                ...l,
+                image_bytes: undefined,
+                comments: state.comments.filter((c) => c.listing_id === l.id && !c.hidden).length,
+              })),
+          };
+        },
       };
       return api;
     },
@@ -204,7 +246,7 @@ test('管理接口：没有口令一律挡住', async () => {
   assert.equal((await adminList({ request: req2('nope'), env })).status, 403);
   const good = await adminList({ request: req2('the-right-token'), env });
   assert.equal(good.status, 200);
-  assert.deepEqual((await good.json()).counts, { live: 0, hidden: 0, reported: 0 });
+  assert.deepEqual((await good.json()).counts, { live: 0, hidden: 0, reported: 0, comments: 0 });
 });
 
 test('管理动作：下架 / 放回（顺带清举报数）/ 真删', async () => {
@@ -315,4 +357,106 @@ test('编辑：凭据不对 / 找不到 / 字段不合法都要挡住', async ()
     env,
   });
   assert.equal(gone.status, 404, '不存在的 id');
+});
+
+test('评论：发一条、按件正序取回、列表带评论数', async () => {
+  const { db, state } = fakeDB();
+  const env = { DB: db };
+  const { id: listingId } = await (await createListing({ request: req({ ...good }), env })).json();
+
+  const send = (body, honeypot = false) =>
+    createComment({
+      request: new Request('https://x/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4' },
+        body: JSON.stringify({ listingId, body, ...(honeypot ? { website: 'http://spam' } : {}) }),
+      }),
+      env,
+    });
+
+  const c1 = await send('还在吗？');
+  assert.equal(c1.status, 200);
+  const first = await c1.json();
+  assert.ok(first.id && first.token, '要回 id 和删除凭据');
+  await send('在的，明天寄');
+
+  const honey = await send('买茶叶吗', true);
+  assert.equal((await honey.json()).skipped, true, '蜜罐静默丢弃');
+  assert.equal(state.comments.length, 2);
+
+  const got = await (await listComments({
+    request: new Request('https://x/api/comments?listingId=' + listingId),
+    env,
+  })).json();
+  assert.deepEqual(got.items.map((c) => c.body), ['还在吗？', '在的，明天寄'], '正序');
+  assert.ok(!('ip_hash' in got.items[0]), '不把 ip_hash 回给前端');
+  assert.equal(got.items[0].bySeller, true, '同一 IP 发的标成卖家');
+
+  const listed = await (await list({ env })).json();
+  assert.equal(listed.items[0].comments, 2, '列表带评论数');
+});
+
+test('评论：删自己那条要凭据；空的、超长的、给不存在的商品都要挡住', async () => {
+  const { db, state } = fakeDB();
+  const env = { DB: db };
+  const { id: listingId } = await (await createListing({ request: req({ ...good }), env })).json();
+  const post = (body) =>
+    createComment({
+      request: new Request('https://x/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId, body }),
+      }),
+      env,
+    });
+
+  assert.equal((await post('   ')).status, 400, '空的要挡住');
+  assert.equal((await post('字'.repeat(201))).status, 400, '超长的要挡住');
+
+  const gone = await createComment({
+    request: new Request('https://x/api/comments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ listingId: 'nope', body: '在吗' }),
+    }),
+    env,
+  });
+  assert.equal(gone.status, 404, '商品不在就不给评论');
+
+  const made = await (await post('我删我自己的')).json();
+  const del = (token) =>
+    deleteComment({
+      request: new Request('https://x/api/comment-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: made.id, token }),
+      }),
+      env,
+    });
+  assert.equal((await del('wrong')).status, 403);
+  assert.equal(state.comments[0].hidden, 0, '凭据不对不能删');
+  assert.equal((await del(made.token)).status, 200);
+  assert.equal(state.comments[0].hidden, 1);
+
+  const after = await (await listComments({ request: new Request('https://x/api/comments?listingId=' + listingId), env })).json();
+  assert.equal(after.items.length, 0, '删掉的不再返回');
+});
+
+test('评论限速：同一个 IP 24 小时内到上限就 429', async () => {
+  const { db } = fakeDB();
+  const env = { DB: db };
+  const { id: listingId } = await (await createListing({ request: req({ ...good }), env })).json();
+  const post = (body) =>
+    createComment({
+      request: new Request('https://x/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ listingId, body }),
+      }),
+      env,
+    });
+
+  let last = 0;
+  for (let i = 0; i < 21; i++) last = (await post('第 ' + (i + 1) + ' 条')).status;
+  assert.equal(last, 429, '第 21 条该被限速');
 });

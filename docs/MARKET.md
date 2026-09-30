@@ -35,6 +35,9 @@ goodprices.online/
 | `GET` | `/api/listings` | 在售列表，最新在前（最多 200 条）。**不含图片字节** |
 | `POST` | `/api/listings` | 发一件。`{title, price, size, contact, note, image}`，`image` 是 data URL。（`store` 这一栏 2026-10-01 从表单里删了，接口仍兼容，老数据照常显示） |
 | `GET` | `/api/img/<id>` | 商品图（`Cache-Control: immutable`，id 随机、内容永不改） |
+| `GET` | `/api/comments?listingId=<id>` | 某一件的评论，**正序**（先说的在前），只回可见的 |
+| `POST` | `/api/comments` | 发评论。`{listingId, body, website?}`，≤200 字 |
+| `POST` | `/api/comment-delete` | 发评论的人删自己那条。`{id, token}` |
 | `POST` | `/api/edit` | 发帖人自己改。`{id, token, title, price, size, contact, note, image?}`，**不带 `image` 就沿用库里那张** |
 | `POST` | `/api/delete` | 发帖人自己下架。`{id, token}` |
 | `POST` | `/api/report` | 举报。累加到 5 次自动下架，等站长回看 |
@@ -101,6 +104,23 @@ goodprices.online/
 - **举报数不清零、下架状态不变**：不然被举报到自动下架之后，编辑一下就能复活。
 - **不额外限速**：凭据本身就是门槛（每条帖子一条、只有发帖那个浏览器有），而发帖是限速的；
   能改的条数受限于自己发过的条数。
+
+## 二点六、评论（2026-10-01 加）
+
+谁都能评论别人发的尾货。页面上一张卡片底部有「评论 N」，点开才去取（**懒加载**——
+不点就不请求，列表页不为几百条评论买单）；发完那条凭据存在浏览器里，自己那条下面有「删除」。
+同一 IP 发的评论会标一个「**卖家**」——买家一眼能看出卖家有没有回话。
+
+几个取舍：
+
+- **限速和发帖分开算**：各有各的预算（评论 20 条/24 小时、全站 500 条/天）。
+  共用一份的话，聊两句就发不了东西了。
+- **不真删**：和商品一样置 \`hidden = 1\`，站长回查看得到。
+- **不回 \`ip_hash\`**：只回一个 \`bySeller\` 布尔值。
+- **卖家标记靠 IP 哈希比对**，不是账号——同一台手机换个网络就不认了。够用，但别当身份。
+
+站长删评论：管理页现在也列出评论（带商品名），三个动作 hideComment / unhideComment /
+removeComment，和商品的三个动作并排。
 
 ## 三、防刷与审核
 

@@ -24,13 +24,23 @@ export async function onRequestGet({ request, env }) {
        FROM listings ORDER BY hidden ASC, created_at DESC LIMIT 500`
   ).all();
   const items = results || [];
+
+  // 评论也一起带上：站长要能删别人的评论，否则只能看着
+  const { results: comments } = await env.DB.prepare(
+    `SELECT c.id, c.listing_id, c.created_at, c.body, c.hidden, l.title AS listing_title
+       FROM comments c LEFT JOIN listings l ON l.id = c.listing_id
+      ORDER BY c.hidden ASC, c.created_at DESC LIMIT 300`
+  ).all();
+
   return json({
     ok: true,
     items,
+    comments: comments || [],
     counts: {
       live: items.filter((x) => !x.hidden).length,
       hidden: items.filter((x) => x.hidden).length,
       reported: items.filter((x) => x.reports > 0).length,
+      comments: (comments || []).filter((c) => !c.hidden).length,
     },
   });
 }

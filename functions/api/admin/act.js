@@ -31,6 +31,20 @@ export async function onRequestPost({ request, env }) {
     return json({ ok: true, id, action });
   }
 
+  // 评论：hideComment / unhideComment / removeComment
+  if (action === 'hideComment' || action === 'unhideComment') {
+    const r = await env.DB.prepare('UPDATE comments SET hidden = ? WHERE id = ? RETURNING id')
+      .bind(action === 'hideComment' ? 1 : 0, id)
+      .first();
+    if (!r) return fail('没找到这条评论', 404);
+    return json({ ok: true, id, action });
+  }
+  if (action === 'removeComment') {
+    const r = await env.DB.prepare('DELETE FROM comments WHERE id = ? RETURNING id').bind(id).first();
+    if (!r) return fail('没找到这条评论', 404);
+    return json({ ok: true, id, action });
+  }
+
   if (action === 'remove') {
     const r = await env.DB.prepare('DELETE FROM listings WHERE id = ? RETURNING id').bind(id).first();
     if (!r) return fail('没找到这件', 404);

@@ -99,3 +99,33 @@ export function validate(input, { imageOptional = false } = {}) {
 
   return { ok: true, value: { title, price, size, store, note, contact, mime: m[1], b64: m[2] } };
 }
+
+/** 每条评论最长多少字、每个 IP 24 小时最多几条、全站一天最多几条 */
+export const MAX_COMMENT_LEN = 200;
+export const COMMENTS_PER_IP_PER_DAY = 20;
+export const COMMENTS_PER_DAY_GLOBAL = 500;
+
+/** 校验一条评论；返回 { ok:true, value } 或 { ok:false, error } */
+export function validateComment(input) {
+  const body = clean(input.body, MAX_COMMENT_LEN);
+  if (len(body) < 1) return { ok: false, error: '写点什么吧' };
+  if (len(String(input.body ?? '').trim()) > MAX_COMMENT_LEN) return { ok: false, error: `评论最多 ${MAX_COMMENT_LEN} 字` };
+  return { ok: true, value: { body } };
+}
+
+/**
+ * 评论限速。**和发帖分开算**（各查各的表）——共用一份预算的话，聊两句就发不了东西了。
+ * 返回 null 表示放行，否则返回该回给用户的话。
+ */
+export async function checkCommentRate(env, hash, now = new Date()) {
+  const since = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+  const day = now.toISOString().slice(0, 10);
+
+  const mine = await env.DB.prepare('SELECT COUNT(*) AS n FROM comments WHERE ip_hash = ? AND created_at > ?').bind(hash, since).first();
+  if ((mine?.n ?? 0) >= COMMENTS_PER_IP_PER_DAY) return `今天你评论得有点多，歇一会儿（每 24 小时最多 ${COMMENTS_PER_IP_PER_DAY} 条）。`;
+
+  const all = await env.DB.prepare('SELECT COUNT(*) AS n FROM comments WHERE created_at LIKE ?').bind(day + '%').first();
+  if ((all?.n ?? 0) >= COMMENTS_PER_DAY_GLOBAL) return '今天整个市集的评论到上限了，明天再来。';
+
+  return null;
+}

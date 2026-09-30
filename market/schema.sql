@@ -28,3 +28,19 @@ CREATE TABLE IF NOT EXISTS posts (
   at      TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_posts_ip ON posts (ip_hash, at);
+
+-- 评论：谁都能评论别人发的尾货（没有账号体系，和发帖一样靠凭据 + 限速）
+--
+-- 为什么单独一张表：评论要能按件查、要能单独隐藏（站长删评论不动商品），
+-- 而且发评论的限速要和发帖的**分开算**——共用一份预算的话，聊两句就发不了东西了。
+CREATE TABLE IF NOT EXISTS comments (
+  id         TEXT PRIMARY KEY,            -- 随机 id
+  listing_id TEXT NOT NULL,               -- 属于哪一件
+  created_at TEXT NOT NULL,               -- ISO 时间，同一件内正序
+  body       TEXT NOT NULL,               -- 正文（≤200 字）
+  ip_hash    TEXT NOT NULL DEFAULT '',    -- 限速用，也用来认「卖家自己来答」
+  token_hash TEXT NOT NULL,               -- 发评论的人可以删自己那条（只存哈希）
+  hidden     INTEGER NOT NULL DEFAULT 0   -- 站长删 = 1（不真删）
+);
+CREATE INDEX IF NOT EXISTS idx_comments_listing ON comments (listing_id, hidden, created_at);
+CREATE INDEX IF NOT EXISTS idx_comments_ip ON comments (ip_hash, created_at);

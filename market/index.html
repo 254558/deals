@@ -208,6 +208,18 @@
     display: inline-block; padding: 0 5px; border: 1px solid var(--rule); background: var(--surface);
     font-family: var(--mono); font-size: 12px; line-height: 18px; color: var(--ink);
   }
+  /* ---- 评论 ---- */
+  .cmts { border-top: 1px solid var(--rule-soft); background: var(--surface-2); padding: 10px 14px 12px; display: grid; gap: 9px; }
+  .cmt__body { font-size: 13px; line-height: 1.55; }
+  .cmt__meta { font-size: 12px; color: var(--ink-4); display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+  .cmt__seller { color: var(--blue); }
+  .cmt__del { border: 0; background: none; color: var(--ink-4); font-size: 12px; cursor: pointer; padding: 0; }
+  .cmt__del:hover { color: var(--red); }
+  .cmts__empty { font-size: 13px; color: var(--ink-4); }
+  .cmts__form { display: flex; gap: 8px; align-items: stretch; }
+  /* 输入框照旧 16px：iOS 小于这个数一聚焦就把整页放大（见上面那条注释） */
+  .cmts__form input { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--rule); font-size: 16px; background: var(--white); }
+  .cmts__form input:focus { outline: 0; border-color: var(--ink); }
   .empty { border: 1px dashed var(--rule); padding: 40px; text-align: center; color: var(--ink-2); }
   footer { border-top: 1px solid var(--rule); margin-top: 34px; padding: 18px 0 40px; font-size: 13px; color: var(--ink-2); }
   footer b { color: var(--ink); }
@@ -448,13 +460,21 @@
           <div class="item__meta">联系：<b>${esc(it.contact)}</b></div>
           <div class="item__foot">
             <span>${ago(it.created_at)}</span>
+            <button class="btn btn--ghost btn--sm" type="button" data-comments="${esc(it.id)}">评论${it.comments ? ' ' + it.comments : ''}</button>
             <span style="margin-left:auto"></span>
             ${mine
               ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
               : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
           </div>
-        </div>`;
-      list.appendChild(el);
+          </div>
+          <div class="cmts" data-cmts="${esc(it.id)}" hidden>
+            <div class="cmts__list"></div>
+            <div class="cmts__form">
+              <input type="text" maxlength="200" placeholder="说点什么…（别人也看得到）" aria-label="评论">
+              <button class="btn btn--sm" type="button" data-send>发表</button>
+            </div>
+          </div>`;
+        list.appendChild(el);
     }
   }
 
@@ -546,11 +566,103 @@
     }
   });
 
+  // ---- 评论 ----
+  // 发评论时回的凭据也只存在这个浏览器里，用来删自己那条
+  const cmtTokens = {
+    all: () => { try { return JSON.parse(localStorage.getItem("market.commentTokens") || "{}"); } catch { return {}; } },
+    set: (id, token) => { const t = cmtTokens.all(); t[id] = token; localStorage.setItem("market.commentTokens", JSON.stringify(t)); },
+    get: (id) => cmtTokens.all()[id] || null,
+  };
+
+  function renderComments(box, items) {
+    const list = box.querySelector(".cmts__list");
+    if (!items.length) { list.innerHTML = '<div class="cmts__empty">还没有人评论</div>'; return; }
+    list.innerHTML = items.map((c) => {
+      const mine = !!cmtTokens.get(c.id);
+      return '<div class="cmt" data-cid="' + esc(c.id) + '">' +
+        '<div class="cmt__body">' + esc(c.body) + "</div>" +
+        '<div class="cmt__meta"><span>' + ago(c.created_at) + "</span>" +
+        (c.bySeller ? '<span class="cmt__seller">卖家</span>' : "") +
+        (mine ? '<button class="cmt__del" type="button" data-cdel="' + esc(c.id) + '">删除</button>' : "") +
+        "</div></div>";
+    }).join("");
+  }
+
+  async function loadComments(box, id) {
+    const list = box.querySelector(".cmts__list");
+    list.innerHTML = '<div class="cmts__empty">加载中…</div>';
+    try {
+      const r = await fetch("/api/comments?listingId=" + encodeURIComponent(id));
+      const data = await r.json();
+      renderComments(box, data.items || []);
+      box.dataset.loaded = "1";
+    } catch (err) {
+      list.innerHTML = '<div class="cmts__empty">读不出来了</div>';
+    }
+  }
+
+  function bumpCount(id, delta) {
+    const btn = document.querySelector('[data-comments="' + id + '"]');
+    if (!btn) return;
+    const n = Math.max(0, (parseInt((btn.textContent.match(/\d+/) || ["0"])[0], 10) || 0) + delta);
+    btn.textContent = n ? "评论 " + n : "评论";
+  }
+
   // ---- 下架 / 举报 ----
   $('list').addEventListener('click', async (e) => {
+    const cmtBtn = e.target.closest('[data-comments]');
+    const sendBtn = e.target.closest('[data-send]');
+    const delBtn = e.target.closest('[data-cdel]');
     const edit = e.target.closest('[data-edit]');
     const del = e.target.closest('[data-del]');
     const rep = e.target.closest('[data-report]');
+    if (cmtBtn) {
+      const id = cmtBtn.getAttribute("data-comments");
+      const box = document.querySelector('[data-cmts="' + id + '"]');
+      box.hidden = !box.hidden;
+      if (!box.hidden && box.dataset.loaded !== "1") loadComments(box, id);
+      return;
+    }
+    if (sendBtn) {
+      const box = sendBtn.closest(".cmts");
+      const id = box.getAttribute("data-cmts");
+      const input = box.querySelector("input");
+      const text = input.value.trim();
+      if (!text) { input.focus(); return; }
+      sendBtn.disabled = true;
+      try {
+        const r = await fetch("/api/comments", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listingId: id, body: text, website: document.getElementById("website").value }),
+        });
+        const data = await r.json();
+        if (!data.ok) throw new Error(data.error || "评论失败");
+        if (data.token) cmtTokens.set(data.id, data.token);
+        input.value = "";
+        await loadComments(box, id);
+        bumpCount(id, 1);
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        sendBtn.disabled = false;
+      }
+      return;
+    }
+    if (delBtn) {
+      const cid = delBtn.getAttribute("data-cdel");
+      if (!confirm("删掉自己这条评论？")) return;
+      const r = await fetch("/api/comment-delete", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: cid, token: cmtTokens.get(cid) }),
+      });
+      const data = await r.json();
+      if (!data.ok) { alert(data.error || "删不掉"); return; }
+      const box = delBtn.closest(".cmts");
+      delBtn.closest(".cmt").remove();
+      bumpCount(box.getAttribute("data-cmts"), -1);
+      if (!box.querySelectorAll(".cmt").length) box.querySelector(".cmts__list").innerHTML = '<div class="cmts__empty">还没有人评论</div>';
+      return;
+    }
     if (edit) startEdit(edit.getAttribute('data-edit'));
     if (del) {
       const id = del.getAttribute('data-del');
