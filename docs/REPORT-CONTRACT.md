@@ -64,16 +64,6 @@
     { "key": "tracked", "label": "待拔草" }
   ],
 
-  // 能按哪些字段排序：工具条那个下拉框照这个渲染（列表视图撤掉后，
-  // 这份声明只剩排序一个用途，所以叫 sorts 不叫 columns）。
-  // "text": true = 这个字段是文本：排序走中文 localeCompare，默认方向取升序。
-  "sorts": [
-    { "key": "name",        "label": "商品",   "text": true },
-    { "key": "launchPrice", "label": "上市价" },
-    { "key": "price",       "label": "现价"   },
-    { "key": "rate",        "label": "降幅"   }
-  ],
-
   "features": {                         // 界面开关，全部是布尔；缺省即 false
     "rankBoard": true,          // 页顶「本期降得最狠的 N 件」榜单（uniqlo）
     "stickerTags": false,       // 商品图上的角标（deca 的 尾货/新品）
@@ -105,7 +95,6 @@
 | `imageAspect` | `3/4` | `1/1` |
 | `storagePrefix` | `uniql` | `deca` |
 | `filters` | 全部 / 限时特优 / 超值精选 / 待拔草 | 全部 / 尾货 / 新品 / 待拔草 |
-| `sorts` | 商品 / 上市价 / 现价 / 降幅 | 商品 / 上市价 / 现价 / 降幅 / 运动 |
 | `features` | `rankBoard`、`dealBarNumber` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip` |
 | `fontNotice` | 思源黑体子集声明 | `null` |
 

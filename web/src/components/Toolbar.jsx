@@ -11,7 +11,6 @@ import { META } from '../lib/site.js';
  */
 export function Toolbar({
   filter, onFilter, query, onQuery, counts, shown, total,
-  sort, asc, onSort, onDir,
 }) {
   return (
     /* 三层，各管一件事：
@@ -45,34 +44,6 @@ export function Toolbar({
             placeholder={META.searchPlaceholder}
             aria-label={META.searchPlaceholder}
           />
-
-          {/* 排序入口。以前还能点列表的表头排序，列表撤掉之后这里是唯一入口，
-              选项来自 payload 的 `meta.sorts` */}
-          <div className="sortctl">
-            <label className="sortctl__label" htmlFor="sortsel">
-              排序
-            </label>
-            <select
-              id="sortsel"
-              className="sortctl__sel"
-              value={sort}
-              onChange={(e) => onSort(e.target.value)}
-            >
-              {META.sorts.map((c) => (
-                <option key={c.key} value={c.key}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-            <button
-              className="sortctl__dir"
-              onClick={onDir}
-              aria-label={asc ? '当前升序，点击改为降序' : '当前降序，点击改为升序'}
-              title={asc ? '升序 ↑' : '降序 ↓'}
-            >
-              {asc ? '↑' : '↓'}
-            </button>
-          </div>
 
           <span className="toolbar__count">
             {shown === total ? `显示全部 ${num(total)} 件` : `筛出 ${num(shown)} / ${num(total)} 件`}

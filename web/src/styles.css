@@ -263,41 +263,6 @@ button {
 .search::placeholder { color: var(--ink-4); }
 .search:focus { border-color: var(--ink); }
 
-/* ---------------- 排序 / 视图开关 ---------------- */
-
-.sortctl { display: flex; align-items: center; }
-.sortctl__label { color: var(--ink-2); }
-/* 这个 `appearance: none` 不是可选项。<select> 是浏览器**特判**的控件：光写
-   `border-radius: 0` 没用，macOS 会照旧在平台层画一个圆角外框盖在作者样式上，
-   而 `getComputedStyle` 读到的仍是 `0px` —— 读样式查不出这个毛病，只能靠看。
-   代价是原生下拉箭头一起没了，所以箭头得自己画（直角折线，不用曲线） */
-.sortctl__sel {
-  appearance: none;
-  -webkit-appearance: none;
-  font-family: inherit;
-  color: var(--ink);
-  background-color: var(--white);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='9' height='6' viewBox='0 0 9 6'%3E%3Cpath d='M.5.5 4.5 4.5 8.5.5' fill='none' stroke='%23616161' stroke-width='1.2'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  border: 1px solid var(--rule);
-  border-radius: 0;
-  cursor: pointer;
-  /* 默认焦点环去掉，反馈靠边框变色（键盘走查另有 :focus-visible 兜底） */
-  outline: none;
-}
-.sortctl__sel:hover { border-color: var(--blue); }
-.sortctl__sel:focus { border-color: var(--blue); }
-.sortctl__dir {
-  font-family: inherit;
-  color: var(--ink-2);
-  background: var(--white);
-  border: 1px solid var(--rule);
-  border-left-width: 0;
-  cursor: pointer;
-}
-.sortctl__dir:hover { color: var(--ink); background: var(--surface-2); }
-.sortctl__dir:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
-
 /* 名称下面那行小灰字（季节/尺码，或品牌+编号），两家的字号不同，见各自作用域 */
 .metaline { color: var(--ink-4); font-variant-numeric: tabular-nums; }
 /* ::before 的内容不进 textContent，只能靠几何验证（已验：每个后随 span 宽出 9.84px） */
@@ -579,19 +544,6 @@ button {
 [data-site="uniqlo"] .search:focus { border-color: var(--ink); }
 [data-site="uniqlo"] .toolbar__count { font-size: 11px; }
 
-[data-site="uniqlo"] .sortctl { gap: 0; }
-[data-site="uniqlo"] .sortctl__label { font-size: 12px; padding-right: 8px; }
-[data-site="uniqlo"] .sortctl__sel {
-  font-size: 12px;
-  background-position: right 7px center;
-  /* 右侧留出箭头的位；上下 6px 的 padding 和旁边升降序按钮对齐。
-     显式行高把总高凑成和旁边按钮一样（12+15+12+2 = 29px），原生 select 差 1px */
-  padding: 6px 22px 6px 8px;
-  line-height: 15px;
-}
-[data-site="uniqlo"] .sortctl__sel:focus { border-color: var(--ink); }
-[data-site="uniqlo"] .sortctl__dir { font-size: 12px; padding: 6px 10px; }
-
 /* 榜单行名称底下那行小灰字（季节/尺码）——卡片和列表行的同款小字已经撤掉，
    这是它最后的使用处（用 rowMetaLine 开关的那一行是迪卡侬的，见第三段） */
 [data-site="uniqlo"] .metaline { font-size: 12px; letter-spacing: 0.02em; }
@@ -753,28 +705,6 @@ html[data-site="decathlon"] {
    免得将来工具条上多一个会消失的控件时，计数跟着左右跳一下 */
 [data-site="decathlon"] .toolbar__count { margin-left: auto; font-size: 13px; color: var(--ink-faint); }
 
-[data-site="decathlon"] .sortctl { gap: 6px; font-size: 14px; }
-[data-site="decathlon"] .sortctl__label { color: var(--ink-faint); }
-[data-site="decathlon"] .sortctl__sel {
-  font: 400 14px/20px var(--font);
-  background-position: right 8px center;
-  border-color: var(--rule);
-  /* 右侧留出箭头的位；高度凑成 20+3+3+2 = 28px，和旁边的升降序按钮齐平 */
-  padding: 3px 26px 3px 8px;
-}
-/* 这个按钮和下拉框是拼在一起的一个控件：共用的那条 `border-left-width: 0` 是为
-   优衣库写的（它那边把两者接缝压掉），迪卡侬那版是完整的 1px 边，得还原回来，
-   否则宽度从 27 变成 28、接缝处少一条线 */
-[data-site="decathlon"] .sortctl__dir {
-  width: 28px;
-  height: 28px;
-  font-size: 13px;
-  background: none;
-  border-left-width: 1px;
-  border-left-color: var(--rule);
-}
-[data-site="decathlon"] .sortctl__dir:hover { color: var(--blue); border-color: var(--blue); background: none; }
-
 /* ---------------- 大图视图 ---------------- */
 
 /* 列间距 0（官网 grid-cols-4 + column-gap: normal），
@@ -896,16 +826,16 @@ html[data-site="decathlon"] {
 }
 
 @media (max-width: 760px) {
-/* 手机端两家都只留页签这一行，而且**这一行钉住**（.toolbar 的 sticky 来自共用骨架）。
-     搜索/排序/视图/计数全撤：屏幕金贵，而这些在手机上各有替代——
-     排序默认就是最该看的「降幅」，视图在窄屏本来也只剩一种能看。
-     撤完工具条就是一行 57px（手机的 7%），钉着才划算：877 / 1302 件商品，
+  /* 手机端两家都只留页签这一行，而且**这一行钉住**（.toolbar 的 sticky 来自共用骨架）。
+     搜索/计数全撤：屏幕金贵，而这些在手机上各有替代——搜索在手机上本来就不方便，
+     计数不看也不影响找东西；排序固定是「降幅」（就是最该看的那个），没有入口要撤。
+     撤完工具条就是一行 57px（手机的 7%），钉着才划算：877 / 1278 件商品，
      滚到中段想换个页签「只看尾货」，不该一路滚回顶部。
 
      合并时这里曾经按「拿高度说话」分成两家两种做法（优衣库 57px 钉住、
      迪卡侬 104px 滚走），依据是两家的旧版各自量过的高度。后来统一成一行之后，
      迪卡侬那两行的前提不成立了，于是跟优衣库对齐——这也是用户明确要的。 */
-.search, .sortctl, .toolbar__count { display: none; }
+  .search, .toolbar__count { display: none; }
 
   [data-site="uniqlo"] { --pad: 16px; }
   [data-site="uniqlo"] .masthead { padding-top: 26px; }
@@ -932,7 +862,7 @@ html[data-site="decathlon"] {
   .toolbar { position: static; }
   .card__bar > i { animation: none; width: var(--w); }
 /* 优衣库那份原来就只做这些；迪卡侬那份还要把交互控件撤掉、把网格固定成三列 */
-[data-site="decathlon"] .dealacts, [data-site="decathlon"] .search, [data-site="decathlon"] .sortctl { display: none; }
+  [data-site="decathlon"] .dealacts, [data-site="decathlon"] .search { display: none; }
   [data-site="decathlon"] .grid { grid-template-columns: repeat(3, 1fr); }
   [data-site="decathlon"] .card { break-inside: avoid; }
 }

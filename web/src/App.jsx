@@ -43,20 +43,6 @@ function matcher(key) {
 }
 
 /**
- * 中文列按 `localeCompare` 排，其余按数字。
- * 哪些字段是文本由 payload 的 `meta.sorts[].text` 给（优衣库只有 name，
- * 迪卡侬还多一个 sports），组件里不猜。
- */
-function compare(key, asc) {
-  const dir = asc ? 1 : -1;
-  const textKeys = new Set(META.sorts.filter((s) => s.text).map((s) => s.key));
-  if (textKeys.has(key)) {
-    return (a, b) => dir * String(a[key] || '').localeCompare(String(b[key] || ''), 'zh');
-  }
-  return (a, b) => dir * ((a[key] ?? 0) - (b[key] ?? 0));
-}
-
-/**
  * 首屏只渲染前 INITIAL 件，往下滑到哨兵再一批一批补上（无限滚动）。
  *
  * 为什么需要：报告是自包含单文件，数据全在内存里，但**卡片是整批建的**。
@@ -181,8 +167,6 @@ function More({ visible, total, sentinelRef }) {
 export default function App() {
   const [filter, setFilter] = useState('all');
   const [query, setQuery] = useState('');
-  const [sort, setSort] = useState('rate');
-  const [asc, setAsc] = useState(false);
   const { watch, togglePick, hide } = useWatch();
 
   /**
@@ -228,24 +212,20 @@ export default function App() {
       deals
         .filter(matcher(filter))
         .filter((d) => !q || hay(d).includes(q))
-        // 排序键就是 meta.sorts 里的 key；降幅那一项比的是 payload 里的 rate（精确值），
-        // 不是四舍五入后的整数百分比——三件都显示 -74% 时顺序仍由真实值决定
-        .sort(compare(sort, asc))
+        /**
+         * 只按降幅从大到小排（2026-09-30 撤掉了排序入口）。
+         *
+         * 比的是 payload 里的精确 `rate`，不是四舍五入后的整数百分比——三件都显示
+         * `-74%` 时顺序仍由真实值决定。`Array.prototype.sort` 是稳定的，所以降幅
+         * 完全相同的那些保持 SQL 那边的顺序（`max_discount DESC`）。
+         */
+        .sort((a, b) => b.rate - a.rate)
     );
-  }, [deals, filter, query, sort, asc]);
+  }, [deals, filter, query]);
 
   // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
-  // resetKey 里放的是「会让结果换一批」的五个状态：筛选、搜索、排序、升降序、视图。
-  const { visible, sentinelRef } = useIncremental(rows.length, `${filter}|${query}|${sort}|${asc}`);
-
-  function handleSort(key) {
-    if (key === sort) setAsc((v) => !v);
-    // 切到一个新列时：文本列升序读起来顺（拼音序），数字列降序才有意义（先看降得最狠的）
-    else {
-      setSort(key);
-      setAsc(META.sorts.some((s) => s.key === key && s.text));
-    }
-  }
+  // resetKey 里放的是「会让结果换一批」的两个状态：筛选与搜索。
+  const { visible, sentinelRef } = useIncremental(rows.length, `${filter}|${query}`);
 
   function reset() {
     setFilter('all');
@@ -276,10 +256,6 @@ export default function App() {
         counts={counts}
         shown={rows.length}
         total={deals.length}
-        sort={sort}
-        asc={asc}
-        onSort={handleSort}
-        onDir={() => setAsc((v) => !v)}
       />
 
       <div className="wrap">

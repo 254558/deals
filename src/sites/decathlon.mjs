@@ -441,18 +441,6 @@ export default {
       { key: 'tracked', label: '待拔草' },
     ],
 
-    // 能按哪些字段排序（工具条那个下拉框照这个渲染）。列表视图撤掉之后
-    // 它不再是「表格的列」，就只剩排序这一个用途，所以叫 sorts 而不是 columns。
-    // text: true 表示这个字段是文本（排序走中文 localeCompare，默认方向取升序）。
-    // 「运动」留着：按它排等于把网格按运动分组，仍然有用
-    sorts: [
-      { key: 'name', label: '商品', text: true },
-      { key: 'launchPrice', label: '上市价' },
-      { key: 'price', label: '现价' },
-      { key: 'rate', label: '降幅' },
-      { key: 'sports', label: '运动', text: true },
-    ],
-
     features: {
       rankBoard: false, // 页顶榜单是优衣库那站的东西，迪卡侬报告不摆
       stickerTags: true, // 商品图上的角标：红＝尾货清仓、灰＝新品
