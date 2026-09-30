@@ -162,7 +162,16 @@ npx wrangler login                  # 只需一次（浏览器点一下 Allow）
 node src/cli.mjs all deploy --target cloudflare
 ```
 
-线上地址：<https://deals-pinouts.pages.dev/uniqlo/> 与 <https://deals-pinouts.pages.dev/decathlon/>（项目名在 `src/sites/index.mjs` 的 `CLOUDFLARE` 里）。
+线上地址：**<https://deals.goodprices.online/uniqlo/>** 与 **<https://deals.goodprices.online/decathlon/>**（域名与项目名在 `src/sites/index.mjs` 的 `CLOUDFLARE` 里；`deals-pinouts.pages.dev` 是同一个部署的备用入口，也一直有效）。
+
+**根路径 `/` 默认进优衣库。** 部署上去的是整个 `reports/`，两份各占一个子目录，所以 `/` 本来什么都没有、打开是 404。生成报告时会顺手写两个小文件到部署根：
+
+- `reports/_redirects` → `/  /uniqlo/  302`（Cloudflare 给真 302，`curl -I /` 能看到 `location: /uniqlo/`）
+- `reports/index.html` → 一份 meta refresh 落地页，**相对路径** `uniqlo/`。相对路径的好处是网页上解析成 `/uniqlo/`、本地双击解析成旁边的 `reports/uniqlo/`，两边都对；而且不依赖托管方特性，将来搬到阿里云 OSS 也一样用
+
+想换默认站点，改 `src/sites/index.mjs` 里的 `DEFAULT_SITE` 一行即可，重跑一次 `report` 就更新。
+
+域名是在阿里云注册的（`goodprices.online`），只加了一条 CNAME：`deals` → `deals-pinouts.pages.dev`，DNS 仍由阿里云托管，没动 NS。Cloudflare 侧自动完成验证并签发证书（Google Trust Services）。**不需要 ICP 备案**——备案只针对服务器在中国大陆境内的网站。
 
 和 Vercel 那边不一样，这里是**一个项目装两份报告**：命令会把两份都重新生成，再把整个 `reports/` 目录发上去，站点各占一个子目录。所以报头那个「另一家的报告」入口在 Cloudflare 上改成了**同域的相对路径**（`../decathlon/`、`../uniqlo/`），换域名、甚至本地双击都对。这个命令与「对哪个站点做」无关，从哪一站触发都一样。
 

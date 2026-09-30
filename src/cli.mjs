@@ -32,11 +32,11 @@ import { homedir } from 'node:os';
 
 import { C, pad, printTable, truncate } from './core/terminal.mjs';
 import { openDb, saveSnapshot, listDeals, listTracked, listJustDropped, historyOf, startRun, finishRun, stats, discountRate } from './core/db.mjs';
-import { buildPayload, writeData, ensureBuild, renderHtml } from './core/report.mjs';
+import { buildPayload, writeData, ensureBuild, renderHtml, writeDeployRoot } from './core/report.mjs';
 import { ensureFontFiles, buildFontCss } from './core/fonts.mjs';
 import { ensureImages } from './core/images.mjs';
 import { findWranglerBundle, smallBatchBundle, pagesDeploy } from './core/cf-wrangler.mjs';
-import { SITES, CLOUDFLARE, resolveTargets, siteList } from './sites/index.mjs';
+import { SITES, CLOUDFLARE, DEFAULT_SITE, resolveTargets, siteList } from './sites/index.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DB_PATH = join(ROOT, 'data', 'deals.db');
@@ -410,6 +410,10 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   if (!existsSync(vercelCfg)) {
     writeFileSync(vercelCfg, JSON.stringify({ framework: null, installCommand: null, buildCommand: null }, null, 2) + '\n', 'utf8');
   }
+
+  // 部署根目录（`/`）默认进哪一站：根路径本来什么都没有、打开是 404，
+  // 所以顺手写一个落地页 + Cloudflare 的 `_redirects`（真 302）。幂等。
+  writeDeployRoot(ROOT, { defaultSite: DEFAULT_SITE, sites: SITES.map((s) => ({ id: s.id, label: s.label })) });
 
   const size = (statSync(reportPath(site)).size / 1024 / 1024).toFixed(1);
   console.log(`\n报告已生成：${C.bold(reportPath(site))}`);

@@ -133,6 +133,68 @@ ${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
 }
 
 /**
+ * 部署根目录的落地页：把 `/` 送到默认站点。
+ *
+ * 为什么需要它：部署上去的是整个 `reports/`，两份报告各占一个子目录，
+ * 所以根路径本来什么都没有、打开就是 404。
+ *
+ * 为什么用「meta refresh + 相对路径」而不是 302：
+ *  - 相对路径（`uniqlo/`）在网页上解析成 `/uniqlo/`，在本地双击打开时解析成
+ *    旁边的 `reports/uniqlo/`，两边都对，也不用知道自己在哪个域名下；
+ *  - meta refresh 不依赖托管方的特性，将来真要搬到阿里云 OSS 也照样能用。
+ * Cloudflare 那边另外还有一份 `_redirects`（真 302），两者不冲突：
+ * 支持 `_redirects` 的主机会先给出 302，其余主机落到这个文件。
+ *
+ * core 这一层不认识站点列表（那在 src/sites/ 里），所以站点信息由调用方传进来。
+ */
+export function renderRootRedirect({ defaultSite, sites = [] }) {
+  const labelOf = (id) => sites.find((s) => s.id === id)?.label ?? id;
+  const other = sites.find((s) => s.id !== defaultSite);
+  const href = `${defaultSite}/`;
+  return `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="refresh" content="0; url=${href}">
+<title>捡漏榜 · 正在打开${labelOf(defaultSite)}</title>
+<style>body{margin:0;font:400 16px/1.7 -apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;color:#000f17;background:#fff}
+main{max-width:32rem;margin:18vh auto;padding:0 24px}a{color:#3643ba}</style>
+</head>
+<body>
+<main>
+<p>默认打开的是<b>${labelOf(defaultSite)}</b>那一份。</p>
+<p>没有自动跳转就点这里：<a href="${href}">${labelOf(defaultSite)}捡漏榜</a></p>
+${other ? `<p style="color:#616161;font-size:14px">另一份在 <a href="${other.id}/">${other.label}</a>。</p>` : ''}
+</main>
+</body>
+</html>
+`;
+}
+
+/**
+ * 写部署根目录里的两个小文件：`reports/index.html`（落地页）与
+ * `reports/_redirects`（Cloudflare 的 302）。生成器从不清 `reports/`，
+ * 所以写完就一直在，不会被下次生成冲掉。
+ *
+ * @returns {string[]} 写出去的文件路径
+ */
+export function writeDeployRoot(root, { defaultSite, sites }) {
+  const dir = join(root, 'reports');
+  mkdirSync(dir, { recursive: true });
+
+  const index = join(dir, 'index.html');
+  writeFileSync(index, renderRootRedirect({ defaultSite, sites }), 'utf8');
+
+  // `_redirects` 给 `/` 一个真 302（比 meta refresh 干净）。
+  // 用 302 不用 301：以后万一想换默认站点，别让浏览器把永久跳转缓存住。
+  const redirects = join(dir, '_redirects');
+  writeFileSync(redirects, `/  /${defaultSite}/  302\n`, 'utf8');
+
+  return [index, redirects];
+}
+
+/**
  * web/ 下最新的源文件时间，用来判断构建产物是不是过期了。
  *
  * **软链要跳过**：`web/public/img` 是 `deals <站点> dev` 建的软链，指向

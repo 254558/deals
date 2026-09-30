@@ -37,8 +37,18 @@ export const SITES = [uniqlo, decathlon];
  */
 export const CLOUDFLARE = {
   project: 'deals-pinouts',
-  host: 'https://deals-pinouts.pages.dev',
+  host: 'https://deals.goodprices.online',
+  pagesDev: 'https://deals-pinouts.pages.dev',
 };
+
+/**
+ * 部署根目录（`/`）默认跳到哪个站点。
+ *
+ * 部署上去的是整个 `reports/`，两份报告各占一个子目录，所以根路径本来没有东西、
+ * 打开就是 404。生成报告时会顺手在 `reports/` 里放一个落地页，把 `/` 送到这里
+ * 声明的这一站（用户要的是「打开默认看优衣库」）。
+ */
+export const DEFAULT_SITE = 'uniqlo';
 
 export const byId = (id) => SITES.find((s) => s.id === id) ?? null;
 
