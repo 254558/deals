@@ -368,7 +368,7 @@
       el.className = 'item';
       const mine = !!tokens.get(it.id);
       el.innerHTML = `
-        <img src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy">
+        <img src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy" decoding="async">
         <div class="item__body">
           <div class="item__title">${esc(it.title)}</div>
           <div class="item__price">¥${Number(it.price).toLocaleString('zh-CN')}</div>

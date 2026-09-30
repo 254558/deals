@@ -74,7 +74,7 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         {/* 不写 width/height 属性：属性会变成 used height 把 aspect-ratio 顶掉，
             图就被塞进一个非本比例的框里留白。比例靠 CSS 的 aspect-ratio 定
             （优衣库 3:4、迪卡侬 1:1），所以这里只给 src */}
-        <img className="card__img" src={image} alt="" loading="lazy" />
+        <img className="card__img" src={image} alt="" loading="lazy" decoding="async" />
       </a>
     </div>
   ) : (

@@ -168,6 +168,35 @@ const safeJs = (code) => code.replace(/<\/script/gi, '<\\/script');
  * 25 个点的相位写在 `--i` 上，值取 (行 + 列)：同一条对角线一起亮，看起来就是
  * 一道斜着扫过去的波。
  */
+/** 开机动画那一屏的关键 CSS。
+ *
+ * 为什么单独拎一小份放在最前面：整块 CSS（含内嵌字体）有 300KB、占 HTML 的三分之一还多，
+ * 而 <style> 是**阻塞渲染**的——放在 head 里，浏览器得先啃完它才肯画第一帧，于是
+ * 「开机动画」根本没机会在等 HTML 的时候出现（实测首绘 ≈ HTML 全部到齐之后）。
+ * 把这一小份（1KB）前置、整块 CSS 挪到 body 末尾，首绘就能在解析到开机动画时立刻发生。
+ * 开机动画是 React 挂载前**唯一**可见的东西，所以不会有「无样式内容闪一下」的问题。
+ *
+ * ⚠️ 这几条与 web/src/styles.css 里 #boot / .boot__dots 那几段是同一件事的两份，
+ * 改那边记得改这边（数量很少，且只在首绘那一瞬生效）。
+ */
+function criticalCss(site) {
+  const ink = site === 'uniqlo' ? '#000f17' : '#000f17';
+  const blue = '#3643ba';
+  return [
+    ':root{--bg:#fff;--blue:' + blue + ';--ink:' + ink + '}',
+    'html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}',
+    'body{font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}',
+    '#boot{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);opacity:0;animation:boot-in 120ms linear forwards}',
+    '@keyframes boot-in{to{opacity:1}}',
+    '#root:not(:empty)~#boot{display:none}',
+    '.boot__dots{display:grid;grid-template-columns:repeat(5,7px);gap:6px}',
+    '.boot__dots i{width:7px;height:7px;background:var(--blue);opacity:.14;animation:boot-wave 1.5s linear infinite;animation-delay:calc(var(--i,0)*55ms)}',
+    '@keyframes boot-wave{0%,100%{opacity:.14}40%{opacity:1}}',
+    '.boot__note{font-size:12px;color:#616161}',
+    '@media (prefers-reduced-motion:reduce){.boot__dots i{animation:none;opacity:.55}}',
+  ].join('');
+}
+
 function renderBoot(iso) {
   const d = new Date(iso ?? Date.now());
   const dots = [];
@@ -184,18 +213,35 @@ function renderBoot(iso) {
 
 export function renderHtml({ js, css, fontCss, payload }) {
   const when = new Date(payload.generatedAt ?? Date.now()).toLocaleString('zh-CN');
+
+  /**
+   * 首屏那几张图的 preload。
+   *
+   * 卡片是 React 渲染出来的，所以 <img> 在 JS 跑完之前根本不在文档里——浏览器**没有机会**
+   * 像普通页面那样在解析 HTML 时就把图片扫出来下载。这里替它把前几张点名：
+   * 初始那批（INITIAL=10）里排在最前的几张，正好是榜单前几名。
+   * 用同一个相对路径，命中之后 <img> 直接吃缓存。
+   */
+  const preload = (payload.deals || [])
+    .slice(0, 4)
+    .filter((d) => d.image)
+    .map((d) => `<link rel="preload" as="image" href="${d.image}">`)
+    .join('\n');
+
   return `<!DOCTYPE html>
 <html lang="zh-CN" data-site="${payload.site}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${payload.meta.pageTitle} · ${when}</title>
-${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
-<style>${css}</style>
+<style>${criticalCss(payload.site)}</style>
+${preload}
 </head>
 <body>
 <div id="root"></div>
 ${renderBoot(payload.generatedAt)}
+${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
+<style>${css}</style>
 <script>window.__DEALS_DATA__ = ${safeJson(payload)};</script>
 <script>${safeJs(js)}</script>
 </body>
