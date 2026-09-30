@@ -339,9 +339,12 @@ button {
 .card__now .now__dec { font-size: 16px; }
 /* 没降价的不配红：退回次级灰 */
 .card__now--flat { color: var(--ink-2); }
-/* 上市价划删除线，只在真降了的时候才画（见 ProductCard 的 cut 判断） */
+/* 上市价划删除线，只在真降了的时候才画（见 ProductCard 的 cut 判断）。
+   2026-09-30 用户要求「把原价变大一点，让用户知道原来原价那么高」：12px → 15px
+   （现价 16px）。划了线的小字看不见，等于白记了上市价——主次改由颜色区分
+   （原价次级灰、现价品牌色），不再靠把原价缩到看不见 */
 .card__was {
-  font-size: 12px;
+  font-size: 15px;
   color: var(--ink-2);
   text-decoration: line-through;
 }
@@ -491,7 +494,8 @@ button {
   white-space: nowrap;
 }
 [data-site="uniqlo"] .rank__was {
-  font-size: 12px;
+  /* 同卡片：12 → 15（榜单现价 22px，仍然主次分明） */
+  font-size: 15px;
   color: var(--ink-2);
   text-decoration: line-through;
   font-variant-numeric: tabular-nums;
