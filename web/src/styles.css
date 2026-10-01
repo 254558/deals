@@ -6,61 +6,8 @@
      一、共用骨架      令牌、重置、.wrap / .toolbar / .grid / .empty /
                        .sr-only / .dealact / .picframe
                        这些两家的**结构**一样，只写一次
-     二、[data-site="uniqlo"]    优衣库专有：3:4 画框、auto-fill 258px 网格、
+     二、   优衣库专有：3:4 画框、auto-fill 258px 网格、
                                  红色标尺、页顶榜单、内嵌思源黑体的字体栈
-     三、[data-site="decathlon"] 迪卡侬专有：方图、固定 4 列且列间距 0、
-                                 角标 / chips / 黄底降幅角标、墨色标尺、
-                                 系统字体栈
-
-   站点差异的唯一开关是 `<html data-site="…">`（见 main.jsx 与契约第一节）。
-   组件里没有任何 `site === '…'` 判断，这里也不给某个站点写「默认值」再让另一家去覆盖
-   ——每个 `[data-site]` 都把自己那一套写全，读起来是哪一家就是哪一家。
-
-   两家的设计令牌本来就是同一套（合并前优衣库那份就是照迪卡侬定的色），
-   所以下面这些颜色 / 几何是**真的共用**，不是「恰好一样」：
-
-     墨 / 次级 / 最淡    #000f17 / #616161 / #b3bac3
-     发丝线 / 浅底       #eff1f3、#d9dde1 / #f5f4f5、#fafafa
-     品牌蓝（链接、hover、选中、收了）  #3643ba
-     黄（角标底）        #ffcd4e，角标上的墨字 #101010
-     红（降价现价、标尺、榜单头名、报头圆点）  #e20c18
-     圆角 0，全站直角
-     现价 16px 数字 / 15px 符号，两家都严格照各自官网的尺寸
-   ============================================================================ */
-
-/* ============================ 一、共用骨架 ============================ */
-
-:root {
-  --white: #ffffff;
-  /* 中性色阶只有「墨 / 次级 / 最淡」三档，不另造中间灰 */
-  --ink: #000f17;
-  --ink-2: #616161;
-  --ink-4: #b3bac3;
-  --ink-faint: #b3bac3;
-  --rule: #d9dde1;
-  --rule-soft: #eff1f3;
-  --surface: #f5f4f5;
-  --surface-2: #fafafa;
-
-  /* 红只剩一个色值：降价现价、标尺、榜单第一名序号、报头那颗小圆点；
-     链接、hover、选中、收了用品牌蓝 */
-  --red: #e20c18;
-
-  /* 页面外壳的左右内边距：报头、工具栏、内容全用它。1180 / 760 两档会收紧 */
-  --pad: 40px;
-  --blue: #3643ba;
-  --yellow: #ffcd4e;
-  --badge-ink: #101010;
-
-  /* 价格字距照优衣库官网的 0.4px（迪卡侬官网没有这一条，两边都用它没有副作用） */
-  --ls-price: 0.4px;
-
-  /* 标尺生长的时长与曲线。两家原来各写各的（优衣库 0.7s、
-     迪卡侬 620ms，曲线也不一样），这里取优衣库那一条当共用的——
-     它慢一点，扫榜时更容易看出条是在「生长」而不是突然出现 */
-  --bar-dur: .7s;
-  --bar-ease: cubic-bezier(.22, .8, .28, 1);
-}
 
 * { box-sizing: border-box; }
 
@@ -422,7 +369,6 @@ button {
   font-variant-numeric: tabular-nums;
 }
 
-
 /* ======================== 二、优衣库专有 ========================
    版面尺寸量自 uniqlo.cn（字号、缩略图 3:4、列宽、卡片网格），配色、价格排版、
    动作图标用两家统一的那一套（见文件头的令牌），所以两份报告看起来是同一个工具
@@ -443,13 +389,12 @@ button {
    把思源黑体按实际用字裁剪后内嵌进来，所以汉字和官网是同一套。
    迪卡侬那一站没有内嵌字体，走系统字体栈（见第三段） */
 
-[data-site="uniqlo"] {
+:root {
   /* 西文在前、中文在后 —— 和官网 `UniqloProRegular, syht_Regular` 同一个结构。
      前面两个名字只在装了官网字体的机器上命中，命不中就分别落到
      Helvetica Neue（西文）和思源黑体（中文，已内嵌，dev 时由 font.css 给） */
   --sans: "Uniqlo Pro", UniqloProRegular, "Helvetica Neue", Helvetica, Arial,
     "Source Han Sans CN", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-
 
 }
 
@@ -458,16 +403,16 @@ button {
    共用骨架里的 button 重置写了 `font: inherit`，它带过来的 18px 会让升降序按钮
    从 28px 变 32px、整条工具条高 1px，
    所以在这里把 UA 那条 normal 显式补回来，只补优衣库这一站 */
-[data-site="uniqlo"] button { line-height: normal; }
+button { line-height: normal; }
 
-[data-site="uniqlo"] body {
+body {
   font-family: var(--sans);
   font-size: 12px;
   line-height: 1.5;
 }
 
 /* 官网的小字排版：小号 + 大字距 + 灰 */
-[data-site="uniqlo"] .label {
+.label {
   font-size: 10px;
   font-weight: 400;
   letter-spacing: 0.12em;
@@ -488,19 +433,18 @@ button {
 
 /* ---------------- 报头 ---------------- */
 
-
 /* ---------------- 榜单（页顶 RankBoard） ----------------
    本期降得最狠的几件排成榜，价格排版照 PDP 来。
    位置在整页最上面（报头之下、筛选页签之上）——打开就先看见榜单，
    页签和商品都在它下面。下边那条线把它跟页签分开。
    整块只在 features.rankBoard 打开时渲染，所以下面的规则只服务优衣库那一站 */
 
-[data-site="uniqlo"] .topranks {
+.topranks {
   padding: 22px 0 20px;
   border-bottom: 1px solid var(--rule);
 }
-[data-site="uniqlo"] .rank { list-style: none; margin: 12px 0 0; padding: 0; }
-[data-site="uniqlo"] .rank__row {
+.rank { list-style: none; margin: 12px 0 0; padding: 0; }
+.rank__row {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr) auto;
   gap: 0 20px;
@@ -509,33 +453,33 @@ button {
   /* 发丝线只在行间，首行上方和末行下方都不画 */
   border-top: 1px solid var(--rule-soft);
 }
-[data-site="uniqlo"] .rank__row:first-child { border-top: 0; padding-top: 0; }
-[data-site="uniqlo"] .rank__row:last-child { padding-bottom: 0; }
-[data-site="uniqlo"] .rank__n {
+.rank__row:first-child { border-top: 0; padding-top: 0; }
+.rank__row:last-child { padding-bottom: 0; }
+.rank__n {
   font-size: 12px;
   letter-spacing: 0.04em;
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
 }
 /* 只有第一名标红：既然排了序，就得看得出哪个是头名 */
-[data-site="uniqlo"] .rank__row:first-child .rank__n { color: var(--red); }
-[data-site="uniqlo"] .rank__body { min-width: 0; }
-[data-site="uniqlo"] .rank__name { font-size: 16px; line-height: 1.35; color: var(--ink); }
-[data-site="uniqlo"] .rank__meta { display: block; margin-top: 3px; }
-[data-site="uniqlo"] .rank__tail {
+.rank__row:first-child .rank__n { color: var(--red); }
+.rank__body { min-width: 0; }
+.rank__name { font-size: 16px; line-height: 1.35; color: var(--ink); }
+.rank__meta { display: block; margin-top: 3px; }
+.rank__tail {
   display: flex;
   align-items: baseline;
   gap: 14px;
   white-space: nowrap;
 }
-[data-site="uniqlo"] .rank__was {
+.rank__was {
   /* 同卡片：12 → 15（榜单现价 22px，仍然主次分明） */
   font-size: 15px;
   color: var(--ink-2);
   text-decoration: line-through;
   font-variant-numeric: tabular-nums;
 }
-[data-site="uniqlo"] .rank__now {
+.rank__now {
   font-size: 26px;
   font-weight: 600;
   letter-spacing: var(--ls-price);
@@ -544,7 +488,7 @@ button {
   font-variant-numeric: tabular-nums;
 }
 /* 降幅＝黄底角标。卡片上的降幅是红字（.card__off），黄角标只剩榜单上这一个 */
-[data-site="uniqlo"] .rank__off {
+.rank__off {
   font-size: 12px;
   font-weight: 600;
   color: var(--badge-ink);
@@ -556,9 +500,9 @@ button {
 
 /* ---------------- 工具条 ---------------- */
 
-[data-site="uniqlo"] .toolbar__row { gap: 18px; padding: 11px 0; }
-[data-site="uniqlo"] .tabs { gap: 0; }
-[data-site="uniqlo"] .tab {
+.toolbar__row { gap: 18px; padding: 11px 0; }
+.tabs { gap: 0; }
+.tab {
   font-size: 12px;
   font-weight: 400;
   padding: 7px 14px;
@@ -568,41 +512,41 @@ button {
      也不会因为谁被选中就挤动后面的页签 */
   margin-left: -1px;
 }
-[data-site="uniqlo"] .tab:first-child { margin-left: 0; }
+.tab:first-child { margin-left: 0; }
 /* 选中的那颗盖在邻居之上，被压住的那条左边线才是它自己的蓝线 */
-[data-site="uniqlo"] .tab[aria-pressed="true"] { position: relative; z-index: 1; }
-[data-site="uniqlo"] .tab__n { margin-left: 5px; }
-[data-site="uniqlo"] .search { font-size: 12px; padding: 7px 12px; width: 240px; }
-[data-site="uniqlo"] .search:focus { border-color: var(--ink); }
+.tab[aria-pressed="true"] { position: relative; z-index: 1; }
+.tab__n { margin-left: 5px; }
+.search { font-size: 12px; padding: 7px 12px; width: 240px; }
+.search:focus { border-color: var(--ink); }
 
 /* 榜单行名称底下那行小灰字（季节/尺码）——卡片和列表行的同款小字已经撤掉，
    这是它最后的使用处（用 rowMetaLine 开关的那一行是迪卡侬的，见第三段） */
-[data-site="uniqlo"] .metaline { font-size: 12px; letter-spacing: 0.02em; }
+.metaline { font-size: 12px; letter-spacing: 0.02em; }
 
 /* ---------------- 大图浏览（PLP 卡片网格） ----------------
    尺寸照 uniqlo.cn 的 PLP 实测：图正好 3:4 铺满卡片宽、卡片间 24px 沟、
    名称 15px，卡片本身没有边框也没有背景色 */
 
-[data-site="uniqlo"] .grid {
+.grid {
   display: grid;
   /* auto-fill 让它自己决定列数：窄屏一列一张大图，宽屏四列，卡宽跟着内容走 */
   grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
   gap: 24px;
   padding: 26px 0 44px;
 }
-[data-site="uniqlo"] .card { min-width: 0; }
-[data-site="uniqlo"] .card__img {
+.card { min-width: 0; }
+.card__img {
   /* 官图就是 3:4，画框也做成 3:4 —— contain 即满框，不会像正方形画框那样缩掉一半 */
   aspect-ratio: 3 / 4;
   background: var(--white);
 }
-[data-site="uniqlo"] .card__img--none { background: var(--surface); }
+.card__img--none { background: var(--surface); }
 /* 断码时名字那一行显示的是尺码（见 ProductCard 的 sizeLine）。
    每一档是一个 **kbd 方块**（用户要的「像键盘键帽」）：直角、发丝边、浅底，
    跟工具条上那些页签是同一种语言（白底 + #d9dde1 边、全站直角）。
    文字用等宽体——尺码是数字和字母，等宽排出来整齐，也让方块宽度不忽宽忽窄。
    「剩余：」和方块里的字**同一个墨色**（用户要求：不要灰的）。 */
-[data-site="uniqlo"] .sizekey {
+.sizekey {
   display: inline-block;
   margin: 0 3px 2px 0;
   padding: 0 4px;
@@ -615,7 +559,7 @@ button {
   vertical-align: 1px;
 }
 
-[data-site="uniqlo"] .card__name {
+.card__name {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -625,24 +569,24 @@ button {
   /* 名称长短不一时，两行的高度先占住，价格才不会一行高一行低 */
   min-height: 45px;
 }
-[data-site="uniqlo"] .card__prices { margin-top: 2px; }
-[data-site="uniqlo"] .card__now { color: var(--red); }
+.card__prices { margin-top: 2px; }
+.card__now { color: var(--red); }
 /* 降幅＝比例条旁边的红字 */
-[data-site="uniqlo"] .card__off {
+.card__off {
   font-size: 12px;
   font-weight: 600;
   color: var(--red);
   font-variant-numeric: tabular-nums;
 }
 /* 标尺的卡片版：一根细横条，条的长度就是降幅，红色降幅数字贴在条尾 */
-[data-site="uniqlo"] .card__deal { display: flex; align-items: center; margin-top: 7px; }
-[data-site="uniqlo"] .card__bar { flex: 1; min-width: 40px; }
-[data-site="uniqlo"] .card__bar > i { background: var(--red); }
+.card__deal { display: flex; align-items: center; margin-top: 7px; }
+.card__bar { flex: 1; min-width: 40px; }
+.card__bar > i { background: var(--red); }
 
 /* ---------------- 空状态 / 页脚 ---------------- */
 
-[data-site="uniqlo"] .empty__hint { font-size: 12px; }
-[data-site="uniqlo"] .empty__reset { font-size: 12px; margin-top: 18px; padding: 9px 18px; }
+.empty__hint { font-size: 12px; }
+.empty__reset { font-size: 12px; margin-top: 18px; padding: 9px 18px; }
 
 /* ======================== 三、迪卡侬专有 ========================
    所有尺寸、颜色都是从 decathlon.com.cn 的**计算样式**里读出来的，不是估的。
@@ -662,80 +606,23 @@ button {
    是品牌字体，不能内嵌，所以直接走系统字体栈 —— 这也是两家字号起点不同的原因
    （优衣库那份的 `body` 是 12px，照它官网的小字体系） */
 
-[data-site="decathlon"] {
-  --font: Roboto, Decathlon, 'Helvetica Neue', Helvetica, Arial, 'PingFang SC',
-    'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-
-
-  /* 商品名固定两行：16px × 行高 24px × 2 = 48px（官网实测值） */
-  --name-line: 24px;
-  --name-lines: 2;
-}
-
 /* `-webkit-text-size-adjust: 100%` 是给 html 的，而 html 本身就是带 data-site 的
-   那个元素 —— 写成 `[data-site="decathlon"] html` 等于「data-site 元素**里面**的 html」，
-   永远匹配不到（旧样式表写的是全局 `html`，合并后加了作用域就踩了这个坑）。
-   所以作用域前缀要和元素名并进同一个复合选择器 */
-html[data-site="decathlon"] {
-  /* 全站直角：官网 border-radius 处处是 0；这一条只是别让 iOS 自己放大字号 */
-  -webkit-text-size-adjust: 100%;
-}
-[data-site="decathlon"] body { font: 400 16px/24px var(--font); }
 
 /* 小标题的语气：官网的导航/标签是小号灰字，不加粗 */
-[data-site="decathlon"] .label { font-size: 13px; line-height: 20px; color: var(--ink-2); }
 
 /* 品牌前缀：官网是内联在商品名前面的一小段灰字（.text-[#616161] 14px/500） */
-[data-site="decathlon"] .brandmark { font-size: 14px; font-weight: 500; color: var(--ink-2); }
 
 /* 名称下面那行小灰字（官网卡片里是 14px/#616161） */
-[data-site="decathlon"] .metaline { font-size: 14px; line-height: 24px; color: var(--ink-2); }
-
 
 /* 键盘走查：整页直角，焦点框也只能是直角 */
-[data-site="decathlon"] :focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
 
 /* ---------------- 报头 ---------------- */
 
-
 /* ---------------- 工具条 ---------------- */
 
-[data-site="decathlon"] .toolbar {
-  /* 工具栏的高度是小数（1280 宽下 57.5px），粘住时和下边内容之间会留下 0.5px 的缝，
-     滚动时从这条缝里会透出行内容——2x 屏上正好是一个物理像素的闪烁细线。
-     这里把白底往下多铺 1px 补掉。用 box-shadow 而不是 padding：它不参与布局，
-     也就不会把工具栏自身的高度改掉 */
-  box-shadow: 0 1px 0 #fff;
-}
-[data-site="decathlon"] .toolbar__row { gap: 10px 16px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
-[data-site="decathlon"] .tabs { align-items: center; gap: 2px; }
-[data-site="decathlon"] .tab {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 5px;
-  padding: 5px 10px;
-  font-size: 14px;
-  color: var(--ink-2);
-  border: 1px solid transparent;
-}
-[data-site="decathlon"] .tab__n { font-size: 12px; color: var(--ink-faint); }
 /* 选中＝品牌蓝（官网链接/hover/选中都用 #3643BA），直角、**细框不填底**：
    共用那一版给的是白底，这里要显式还原成透明，否则按下之后会多出一块白方块 */
-[data-site="decathlon"] .tab[aria-pressed="true"] {
-  color: var(--blue);
-  background: none;
-  border-color: var(--blue);
-}
-[data-site="decathlon"] .tab[aria-pressed="true"] .tab__n { color: var(--blue); }
-[data-site="decathlon"] .search {
-  flex: 1 1 200px;
-  min-width: 150px;
-  max-width: 300px;
-  padding: 6px 10px;
-  font: 400 14px/20px var(--font);
-  border-radius: 0;
-}
-[data-site="decathlon"] .search:focus { border-color: var(--blue); }
+
 /* 计数靠右：共用那条已经给了 `margin-left: auto`，这里再写一遍是为了把它钉死，
    免得将来工具条上多一个会消失的控件时，计数跟着左右跳一下 */
 
@@ -744,100 +631,23 @@ html[data-site="decathlon"] {
 /* 列间距 0（官网 grid-cols-4 + column-gap: normal），
    卡片之间靠卡片自己的 10px padding 透气。响应式档位照官网的
    `lg:grid-cols-4 mn:grid-cols-3 mix:grid-cols-2` 来 */
-[data-site="decathlon"] .grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-  padding: 8px 0 40px;
-}
-[data-site="decathlon"] .card {
-  position: relative;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-}
-[data-site="decathlon"] .card__picwrap { position: relative; }
-[data-site="decathlon"] .card__img { aspect-ratio: 1 / 1; background: var(--surface); }
-[data-site="decathlon"] .card__img--none { display: block; aspect-ratio: 1 / 1; background: var(--surface); }
 
 /* 角标贴在图上，位置照官网 `.tag-box absolute left-10`。
    红＝尾货清仓、灰＝新品（官网那个红角标写的是「在打折」，人人都有，
    换成「清仓」才带信息量） */
-[data-site="decathlon"] .tagbox {
-  position: absolute;
-  top: 0;
-  left: 0;
-  font-size: 12px;
-  line-height: 24px;
-  height: 24px;
-  padding: 0 4px;
-  color: #fff;
-}
-[data-site="decathlon"] .tagbox--endlife { background: var(--red); }
-[data-site="decathlon"] .tagbox--new_arrival { background: var(--ink-2); }
 
 /* 商品名：16px/行高 24px、容器高 48px（正好两行），多的截掉 —— 官网实测 */
-[data-site="decathlon"] .card__name {
-  margin: 10px 0 0;
-  font-size: 16px;
-  line-height: var(--name-line);
-  height: calc(var(--name-line) * var(--name-lines));
-}
-[data-site="decathlon"] .card__namelink:hover { color: var(--blue); }
-[data-site="decathlon"] .card__prices { margin-top: 8px; }
-[data-site="decathlon"] .card__now { color: var(--ink); }
+
 /* 没降价的（手动盯着的）退回次级灰 */
-[data-site="decathlon"] .card__now--flat { color: var(--ink-2); }
+
 /* 折扣角标：黄底直角，10px、高 16px、内衬 0 4px —— 官网实测。
    官网把折扣写成「6.0折」，这里写降幅，和榜单、排序的口径一致 */
-[data-site="decathlon"] .offbadge {
-  font-size: 10px;
-  line-height: 16px;
-  height: 16px;
-  padding: 0 4px;
-  color: var(--badge-ink);
-  background: var(--yellow);
-  font-weight: 400;
-}
-[data-site="decathlon"] .card__bar { margin-top: 10px; background: var(--rule-soft); }
-[data-site="decathlon"] .card__bar > i { background: var(--ink); }
-[data-site="decathlon"] .card__deal--flat { margin-top: 10px; color: var(--ink-faint); }
+
 /* chips 行（卡片底部 / 列表行底部）。
    `margin-top: auto` 是这一行的全部意义：它在 flex 纵列的卡片里把这一行推到底边，
    加上 min-height，整排卡片的底就对齐了 —— 不会被「有没有标签、有没有收藏」带歪 */
-[data-site="decathlon"] .card__chips {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-top: auto;
-  padding-top: 10px;
-  min-height: 32px;
-}
-[data-site="decathlon"] .chip {
-  font-size: 12px;
-  line-height: 22px;
-  height: 22px;
-  padding: 0 7px;
-  color: var(--ink-2);
-  border: 1px solid var(--rule);
-}
-[data-site="decathlon"] .chip--endlife { color: #fff; background: var(--red); border-color: var(--red); }
-[data-site="decathlon"] .chip--new_arrival { color: #fff; background: var(--ink-2); border-color: var(--ink-2); }
-[data-site="decathlon"] .chip--tracked { color: var(--blue); border-color: var(--blue); }
 
 /* ---------------- 空状态 / 页脚 ---------------- */
-
-[data-site="decathlon"] .empty__title { font-size: 16px; color: var(--ink); font-weight: 400; }
-[data-site="decathlon"] .empty__hint { margin-top: 6px; font-size: 14px; color: var(--ink-2); }
-[data-site="decathlon"] .empty__reset {
-  margin-top: 16px;
-  font-size: 14px;
-  color: var(--blue);
-  background: none;
-  border-bottom: 1px solid var(--blue);
-}
-[data-site="decathlon"] .empty__reset:hover { background: none; color: var(--blue); }
 
 /* ============================ 窄屏 ============================
    两家在这一段的做法不一样，所以整段都在各自的作用域里：
@@ -852,14 +662,11 @@ html[data-site="decathlon"] {
        就自动把整页放大一点（手机端搜索是隐藏的，见下面那条，所以这条只管平板）。 */
     [data-site] .search { font-size: 16px; }
   /* 五格还是五格，只是每格的内衬收一收——换列数会让格与格之间的竖线断在换行处 */
-  [data-site="uniqlo"] .topranks { gap: 16px; }
+  .topranks { gap: 16px; }
 
-  [data-site="decathlon"] .grid { grid-template-columns: repeat(3, 1fr); }
 }
 
-@media (max-width: 900px) {
-  [data-site="decathlon"] .grid { grid-template-columns: repeat(2, 1fr); }
-}
+
 
 @media (max-width: 760px) {
   /* 手机端两家都只留页签这一行，而且**这一行钉住**（.toolbar 的 sticky 来自共用骨架）。
@@ -875,16 +682,14 @@ html[data-site="decathlon"] {
 
     :root { --pad: 16px; }
   .masthead { padding-top: 26px; }
-  [data-site="uniqlo"] .topranks { padding: 18px 0 16px; }
+  .topranks { padding: 18px 0 16px; }
   /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */
-  [data-site="uniqlo"] .rank__row { grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; }
-  [data-site="uniqlo"] .rank__tail { grid-column: 2; margin-top: 6px; gap: 10px; }
-  [data-site="uniqlo"] .rank__now { font-size: 22px; }
+  .rank__row { grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; }
+  .rank__tail { grid-column: 2; margin-top: 6px; gap: 10px; }
+  .rank__now { font-size: 22px; }
 }
 
-@media (max-width: 620px) {
-  [data-site="decathlon"] .grid { grid-template-columns: 1fr; }
-}
+
 
 /* 系统设了「减少动态效果」就不跑生长动画，直接把条子画到最终长度 */
 @media (prefers-reduced-motion: reduce) {
@@ -894,11 +699,23 @@ html[data-site="decathlon"] {
 }
 
 /* 打印：动效抽掉，但墨条长度要保留，否则标尺就没意义了 */
+
+/* ---- 尾货/新品的小标签（原属迪卡侬那套，2026-10-01 统一视觉后搬到这里共用）---- */
+.chip {
+  font-size: 12px;
+  line-height: 22px;
+  height: 22px;
+  padding: 0 7px;
+  color: var(--ink-2);
+  border: 1px solid var(--rule);
+}
+.chip--endlife { color: #fff; background: var(--red); border-color: var(--red); }
+.chip--new_arrival { color: #fff; background: var(--ink-2); border-color: var(--ink-2); }
+.chip--tracked { color: var(--blue); border-color: var(--blue); }
+
 @media print {
   .toolbar { position: static; }
   .card__bar > i { animation: none; width: var(--w); }
 /* 优衣库那份原来就只做这些；迪卡侬那份还要把交互控件撤掉、把网格固定成三列 */
-  [data-site="decathlon"] .dealacts, [data-site="decathlon"] .search { display: none; }
-  [data-site="decathlon"] .grid { grid-template-columns: repeat(3, 1fr); }
-  [data-site="decathlon"] .card { break-inside: avoid; }
+
 }

@@ -419,7 +419,7 @@ export default {
     label: '迪卡侬',
     pageTitle: '迪卡侬捡漏榜',
     currency: { sym: '￥', zero: '￥0' },
-    imageAspect: '1/1',
+    imageAspect: '3/4',
     searchPlaceholder: '搜商品名、编号或品牌',
     searchLabel: '名称、编号或品牌',
     // 两个旧报告里的收藏/隐藏存在这两个前缀下（deca.picks 等），沿用即可原样保留
@@ -441,13 +441,13 @@ export default {
     ],
 
     features: {
-      rankBoard: false, // 页顶榜单是优衣库那站的东西，迪卡侬报告不摆
-      stickerTags: true, // 商品图上的角标：红＝尾货清仓、灰＝新品
-      brandMark: true, // 名称前那块品牌小字
-      priceOffBadge: true, // 价格行里的黄底「-xx%」角标
-      dealBarNumber: false,
-      cardChips: true, // 卡片底部的 chips 行（托住卡片底边，整排对齐）
-      trackChip: true, // ★ 待拔草 chip
+      rankBoard: true, // 页顶「本期降得最狠的五件」（优衣库独有）
+      stickerTags: false,
+      brandMark: false,
+      priceOffBadge: false,
+      dealBarNumber: true, // 卡片横条尾部的红色降幅数字
+      cardChips: false,
+      trackChip: false,
     },
 
     tagLabels: TAGS,
