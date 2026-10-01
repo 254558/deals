@@ -278,7 +278,7 @@ export function renderHtml({ js, css, fontCss, payload, beacon = null, origin = 
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${payload.meta.pageTitle} · ${when}</title>
+<title>GoodPrices · ${payload.meta.pageTitle} · ${when}</title>
 ${seo}
 <style>${criticalCss(payload.site)}</style>
 ${preload}
@@ -321,13 +321,13 @@ export function renderRootRedirect({ defaultSite, sites = [] }) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta http-equiv="refresh" content="0; url=${href}">
-<title>捡漏榜 · 正在打开${labelOf(defaultSite)}</title>
+<title>GoodPrices · 正在打开${labelOf(defaultSite)}</title>
 <style>body{margin:0;font:400 16px/1.7 -apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;color:#000f17;background:#fff}
 main{max-width:32rem;margin:18vh auto;padding:0 24px}a{color:#3643ba}</style>
 </head>
 <body>
 <main>
-<p>默认打开的是<b>${labelOf(defaultSite)}</b>那一份。</p>
+<p><b>GoodPrices</b> 默认打开的是<b>${labelOf(defaultSite)}</b>那一份。</p>
 <p>没有自动跳转就点这里：<a href="${href}">${labelOf(defaultSite)}捡漏榜</a></p>
 ${other ? `<p style="color:#616161;font-size:14px">另一份在 <a href="${other.id}/">${other.label}</a>。</p>` : ''}
 </main>

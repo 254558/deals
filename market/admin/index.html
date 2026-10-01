@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<title>尾货市集 · 管理</title>
+<title>GoodPrices · 尾货市集 · 管理</title>
 <!--
   管理页。跟市集同一套视觉语言，但**没有任何服务端渲染**：它就用口令调 /api/admin/*。
 
@@ -43,7 +43,12 @@
   .masthead__dot { flex: none; width: 6px; height: 6px; background: var(--red); }
   .masthead__text { font-size: 10px; font-weight: 400; letter-spacing: 0.12em; color: var(--ink-4); }
   .masthead__cross { color: var(--blue); text-decoration: none; }
-  .masthead__cross:first-of-type { margin-left: auto; }
+  /* GoodPrices 留在左边，其余（各页入口）由它推到右边。
+   ⚠️ 原来写的是 `.masthead__cross:first-of-type { margin-left: auto }`——那个
+   `:first-of-type` 数的是「父元素里第一个 <a>」，品牌名换成 <a> 之后第一个 <a>
+   就成了 GoodPrices 自己，于是整组被推到右边、左边空着（2026-10-01 用户报的）。
+   现在让品牌名吃掉右侧空白，语义也更直白：它左边、其余右边。 */
+.masthead__home { margin-right: auto; }
   .masthead__cross:hover { text-decoration: underline; }
   .masthead__home { color: var(--ink); text-decoration: none; }
   .masthead__home:hover { text-decoration: underline; }
@@ -53,7 +58,8 @@
      flex 就会把它折到第二行（用户报的「优衣库比价、迪卡侬比价另起一行」）。
      桌面版仍然推到行尾——那是用户 2026-09-30 明确要的「右对齐、间距不要太大」。 */
   @media (max-width: 760px) {
-    .masthead__cross:first-of-type { margin-left: 0; }
+    /* 手机上不推：入口紧跟站点名排（见上面那条的说明） */
+    .masthead__home { margin-right: 0; }
   }
   @media (max-width: 760px) { .masthead { padding-top: 26px; } }
   .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
