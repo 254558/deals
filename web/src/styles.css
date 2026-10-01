@@ -1,3 +1,28 @@
+/**
+ * 兜底调色板。
+ *
+ * 这些令牌原先散在几个**按站点划分**的变量块里。2026-10-01 统一皮肤时删掉了其中一个，
+ * 于是 `--rule-soft` 之类的令牌在页面上根本解析不到 —— 而 `.card__bar`（价格右边
+ * 那根降幅条）的背景正是 `var(--rule-soft)`：解析失败 → 背景是透明 → 整条看不见了
+ * （用户报的「-74% 左边那条不见了」就是这么来的）。
+ *
+ * 放在**最前面**是刻意的：CSS 自定义属性按文档顺序取最后一条，所以后面任何同名定义
+ * 都会覆盖这里，这份只是补缺口。
+ */
+:root {
+  --white: #fff;
+  --ink: #000f17;
+  --ink-2: #616161;
+  --ink-4: #b3bac3;
+  --rule: #d9dde1;
+  --rule-soft: #eff1f3;
+  --surface: #f5f4f5;
+  --surface-2: #fafafa;
+  --blue: #3643ba;
+  --red: #e20c18;
+  --yellow: #ffcd4e;
+}
+
 /* ============================================================================
    捡漏榜 · 两家共用的一张样式表
    ----------------------------------------------------------------------------
@@ -287,7 +312,10 @@ button {
 .dealact:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 /* 爱心一律实心，形状不再表示状态，收没收由颜色说：淡灰 → 品牌蓝 */
 .dealact--on { color: var(--blue); }
-@keyframes scale-fill { to { width: var(--w); } }
+@keyframes scale-fill {
+  from { width: 0; }
+  to { width: var(--w, 0); }
+}
 @keyframes scale-notch { from { left: 0; } to { left: var(--w); } }
 
 /* ---------------- 大图浏览（PLP 卡片网格） ----------------
@@ -343,7 +371,10 @@ button {
   display: block;
   height: 100%;
   width: 0;
-  animation: scale-fill var(--bar-dur) var(--bar-ease) forwards;
+  /* 两个变量用 var() 自带兜底值：它们原先定义在按站点分的变量块里，
+     统一皮肤时连同那个块一起删掉了 → 整条 animation 简写作废 →
+     填充宽度停在 0，也就是「-74% 左边那条不见了」。 */
+    animation: scale-fill var(--bar-dur, 600ms) var(--bar-ease, cubic-bezier(0.2, 0.7, 0.3, 1)) forwards;
 }
 .card__deal--flat { font-size: 12px; color: var(--ink-4); }
 
