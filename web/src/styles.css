@@ -529,8 +529,10 @@ body {
 
 .grid {
   display: grid;
-  /* auto-fill 让它自己决定列数：窄屏一列一张大图，宽屏四列，卡宽跟着内容走 */
-  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  /* auto-fill 让它自己决定列数。每列最小 300px：1440 的版心下正好落成 **4 列**
+     （258px 时是 5 列，卡片挨在一起显得两侧很挤——用户 2026-10-01 反馈）。
+     列数变了卡宽也跟着变，图片不用动。 */
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 24px;
   padding: 26px 0 44px;
 }
