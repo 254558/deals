@@ -45,20 +45,22 @@ export const ipHash = (request) =>
 export const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
 export const MAX_IMAGE_BYTES = 400 * 1024;
 
-/** 每个 IP 24 小时最多发几件、整个市集一天最多几件 */
-export const PER_IP_PER_DAY = 5;
+/**
+ * 整个市集一天最多几件（最后一道阀门）。
+ *
+ * **单 IP 每天 5 件那条 2026-10-01 按用户要求去掉了**：他自己发东西时被挡过，
+ * 而且这个市集本来也没多少人来。留下的这条只防「一晚上灌进来几千件」那种，
+ * 正常人碰不到。评论那条（每 IP 24 小时 20 条）没动 —— 评论更容易被刷。
+ */
 export const PER_DAY_GLOBAL = 200;
 
 /**
  * 限速。返回 null 表示放行（并把这次记上），否则返回该回给用户的话。
  */
 export async function checkRate(env, hash, now = new Date()) {
-  const since = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
   const day = now.toISOString().slice(0, 10);
 
-  const mine = await env.DB.prepare('SELECT COUNT(*) AS n FROM posts WHERE ip_hash = ? AND at > ?').bind(hash, since).first();
-  if ((mine?.n ?? 0) >= PER_IP_PER_DAY) return '今天你发得有点多，歇一天再来（每 24 小时最多 5 件）。';
-
+  // 单 IP 的每日件数不再限制（见上面 PER_DAY_GLOBAL 的说明），只留全站上限
   const all = await env.DB.prepare("SELECT COUNT(*) AS n FROM posts WHERE at LIKE ?").bind(day + '%').first();
   if ((all?.n ?? 0) >= PER_DAY_GLOBAL) return '今天整个市集的新帖到上限了，明天再来。';
 

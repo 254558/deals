@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validate, clean, len, SHA, checkRate, PER_IP_PER_DAY } from '../functions/api/_lib.mjs';
+import { validate, clean, len, SHA, checkRate, PER_DAY_GLOBAL } from '../functions/api/_lib.mjs';
 import { onRequestPost as createListing, onRequestGet as listListings } from '../functions/api/listings.js';
 import { onRequestPost as deleteListing } from '../functions/api/delete.js';
 import { onRequestPost as reportListing } from '../functions/api/report.js';
@@ -175,17 +175,28 @@ test('发布：蜜罐被填就静默丢弃，正常发贴回一条删除凭据',
   assert.equal(state.listings[0].image_bytes instanceof Uint8Array, true, '图片以字节落库');
 });
 
-test('发布：同一 IP 发满当天额度就 429', async () => {
+test('发布：不再限制单 IP 每天的件数（连发 12 件都成功）', async () => {
   const { db, state } = fakeDB();
   const env = { DB: db };
-  for (let i = 0; i < PER_IP_PER_DAY; i++) {
-    const r = await createListing({ request: req({ ...good, title: `第 ${i} 件` }), env });
+  // 2026-10-01 用户要求去掉「每 24 小时最多 5 件」：同一个 IP 连发多件都该放过
+  for (let i = 0; i < 12; i++) {
+    const r = await createListing({ request: req({ ...good, title: `第 ${i + 1} 件` }), env });
     assert.equal(r.status, 200, `第 ${i + 1} 件应该放过`);
   }
-  const blocked = await createListing({ request: req({ ...good, title: '超了' }), env });
-  assert.equal(blocked.status, 429);
-  assert.match((await blocked.json()).error, /最多 5 件/);
-  assert.equal(state.listings.length, PER_IP_PER_DAY);
+  assert.equal(state.listings.length, 12);
+});
+
+test('发布：全站每天的上限还在（最后一道阀门）', async () => {
+  const { db, state } = fakeDB();
+  const env = { DB: db };
+  // 假装今天已经发满了全站额度
+  const now = new Date().toISOString();
+  for (let i = 0; i < PER_DAY_GLOBAL; i++) state.posts.push({ ip_hash: 'other', at: now });
+
+  const r = await createListing({ request: req({ ...good }), env });
+  assert.equal(r.status, 429);
+  assert.match((await r.json()).error, /到上限/);
+  assert.equal(state.listings.length, 0, '被挡住时一件都不该落库');
 });
 
 test('删除：凭据不对 403，对了就下架（且幂等）', async () => {
