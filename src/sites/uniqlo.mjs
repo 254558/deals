@@ -454,6 +454,8 @@ export default {
     pageTitle: '优衣库捡漏榜',
     currency: { sym: '¥', zero: '¥ 0' },
     imageAspect: '3/4',
+    // 网格每列的最小宽度：258px 在 1440 的版心下正好排 5 列（这份一直是 5 列）
+    cardMin: '258px',
     searchPlaceholder: '搜商品名或吊牌编号',
     searchLabel: '名称或编号',
     // 两个旧报告里的收藏/隐藏存在这两个前缀下（uniql.picks 等），沿用即可原样保留

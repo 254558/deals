@@ -420,6 +420,8 @@ export default {
     pageTitle: '迪卡侬捡漏榜',
     currency: { sym: '￥', zero: '￥0' },
     imageAspect: '3/4',
+    // 用户 2026-10-01 要「一行放 4 个」（5 列时两列贴太紧）
+    cardMin: '300px',
     searchPlaceholder: '搜商品名、编号或品牌',
     searchLabel: '名称、编号或品牌',
     // 两个旧报告里的收藏/隐藏存在这两个前缀下（deca.picks 等），沿用即可原样保留
