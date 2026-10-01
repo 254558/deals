@@ -274,7 +274,7 @@ export function renderHtml({ js, css, fontCss, payload, beacon = null, origin = 
     .join('\n');
 
   return `<!DOCTYPE html>
-<html lang="zh-CN" data-site="${payload.site}" style="--card-min:${payload.meta.cardMin ?? '258px'}">
+<html lang="zh-CN" data-site="${payload.site}" style="--card-min:${payload.meta.cardMin ?? '258px'};--card-aspect:${payload.meta.imageAspect ?? '3/4'}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">

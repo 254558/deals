@@ -580,7 +580,9 @@ body {
 .card { min-width: 0; }
 .card__img {
   /* 官图就是 3:4，画框也做成 3:4 —— contain 即满框，不会像正方形画框那样缩掉一半 */
-  aspect-ratio: 3 / 4;
+  /* 画框比例按站点给：优衣库官图 3:4、迪卡侬官图 1:1。写死 3:4 会让方图
+     在 contain 下上下留白（用户报的「图片和图片的上下距离太远」）。 */
+  aspect-ratio: var(--card-aspect, 3 / 4);
   background: var(--white);
 }
 .card__img--none { background: var(--surface); }

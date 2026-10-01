@@ -419,7 +419,9 @@ export default {
     label: '迪卡侬',
     pageTitle: '迪卡侬捡漏榜',
     currency: { sym: '￥', zero: '￥0' },
-    imageAspect: '3/4',
+    // 官图就是方的（800×800）。画框必须跟着方，否则 contain 会在上下留白，
+    // 看着像「图片之间离得太远」（用户 2026-10-01 报的）。
+    imageAspect: '1/1',
     // 用户 2026-10-01 要「一行放 4 个」（5 列时两列贴太紧）
     cardMin: '300px',
     searchPlaceholder: '搜商品名、编号或品牌',
