@@ -268,8 +268,6 @@ button {
   border-color: var(--blue);
   color: var(--blue);
 }
-.tab__n { color: var(--ink-4); font-variant-numeric: tabular-nums; }
-.tab[aria-pressed="true"] .tab__n { color: var(--blue); }
 
 .search {
   font-family: inherit;
@@ -560,7 +558,6 @@ body {
 .tab:first-child { margin-left: 0; }
 /* 选中的那颗盖在邻居之上，被压住的那条左边线才是它自己的蓝线 */
 .tab[aria-pressed="true"] { position: relative; z-index: 1; }
-.tab__n { margin-left: 5px; }
 .search { font-size: 12px; padding: 7px 12px; width: 240px; }
 .search:focus { border-color: var(--ink); }
 

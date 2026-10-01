@@ -1,4 +1,3 @@
-import { num } from '../lib/format.js';
 import { META } from '../lib/site.js';
 
 /**
@@ -29,9 +28,10 @@ export function Toolbar({
                 aria-pressed={filter === f.key}
                 onClick={() => onFilter(f.key)}
               >
+                {/* 页签只留名字，**不挂件数**：用户 2026-10-01 明确说「这些后面不要加数字，
+                    我不关心这个」。计数照样算（`counts` 还在，留给 aria 与以后要用时取），
+                    只是不往界面上摆。 */}
                 {f.label}
-                {/* 计数为 0 的页签不挂那个小数字：挂一个 0 只是噪音 */}
-                {counts[f.key] > 0 && <span className="tab__n n">{num(counts[f.key])}</span>}
               </button>
             ))}
           </div>
