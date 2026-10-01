@@ -581,7 +581,7 @@ body {
 /* 标尺的卡片版：一根细横条，条的长度就是降幅，红色降幅数字贴在条尾 */
 .card__deal { display: flex; align-items: center; margin-top: 7px; }
 .card__bar { flex: 1; min-width: 40px; }
-.card__bar > i { background: var(--red); }
+.card__bar > i { background: #e20c18 !important; }
 
 /* ---------------- 空状态 / 页脚 ---------------- */
 
@@ -722,10 +722,14 @@ body {
 
 /* ------------------------------------------------------------------
    现价与降幅比例条：**两家一律红色**。
+   ⚠️ 这里刻意用**字面色值 + !important**：2026-10-01 统一皮肤之后，这条规则用
+   \`var(--red)\` 写时线上始终算成墨色（排查过构建产物：规则在、顺序也在最后，
+   但计算值仍是继承来的墨色；用 CDP 查命中规则那步也没能定性）。为了不再赌
+   变量链和优先级，直接写死 #e20c18。哪天查清了可以再换回 var(--red)。
    放最后是为了压过前面任何 color / background 声明 —— 2026-10-01 统一皮肤那轮
    把优衣库原来自带的红色弄丢了（两边的价格都变成墨色），这里显式补回来。
    「没有降幅」的卡片走 .card__now--flat，仍然是灰的，别一起红掉。
    ------------------------------------------------------------------ */
 .card__now:not(.card__now--flat),
-.rank__now { color: var(--red); }
-.card__bar > i { background: var(--red); }
+.rank__now { color: #e20c18 !important; }
+.card__bar > i { background: #e20c18 !important; }
