@@ -45,6 +45,8 @@
   .masthead__cross { color: var(--blue); text-decoration: none; }
   .masthead__cross:first-of-type { margin-left: auto; }
   .masthead__cross:hover { text-decoration: underline; }
+  .masthead__home { color: var(--ink); text-decoration: none; }
+  .masthead__home:hover { text-decoration: underline; }
 
   /* 手机上：入口**紧跟站点名**排，不推到行尾。
      推到行尾（margin-left: auto）在窄屏上很脆：中文标签 + 两个入口一旦超出可用宽度，
@@ -92,7 +94,7 @@
   <div class="wrap">
   <div class="masthead__eyebrow">
     <span class="masthead__dot"></span>
-    <span class="masthead__text">尾货市集 · 管理</span>
+    <a class="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
     <a class="masthead__text masthead__cross" href="/market/">回市集</a>
     <a class="masthead__text masthead__cross" href="/uniqlo/" target="_blank" rel="noreferrer">优衣库</a>
     <a class="masthead__text masthead__cross" href="/decathlon/" target="_blank" rel="noreferrer">迪卡侬</a>

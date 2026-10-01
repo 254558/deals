@@ -11,8 +11,10 @@ import { META } from '../lib/site.js';
  * 报头的皮是**一套**（见 styles.css 的 .masthead 那段），不分站点——2026-10-01 之前两家各一套，
  * 换个页面导航栏就换个样子。
  *
- *   META.label         站点名（优衣库 / 迪卡侬 · 中国官网）—— 两家的写法不一样，
- *                      所以连「· 中国官网」这个后缀也归数据，不在这里拼
+ *   左上角那格       **固定写 GoodPrices**（2026-10-01 起）：它是这个站的名字，
+ *                      四个页面（两份报告 + 市集 + 管理页）都一样，点它回首页（/ → 优衣库）。
+ *                      页面自己的名字由 title、榜单小标题和 URL 说，不用报头再重复一遍。
+ *                      `META.label`（优衣库/迪卡侬）仍然在 payload 里，只是报头不用它了。
  *   META.links         行尾那组入口（数组）：另一家的报告 + 尾货市集。核心拼好，两家一样；
  *                      没配就是空数组，一个都不渲染。
  *   META.showRecorded  是否显示「共记录 N 件」（迪卡侬有，优衣库没有）
@@ -33,7 +35,7 @@ export function Masthead({ recorded }) {
     <header className="masthead">
       <div className="masthead__eyebrow">
         <span className="masthead__dot" />
-        <span className="masthead__text">{META.label}</span>
+        <a className="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
         {META.showRecorded && <span className="label">共记录 {num(recorded)} 件</span>}
         {/* 行尾右对齐的入口：兄弟报告 + 尾货市集（靠 margin-left: auto 顶到行尾） */}
         {links.map((l) => (

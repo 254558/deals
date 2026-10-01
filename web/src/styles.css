@@ -173,6 +173,9 @@ button {
   letter-spacing: 0.12em;
   color: var(--ink-4);
 }
+/* 左上角那格是品牌名，也是回首页的入口：比右侧入口深一点，看得出是可点的 */
+.masthead__home { color: var(--ink); text-decoration: none; }
+.masthead__home:hover { text-decoration: underline; }
 /* 行尾那组入口（兄弟报告 + 尾货市集）。
    ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
    flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
