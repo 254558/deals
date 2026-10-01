@@ -47,10 +47,13 @@ export async function onRequestPost({ request, env }) {
   const now = new Date().toISOString();
   const bytes = Uint8Array.from(atob(v.b64), (c) => c.charCodeAt(0));
 
+  // 列数必须和占位符个数一致：删 store 那轮改了列名、却漏改 `?` 的个数
+  // （12 个占位符对 11 列），于是发帖在线上一直是 500。单测用的是假 D1、SQL 根本不执行，
+  // 所以 43 条全绿也没抓到——是靠本地真 D1 的冒烟才现形的。
   await env.DB.prepare(
     `INSERT INTO listings (id, created_at, title, price, size, contact, note,
                            image_mime, image_bytes, ip_hash, token_hash)
-     VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
+     VALUES (?,?,?,?,?,?,?,?,?,?,?)`
   )
     .bind(id, now, v.title, v.price, v.size, v.contact, v.note, v.mime, bytes, hash, await SHA(token))
     .run();
