@@ -57,10 +57,7 @@
      推到行尾（margin-left: auto）在窄屏上很脆：中文标签 + 两个入口一旦超出可用宽度，
      flex 就会把它折到第二行（用户报的「优衣库比价、迪卡侬比价另起一行」）。
      桌面版仍然推到行尾——那是用户 2026-09-30 明确要的「右对齐、间距不要太大」。 */
-  @media (max-width: 760px) {
-    /* 手机上不推：入口紧跟站点名排（见上面那条的说明） */
-    .masthead__home { margin-right: 0; }
-  }
+
   @media (max-width: 760px) { .masthead { padding-top: 26px; } }
   .bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 18px; }
   /* 16px 是 iOS 的门槛：小于它就一聚焦自动放大整页 */
