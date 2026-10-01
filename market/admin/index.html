@@ -50,7 +50,9 @@
    现在让品牌名吃掉右侧空白，语义也更直白：它左边、其余右边。 */
 .masthead__home { margin-right: auto; }
   .masthead__cross:hover { text-decoration: underline; }
-  .masthead__home { color: var(--ink); text-decoration: none; }
+  /* 品牌名：粗体 + 品牌蓝。用复合选择器是为了压过上面 `.masthead__text` 里的
+     font-weight: 400 —— 那条规则在本文件里位置更靠后，单靠 `.masthead__home` 会被它盖掉。 */
+.masthead__text.masthead__home { color: var(--blue); font-weight: 700; text-decoration: none; }
   .masthead__home:hover { text-decoration: underline; }
 
   /* 手机上：入口**紧跟站点名**排，不推到行尾。
