@@ -52,7 +52,9 @@
   .masthead__cross:hover { text-decoration: underline; }
   /* 品牌名：粗体 + 品牌蓝。用复合选择器是为了压过上面 `.masthead__text` 里的
      font-weight: 400 —— 那条规则在本文件里位置更靠后，单靠 `.masthead__home` 会被它盖掉。 */
-.masthead__text.masthead__home { color: var(--blue); font-weight: 700; text-decoration: none; }
+/* 品牌名：粗体 + 红。色值带字面兜底 —— 这个项目里已经栽过两次
+     「var() 解析不到 → 整条声明失效」（降幅条灰底、页签边框），所以不再裸用变量。 */
+.masthead__text.masthead__home { color: var(--red, #e20c18); font-weight: 700; text-decoration: none; }
   .masthead__home:hover { text-decoration: underline; }
 
   /* 手机上：入口**紧跟站点名**排，不推到行尾。
