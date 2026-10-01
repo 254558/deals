@@ -159,7 +159,7 @@
     renderComments(comments || []);
     if (!items.length) { $('box').innerHTML = ''; return; }
     $('box').innerHTML = `<table>
-      <thead><tr><th>图</th><th>商品</th><th>价格 / 尺码</th><th>店 / 联系</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+      <thead><tr><th>图</th><th>商品</th><th>价格 / 尺码</th><th>联系</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
       <tbody>${items.map((it) => `
         <tr class="${it.hidden ? 'is-hidden' : ''}${it.reports > 0 && !it.hidden ? ' is-reported' : ''}">
           <td><img class="pic" src="/api/img/${esc(it.id)}" alt="" loading="lazy"></td>
@@ -169,7 +169,7 @@
             ${it.note ? `<div style="font-size:12px;color:var(--ink-2)">${esc(it.note)}</div>` : ''}
           </td>
           <td>¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? `<div><span class="tag">${esc(it.size)}</span></div>` : ''}</td>
-          <td>${esc(it.store || '—')}<div class="id">${esc(it.contact)}</div></td>
+          <td>${esc(it.contact)}</td>
           <td>
             ${it.hidden ? '<span class="tag tag--hidden">已下架</span>' : '<span class="tag">在售</span>'}
             ${it.reports > 0 ? `<span class="tag tag--reported">被举报 ${it.reports}</span>` : ''}

@@ -20,7 +20,7 @@ export async function onRequestGet({ request, env }) {
   if (denied) return denied;
 
   const { results } = await env.DB.prepare(
-    `SELECT id, created_at, title, price, size, store, contact, note, reports, hidden
+    `SELECT id, created_at, title, price, size, contact, note, reports, hidden
        FROM listings ORDER BY hidden ASC, created_at DESC LIMIT 500`
   ).all();
   const items = results || [];

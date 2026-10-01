@@ -361,7 +361,6 @@ export default {
   id: 'decathlon',
   label: '迪卡侬',
   aliases: ['decathlon', 'deca', 'd'],
-  vercelProject: 'decathlon-deals',
   imageSize: 800,
   sizeVariant,
   fonts: null, // 迪卡侬这一站不内嵌字体，走系统字体栈

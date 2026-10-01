@@ -10,7 +10,6 @@ CREATE TABLE IF NOT EXISTS listings (
   title       TEXT NOT NULL,              -- 商品名（卖家自己写）
   price       REAL NOT NULL,              -- 标价（元）
   size        TEXT NOT NULL DEFAULT '',   -- 尺码
-  store       TEXT NOT NULL DEFAULT '',   -- 哪家店、哪个城市
   contact     TEXT NOT NULL,              -- 微信 / 手机号 / 闲鱼链接，卖家自己填
   note        TEXT NOT NULL DEFAULT '',   -- 包邮还是到付、有瑕疵之类的说明
   image_mime  TEXT NOT NULL,

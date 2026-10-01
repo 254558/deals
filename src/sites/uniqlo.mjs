@@ -385,7 +385,6 @@ export default {
   id: 'uniqlo',
   label: '优衣库',
   aliases: ['uniqlo', 'uniql', 'u'],
-  vercelProject: 'uniql',
   imageSize: 561,
   sizeVariant,
   /** 这件商品还剩哪些尺码（见上面 sizeInfo 那段）。答不出来返回 null */

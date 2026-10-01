@@ -35,16 +35,16 @@ export async function onRequestPost({ request, env }) {
   if (v.b64) {
     const bytes = Uint8Array.from(atob(v.b64), (c) => c.charCodeAt(0));
     await env.DB.prepare(
-      `UPDATE listings SET title=?, price=?, size=?, store=?, contact=?, note=?,
+      `UPDATE listings SET title=?, price=?, size=?, contact=?, note=?,
                            image_mime=?, image_bytes=? WHERE id=?`
     )
-      .bind(v.title, v.price, v.size, v.store, v.contact, v.note, v.mime, bytes, id)
+      .bind(v.title, v.price, v.size, v.contact, v.note, v.mime, bytes, id)
       .run();
   } else {
     await env.DB.prepare(
-      'UPDATE listings SET title=?, price=?, size=?, store=?, contact=?, note=? WHERE id=?'
+      'UPDATE listings SET title=?, price=?, size=?, contact=?, note=? WHERE id=?'
     )
-      .bind(v.title, v.price, v.size, v.store, v.contact, v.note, id)
+      .bind(v.title, v.price, v.size, v.contact, v.note, id)
       .run();
   }
 

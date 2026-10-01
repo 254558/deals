@@ -7,7 +7,7 @@ const LIMIT = 200;
 export async function onRequestGet({ env }) {
   // 顺手带上评论数（卡片上要显示「评论 N」）——子查询，别为这个再开一趟请求
   const { results } = await env.DB.prepare(
-    `SELECT id, created_at, title, price, size, store, note, contact, reports,
+    `SELECT id, created_at, title, price, size, note, contact, reports,
             (SELECT COUNT(*) FROM comments c WHERE c.listing_id = listings.id AND c.hidden = 0) AS comments
        FROM listings WHERE hidden = 0 ORDER BY created_at DESC LIMIT ?`
   )
@@ -48,11 +48,11 @@ export async function onRequestPost({ request, env }) {
   const bytes = Uint8Array.from(atob(v.b64), (c) => c.charCodeAt(0));
 
   await env.DB.prepare(
-    `INSERT INTO listings (id, created_at, title, price, size, store, contact, note,
+    `INSERT INTO listings (id, created_at, title, price, size, contact, note,
                            image_mime, image_bytes, ip_hash, token_hash)
      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`
   )
-    .bind(id, now, v.title, v.price, v.size, v.store, v.contact, v.note, v.mime, bytes, hash, await SHA(token))
+    .bind(id, now, v.title, v.price, v.size, v.contact, v.note, v.mime, bytes, hash, await SHA(token))
     .run();
 
   return json({ ok: true, id, token, createdAt: now });

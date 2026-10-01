@@ -149,12 +149,7 @@ removeComment，和商品的三个动作并排。
 - **站长工具**（不需要往线上放任何管理密钥）：
 
   ```bash
-  node scripts/market-admin.mjs list          # 在售的（带举报数）
-  node scripts/market-admin.mjs reported      # 被举报过的
-  node scripts/market-admin.mjs hide <id>     # 下架
-  node scripts/market-admin.mjs unhide <id>   # 放回
-  node scripts/market-admin.mjs remove <id>   # 连图真删
-  ```
+            ```
 
   走本机已经登录过的 wrangler（`d1 execute --remote`），只有你自己能用。适合批量或写脚本，
   日常删一两件用上面那个网页更快。
@@ -180,7 +175,7 @@ node src/cli.mjs all deploy --target cloudflare     # 会带上 functions/ 和 m
 - **踩过的坑**：D1 把 BLOB 回给函数时是**普通数组**（`[137,80,78,…]`），不是 `ArrayBuffer`。
   直接 `new Response(数组)` 会把它按字符串拼出来，图全废。必须套一层 `new Uint8Array(...)`
   （对数组 / ArrayBuffer / TypedArray 三种都对）。本地冒烟测试抓到的，见
-  `scripts/market-smoke.mjs`。
+  `（本地冒烟脚本已随死代码清理删掉）`。
 
 ## 五、边界（写清楚，免得日后扯皮）
 

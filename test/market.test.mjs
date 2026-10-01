@@ -74,7 +74,7 @@ function fakeDB(seed = {}) {
         async run() {
           calls.push(q);
           if (/INSERT INTO posts/.test(sql)) state.posts.push({ ip_hash: q.args[0], at: q.args[1] });
-          // INSERT 的列顺序：id, created_at, title, price, size, store, contact, note,
+          // INSERT 的列顺序：id, created_at, title, price, size, contact, note,
           //                   image_mime, image_bytes, ip_hash, token_hash
           if (/INSERT INTO comments/.test(sql)) {
             const [id, listing_id, created_at, body, ip_hash, token_hash] = q.args;
@@ -82,21 +82,21 @@ function fakeDB(seed = {}) {
           }
           if (/UPDATE comments SET hidden = 1/.test(sql)) { const c = state.comments.find((x) => x.id === q.args[0]); if (c) c.hidden = 1; }
           if (/INSERT INTO listings/.test(sql)) {
-            const [id, created_at, title, price, size, store, contact, note, , image_bytes, ip_hash, token_hash] = q.args;
-            state.listings.push({ id, created_at, title, price, size, store, contact, note, image_bytes, ip_hash, token_hash, reports: 0, hidden: 0 });
+            const [id, created_at, title, price, size, contact, note, , image_bytes, ip_hash, token_hash] = q.args;
+            state.listings.push({ id, created_at, title, price, size, contact, note, image_bytes, ip_hash, token_hash, reports: 0, hidden: 0 });
           }
           if (/UPDATE listings SET hidden = 1/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.hidden = 1; }
           if (/UPDATE listings SET reports = 0/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[0]); if (r) r.reports = 0; }
           // 编辑：带图（9 个参数，最后是 id）与不带图（7 个参数）两条
-          if (/UPDATE listings SET title=\?, price=\?, size=\?, store=\?, contact=\?, note=\?,\s*image_mime=\?, image_bytes=\? WHERE id=\?/.test(sql)) {
-            const [title, price, size, store, contact, note, , image_bytes, id] = q.args;
+          if (/UPDATE listings SET title=\?, price=\?, size=\?, contact=\?, note=\?,\s*image_mime=\?, image_bytes=\? WHERE id=\?/.test(sql)) {
+            const [title, price, size, contact, note, , image_bytes, id] = q.args;
             const r = state.listings.find((l) => l.id === id);
-            if (r) Object.assign(r, { title, price, size, store, contact, note, image_bytes });
+            if (r) Object.assign(r, { title, price, size, contact, note, image_bytes });
           }
-          if (/UPDATE listings SET title=\?, price=\?, size=\?, store=\?, contact=\?, note=\? WHERE id=\?/.test(sql)) {
-            const [title, price, size, store, contact, note, id] = q.args;
+          if (/UPDATE listings SET title=\?, price=\?, size=\?, contact=\?, note=\? WHERE id=\?/.test(sql)) {
+            const [title, price, size, contact, note, id] = q.args;
             const r = state.listings.find((l) => l.id === id);
-            if (r) Object.assign(r, { title, price, size, store, contact, note });
+            if (r) Object.assign(r, { title, price, size, contact, note });
           }
           if (/UPDATE listings SET reports/.test(sql)) { const r = state.listings.find((l) => l.id === q.args[3]); if (r) { r.reports = q.args[0]; if (q.args[1] >= q.args[2]) r.hidden = 1; } }
           return { success: true };
@@ -135,7 +135,7 @@ function fakeDB(seed = {}) {
 }
 
 const req = (body) => new Request('https://x/api/listings', { method: 'POST', headers: { 'Content-Type': 'application/json', 'CF-Connecting-IP': '1.2.3.4' }, body: JSON.stringify(body) });
-const good = { title: '羊毛混纺大衣', price: 299, size: 'M', store: '上海 · 南京西路店', contact: 'wx: a', note: '包邮', image: PNG };
+const good = { title: '羊毛混纺大衣', price: 299, size: 'M', contact: 'wx: a', note: '包邮', image: PNG };
 
 test('validate：不合格的输入每条都有话说明白', () => {
   assert.equal(validate({ ...good, title: '一' }).error.includes('太短'), true);

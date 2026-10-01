@@ -10,7 +10,7 @@
  *   deals <站点> report            生成 HTML 报告并用浏览器打开
  *   deals <站点> stats             看看本地攒了多少数据
  *   deals <站点> dev               起 Vite 开发服务器调报告页面
- *   deals <站点> deploy            生成最新报告并推到 Vercel
+ *   deals <站点> deploy            生成最新报告并推到 Cloudflare Pages
  *   deals sites                    有哪些站点、各攒了多少
  *
  * 站点可以写 `all`（sync / report / deploy 支持一次做两家）：
@@ -78,7 +78,7 @@ const flag = (name, def) => {
 };
 const has = (name) => cliArgs.includes(`--${name}`);
 
-const COMMANDS = new Set(['sync', 'list', 'new', 'track', 'report', 'stats', 'history', 'dev', 'deploy', 'sites', 'backup', 'alert', 'help', 'block', 'unblock', 'blocked']);
+const COMMANDS = new Set(['sync', 'list', 'track', 'report', 'stats', 'history', 'dev', 'deploy', 'sites', 'backup', 'alert', 'help', 'block', 'unblock', 'blocked']);
 
 /**
  * 这个项目里唯一**不可再生**的东西就是 data/deals.db：
@@ -347,26 +347,6 @@ function cmdList(site) {
   );
 }
 
-function cmdNew(site) {
-  const db = openDb(DB_PATH);
-  const rows = listJustDropped(db, site.id);
-
-  if (!rows.length) {
-    console.log(C.dim(`\n最近一次抓取没有商品降价。跑 deals ${site.id} sync 更新数据。\n`));
-    return;
-  }
-  const codeW = site.tableColumns[0].w;
-  console.log(C.bold(`\n▍最近一次抓取新降价的 ${rows.length} 件商品\n`));
-  for (const r of rows) {
-    console.log(
-      `  ${pad(r.code, codeW)} ${pad(truncate(r.name, 30), 32)} ` +
-        `${C.dim(`¥${r.prev_price}`)} → ${C.bold(`¥${r.last_price}`)}  ` +
-        `${C.red(`-${Math.round(r.rate * 100)}%`)}  ${C.dim(`省 ¥${r.origin_price - r.last_price}`)}`
-    );
-  }
-  console.log();
-}
-
 async function cmdTrack(site, codeArg) {
   if (!codeArg) {
     throw new Error(`用法：deals ${site.id} track <商品编号>，${site.copy.trackUsage}`);
@@ -451,14 +431,9 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   const payload = buildPayload(db, site, images, { crossLinkHref, marketHref });
   writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, payload, beacon, origin }), 'utf8');
 
-  // 报告目录里放一份三行的 vercel.json（framework / installCommand / buildCommand 全置空）：
-  // 这个目录里没有 package.json，Vercel 只该原样收下这些文件。旧的优衣库那份报告就是靠它
   // 避免被识别成 Vite 预设、在部署机上白跑一遍 vite build。生成器从不清 reports/ 目录，
   // 所以这份配置不会被下次生成冲掉；已存在就不覆盖。
-  const vercelCfg = join(outDir, 'vercel.json');
-  if (!existsSync(vercelCfg)) {
-    writeFileSync(vercelCfg, JSON.stringify({ framework: null, installCommand: null, buildCommand: null }, null, 2) + '\n', 'utf8');
-  }
+  
 
   // 部署根目录（`/`）默认进哪一站：根路径本来什么都没有、打开是 404，
   // 所以顺手写一个落地页 + Cloudflare 的 `_redirects`（真 302）。幂等。
@@ -652,19 +627,6 @@ async function cmdDev(site) {
   spawnSync(vite, ['--open'], { cwd: ROOT, stdio: 'inherit' });
 }
 
-async function cmdDeployVercel(site) {
-  console.log(C.dim(`\n先重新生成 ${site.label} 的报告…`));
-  await cmdReport(site, { open: false });
-
-  const dir = reportDir(site);
-  const args = ['deploy', dir, '--project', site.vercelProject, '--prod', '--yes'];
-  console.log(C.bold(`\nvercel ${args.join(' ')}\n`));
-  const res = spawnSync('vercel', args, { cwd: ROOT, stdio: 'inherit' });
-  if (res.error) throw new Error(`vercel 起不来：${res.error.message}（要装 Vercel CLI 并先登录一次：npm i -g vercel && vercel login）`);
-  if (res.status !== 0) throw new Error(`vercel 返回 ${res.status}，看上面的输出`);
-  return res.status;
-}
-
 /**
  * 两份报告互相指路的链接：Cloudflare 上它们是同一个域名的兄弟目录，
  * 所以用相对路径 `../<另一个站点>/` —— 换域名、换本地双击都对。
@@ -677,11 +639,11 @@ const cfCrossLink = (site) => {
 /**
  * Cloudflare Pages。
  *
- * 和 Vercel 那边的关键差别：**一个项目装两份报告**。所以这个命令与「对哪个站点做」
+ * 一个 Pages 项目装两份报告。所以这个命令与「对哪个站点做」
  * 无关 —— 从哪一站触发都会把两份报告一起刷新，再把整个 `reports/` 目录发上去，
  * 得到 `<host>/uniqlo/` 与 `<host>/decathlon/`。
  *
- * 报告目录里那两个 `vercel.json` 会跟着一起传上去，当成普通静态文件放着（无害）；
+ *
  * wrangler 没有 exclude 之类的开关，不为它专门绕路。
  */
 async function cmdDeployCloudflare() {
@@ -747,7 +709,7 @@ function cmdSites() {
     console.log(
       C.dim(
         `    ${s.aliases.join(' / ')}　图片档位 ${s.imageSize}${s.fonts ? '　内嵌中文字体' : ''}` +
-          `　Vercel 项目 ${s.vercelProject}　Cloudflare ${CLOUDFLARE.project}/${s.id}/`
+          `　Cloudflare ${CLOUDFLARE.project}/${s.id}/`
       )
     );
   }
@@ -781,7 +743,7 @@ ${C.bold('deals')} —— 比价与捡漏工具（${siteList()}）
        --rebuild                         强制重新构建 React 页面
   ${C.bold(`deals ${id} stats`)}             本地数据概览
   ${C.bold(`deals ${id} dev`)}               起 Vite 开发服务器调报告页面
-  ${C.bold(`deals ${id} deploy`)}            生成最新报告并推到 Vercel（每站一个项目）
+  ${C.bold(`deals ${id} deploy`)}            生成最新报告并推到 Cloudflare Pages（每站一个项目）
        --target cloudflare               改推 Cloudflare Pages
                                           （一个项目装两份，与站点无关）
 
@@ -807,7 +769,7 @@ const SINGLE = new Set(['list', 'new', 'track', 'stats', 'history', 'dev', 'bloc
 const MULTI = new Set(['sync', 'report', 'deploy']);
 
 /** 部署目标。默认 Vercel（每站一个项目）；`--target cloudflare` 走一个 Pages 项目装两份 */
-const DEPLOY_TARGETS = new Set(['vercel', 'cloudflare']);
+const DEPLOY_TARGETS = new Set(['cloudflare']);
 
 try {
   if (cmd === 'help' && !target) {
@@ -834,7 +796,7 @@ try {
     }
     const sites = resolved.sites;
 
-    const deployTo = flag('target', 'vercel').toLowerCase();
+    const deployTo = flag('target', 'cloudflare').toLowerCase();
     if (cmd === 'deploy' && !DEPLOY_TARGETS.has(deployTo)) {
       console.error(C.red(`\n没有「${deployTo}」这个部署目标。可用：${[...DEPLOY_TARGETS].join(' / ')}\n`));
       process.exit(1);
@@ -865,7 +827,6 @@ try {
           switch (cmd) {
             case 'sync': await cmdSync(site); break;
             case 'list': cmdList(site); break;
-            case 'new': cmdNew(site); break;
             case 'track': await cmdTrack(site, rest[0] || flag('code')); break;
             case 'report':
               await cmdReport(site, {
@@ -881,7 +842,8 @@ try {
             case 'blocked': cmdBlocked(site); break;
             case 'history': cmdHistory(site, rest[0] || flag('code')); break;
             case 'dev': await cmdDev(site); break;
-            case 'deploy': await cmdDeployVercel(site); break;
+            // Cloudflare 是一个项目装两份，所以只在第一轮跑一次（否则 all deploy 会跑两遍）
+            case 'deploy': if (site === sites[0]) await cmdDeployCloudflare(); break;
             default: cmdHelp(sites.length === 1 ? sites[0] : null);
           }
         } catch (err) {

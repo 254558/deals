@@ -455,7 +455,7 @@
           <div class="item__title">${esc(it.title)}</div>
           <div class="item__price">¥${Number(it.price).toLocaleString('zh-CN')}</div>
           <div class="item__meta">
-            ${it.size ? '<span class="kbd">' + esc(it.size) + '</span>' : ''}${it.store ? (it.size ? ' ' : '') + esc(it.store) : ''}
+            ${it.size ? '<span class="kbd">' + esc(it.size) + '</span>' : ''}
           </div>
           ${it.note ? `<div class="item__note">${esc(it.note)}</div>` : ''}
           <div class="item__meta">联系：<b>${esc(it.contact)}</b></div>

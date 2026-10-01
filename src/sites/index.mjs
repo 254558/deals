@@ -13,7 +13,7 @@
  *   tags / report / copy      站点口味：标签文案、报告的 meta、终端提示语
  *   fonts                     要内嵌的中文字体；null = 走系统字体栈
  *   statsExtra[]              站点私有的统计行
- *   vercelProject             `deals <站点> deploy` 推到哪个 Vercel 项目
+null
  *
  * 规范形状（适配器 → 核心）：
  *   { productCode, code, name, brand, sports, season, sizeRange, url,
@@ -30,7 +30,7 @@ export const SITES = [uniqlo, decathlon];
 /**
  * Cloudflare Pages 的配置。
  *
- * 和 Vercel 那边不一样：Vercel 是**每站一个项目**（站点描述符里的 `vercelProject`），
+null
  * Cloudflare 这边是**一个项目装两份报告**，各占一个子目录 —— 把整个 `reports/`
  * 目录发上去，得到 `<host>/uniqlo/` 与 `<host>/decathlon/`。
  * 所以项目名/域名属于「一次部署」，不属于某个站点，放在这里而不是站点描述符里。
