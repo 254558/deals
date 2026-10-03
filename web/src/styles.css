@@ -313,13 +313,16 @@ button {
   align-items: baseline;
   flex-wrap: wrap;
   gap: 8px;
+  /* 价格行自己的行盒也要收：22px 的字按默认行高会撑出一大截空白，
+     那是「价格 → 比例条」那 10px 里的大头。1.15 不切 ¥ 的上缘。 */
+  line-height: 1.15;
 }
 .card__now { font-weight: 600; }
-.card__now .now__sym { font-size: 16px; }
+.card__now .now__sym { font-size: 18px; }
 /* 现价 16 → 19px（用户 2026-10-01：「价格放大」）。数字用的是 DIN Alternate 这类窄体，
    放大之后仍然不占地方；符号与划线价各提一档，主次关系不变。 */
 .card__now .now__int,
-.card__now .now__dec { font-size: 19px; }
+.card__now .now__dec { font-size: 22px; }
 /* 没降价的不配红：退回次级灰 */
 .card__now--flat { color: var(--ink-2); }
 /* 上市价划删除线，只在真降了的时候才画（见 ProductCard 的 cut 判断）。
@@ -327,7 +330,7 @@ button {
    （现价 16px）。划了线的小字看不见，等于白记了上市价——主次改由颜色区分
    （原价次级灰、现价品牌色），不再靠把原价缩到看不见 */
 .card__was {
-  font-size: 16px;
+  font-size: 17px;
   color: var(--ink-2);
   text-decoration: line-through;
 }
@@ -579,9 +582,11 @@ body {
      现在名字只有一行高：省下约 22px、卡片更紧凑，而且「名字长短不一导致价格行错位」
      这个问题自然消失了 —— 每张卡的名字都是同样的一行。 */
   font-size: 15px;
-  line-height: 1.5;
-  /* 图 → 标题：16 → 10（用户 2026-10-01：「标题，价格，比例条之间的间距缩小」） */
-  margin-top: 10px;
+  /* 行高 1.5 → 1.3：标题上下那点空隙其实是行盒（half-leading），只收 margin 收不掉。
+     这是「标题 → 价格 已经是 0，看着却还有缝」的原因。 */
+  line-height: 1.3;
+  /* 图 → 标题：16 → 10 → 6（用户 2026-10-01：「间距继续缩小」） */
+  margin-top: 6px;
   min-height: 0;
 }
 .card__prices { margin-top: 0; } /* 标题 → 价格：2 → 0 */
@@ -594,7 +599,7 @@ body {
   font-variant-numeric: tabular-nums;
 }
 /* 标尺的卡片版：一根细横条，条的长度就是降幅，红色降幅数字贴在条尾 */
-.card__deal { display: flex; align-items: center; margin-top: 3px; } /* 价格 → 比例条：7 → 3 */
+.card__deal { display: flex; align-items: center; margin-top: 2px; } /* 价格 → 比例条：7 → 3 → 2 */
 .card__bar { flex: 1; min-width: 40px; }
 .card__bar > i { background: #e20c18 !important; }
 
