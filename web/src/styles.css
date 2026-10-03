@@ -730,3 +730,13 @@ body {
 .card__now:not(.card__now--flat),
 .rank__now { color: #e20c18 !important; }
 .card__bar > i { background: #e20c18 !important; }
+
+/* 手机端改成**两列**。
+   改前实测（390×844，线上）：优衣库一列，卡 358×591 → 一屏只能看 1.4 件；
+   迪卡侬一列，卡 358×472 → 1.8 件。3:4 的图一个人就占掉 477px，翻 800 多件要滑很久。
+   两列之后单卡约 173 宽、330 高，一屏能看到 2.5 件上下。
+   上限设在 560px：再宽一点（小平板）两列反而挤，那时保持一列。
+   放在文件末尾是刻意的 —— 媒体查询按顺序覆盖，放最后才压得住上面那些。 */
+@media (max-width: 560px) {
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+}
