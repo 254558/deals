@@ -334,7 +334,10 @@ button {
    （现价 16px）。划了线的小字看不见，等于白记了上市价——主次改由颜色区分
    （原价次级灰、现价品牌色），不再靠把原价缩到看不见 */
 .card__was {
-  font-size: 17px;
+  /* 17 → 15px，并显式不加粗（用户 2026-10-01：「原价不需要加粗，也可小一点」）。
+     现价 22px 加粗、原价 15px 常规 —— 主次一眼就分得开，不用靠字号差太多。 */
+  font-size: 15px;
+  font-weight: 400;
   color: var(--ink-2);
   text-decoration: line-through;
 }
