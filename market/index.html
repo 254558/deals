@@ -470,7 +470,7 @@
           <div class="item__meta">联系：<b>${esc(it.contact)}</b></div>
           <div class="item__foot">
             <span>${ago(it.created_at)}</span>
-            <button class="btn btn--ghost btn--sm" type="button" data-comments="${esc(it.id)}" aria-expanded="true">收起评论${it.comments ? '（' + it.comments + '）' : ''}</button>
+            ${it.comments ? '<button class="btn btn--ghost btn--sm" type="button" data-comments="' + esc(it.id) + '" aria-expanded="true">收起评论</button>' : ''}
             <span style="margin-left:auto"></span>
             ${mine
               ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`

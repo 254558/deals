@@ -224,7 +224,10 @@ function normalize(p) {
     rate: best.rate, // 降幅 0~1
     onSale: m.price?.on_sale !== false,
     tags: [...tags],
-    url: `https://www.decathlon.com.cn/product-detail?dsm_code=${dsmCode}${modelCode ? `&model_code=${modelCode}` : ''}`,
+    // 只带 dsm_code（商品主编号），**不带 model_code**：model 是当时那个颜色/款式的编号，
+      // 款式下架后带它的链接会落到「没有相关搜索结果」（用户 2026-10-01 报的 8336932 就是这种）。
+      // dsm_code 是商品级的，页面会自己挑一个在售款式，长期有效。
+      url: `https://www.decathlon.com.cn/product-detail?dsm_code=${dsmCode}`,
   };
 }
 
