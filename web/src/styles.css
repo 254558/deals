@@ -496,6 +496,12 @@ body {
    页签和商品都在它下面。下边那条线把它跟页签分开。
    整块只在 features.rankBoard 打开时渲染，所以下面的规则只服务优衣库那一站 */
 
+/* 榜单标题那行现在是个开关；收起时列表整块不显示（用 class，不用 hidden 属性） */
+.topranks__toggle { display: flex; align-items: baseline; gap: 8px; background: none; border: 0; padding: 0; cursor: pointer; }
+.topranks__toggle:hover .label { color: var(--ink-2); }
+.topranks__hint { font-size: 12px; color: var(--blue); }
+.rank--hidden { display: none; }
+
 .topranks {
   padding: 22px 0 20px;
   border-bottom: 1px solid var(--rule);

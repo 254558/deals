@@ -453,7 +453,11 @@ export default {
       brandMark: false,
       priceOffBadge: false,
       dealBarNumber: true, // 卡片横条尾部的红色降幅数字
-      cardChips: false,
+      // 2026-10-01：这个原本是 true —— 统一皮肤那轮我从优衣库抄了一份 features，
+      // 把 cardChips 一起抄成了 false，于是卡片上的「尾货 / 新品」小标签全没了
+      // （用户报的「迪卡侬少了个标记」就是这个）。迪卡侬的商品确实需要这个标记：
+      // 它一半的卖点就是「尾货清仓」。样式在共用区（.chip 那几条），不用另写。
+      cardChips: true,
       trackChip: false,
     },
 

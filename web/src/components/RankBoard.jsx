@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { META } from '../lib/site.js';
 import { pct, price } from '../lib/format.js';
 
 /** 「几件」用汉字，词随实际条数走——只剩 3 件的时候不该写成「五件」 */
@@ -37,13 +38,26 @@ export function RankBoard({ deals }) {
     [deals]
   );
 
+  // 榜单看过一次就够了：第一次进来展开、并记一笔，之后默认收起（仍然可以手动展开）。
+  // 起因是手机上这一块占掉整整第一屏（5 行榜），而多数时候打开是想直接翻商品。
+  const seeKey = (META.storagePrefix || 'deals') + '.rankSeen';
+  const [open, setOpen] = useState(() => {
+    try { return !localStorage.getItem(seeKey); } catch { return true; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(seeKey, '1'); } catch {}
+  }, [seeKey]);
+
   // 开关的判断放在 useMemo 之后（App 里也还有一道），免得 Hook 调用次序随开关变
   if (top.length === 0) return null;
 
   return (
     <section className="topranks" aria-label="本期降得最狠的商品">
-      <span className="label">本期降得最狠的{CN[top.length - 1]}件</span>
-      <ol className="rank">
+      <button className="topranks__toggle" type="button" onClick={() => setOpen(!open)} aria-expanded={open}>
+          <span className="label">本期降得最狠的{CN[top.length - 1]}件</span>
+          <span className="topranks__hint">{open ? '收起' : '展开'}</span>
+        </button>
+      <ol className={open ? 'rank' : 'rank rank--hidden'}>
         {top.map((d, i) => (
           <li className="rank__row" key={d.id}>
             <span className="rank__n n">{String(i + 1).padStart(2, '0')}</span>
