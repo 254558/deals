@@ -282,6 +282,12 @@ button {
 
 .card__name {
   overflow: hidden;
+  /* 标题**只占一行**，超出用省略号（用户 2026-10-01：「标题就弄一行，超出的部份用省略号替代」）。
+     必须是块级容器，text-overflow 才生效；报告里的卡片是 grid，本身就会把子元素块级化。
+     完整名字仍在 title 里 —— 鼠标停一下能看到。 */
+  display: block;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   color: var(--ink);
 }
 .card__name:hover { color: var(--blue); }
@@ -552,14 +558,13 @@ body {
 }
 
 .card__name {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  /* 一行就够（原来 -webkit-line-clamp: 2 + min-height: 45px 预留两行，为的是价格行对齐）。
+     现在名字只有一行高：省下约 22px、卡片更紧凑，而且「名字长短不一导致价格行错位」
+     这个问题自然消失了 —— 每张卡的名字都是同样的一行。 */
   font-size: 15px;
   line-height: 1.5;
   margin-top: 16px;
-  /* 名称长短不一时，两行的高度先占住，价格才不会一行高一行低 */
-  min-height: 45px;
+  min-height: 0;
 }
 .card__prices { margin-top: 2px; }
 .card__now { color: var(--red); }
