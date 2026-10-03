@@ -1,4 +1,4 @@
-import { priceParts, tagLabel, chips, goneNote } from '../lib/format.js';
+import { chips, goneNote, num, priceParts, tagLabel } from '../lib/format.js';
 import { META } from '../lib/site.js';
 import { CardActions } from './CardActions.jsx';
 
