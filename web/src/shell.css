@@ -1,0 +1,132 @@
+/* ============================================================================
+ * 外壳（shell）：令牌 + 页面内衬 + 报头
+ *
+ * **唯一的出处。** 两处消费它，不要再手抄第三份：
+ *   1. 报告：web/src/styles.css 顶部 `@import './shell.css'`
+ *      （Vite 构建时内联进来，单文件的性质不变）
+ *   2. 尾货市集 / 管理页：部署时由 src/core/report.mjs 的 stageMarketPages()
+ *      注入到它们 HTML 里 `<!-- @shell -->` 的位置
+ *
+ * 为什么合并：这三段原来在三个文件里各存一份，改一次报头要改三处（漏过）；
+ * 而四次令牌回归（降幅条灰底、红填充、页签边框、左右边距）全是「令牌定义散落」引起的。
+ * 合成一处后，test/css-tokens.test.mjs 盯住这一个文件就能判断令牌有没有缺。
+ * ========================================================================= */
+
+:root {
+  --white: #fff;
+  --ink: #000f17;
+  --ink-2: #616161;
+  --ink-4: #b3bac3;
+  --rule: #d9dde1;
+  --rule-soft: #eff1f3;
+  --surface: #f5f4f5;
+  --surface-2: #fafafa;
+  --blue: #3643ba;
+  --red: #e20c18;
+  --yellow: #ffcd4e;
+  /* 页面外壳的左右内边距。基准值 40px 丢了之后 `padding: 0 var(--pad)` 整条失效，
+     左右边距直接算成 0（用户 2026-10-01 报的「整体左右边距没有了」）。
+     1180 / 760 两档的收紧写在文件后面的媒体查询里，会覆盖这里。 */
+  --pad: 40px;
+
+  /* 下面这几个是 2026-10-01 那条「变量必须有定义」的测试查出来的：
+     它们被用了、但没人定义 —— 也就是那些声明**一直在线上失效**（var() 解析不到
+     会让整条声明作废）。逐个看回原处，确认都是当初就想要的效果，所以补定义而不是删规则：
+       --bg          启动画面的底色（.boot）
+       --ink-3       启动提示文字（比 --ink-2 淡、比 --ink-4 深）
+       --ink-faint   收藏 / 隐藏按钮的静默灰（要比任何彩色角标都安静）
+       --ls-price    榜单大字价格的字符间距
+       --badge-ink   榜单黄角标上的字色
+       --bar-dur / --bar-ease  降幅条动画的时长与缓动（这里才是它们的家；
+                     .card__bar > i 里那两个 var() 兜底值留着，当第二道保险 */
+  --bg: #fff;
+  --ink-3: #8a8f96;
+  --ink-faint: #d3d8de;
+  --ls-price: -0.01em;
+  --badge-ink: #000f17;
+  --bar-dur: 600ms;
+  --bar-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }
+
+/* 页面内衬的三档：40（基准，在调色板里）→ 24 → 16 */
+@media (max-width: 1180px) {
+  :root { --pad: 24px; }
+}
+@media (max-width: 760px) {
+  :root { --pad: 16px; }
+}
+
+/* ---------------- 报头 ---------------- */
+
+/**
+ * 报头（最上面那条导航）。
+ *
+ * **一套皮，不分站点**：2026-10-01 之前优衣库和迪卡侬各有一套（11px vs 15px、有没有
+ * 底下那条细线、小方块 6px vs 10px、间距 14 vs 4/18），换个页面导航栏就换个样子。
+ * 现在这里就是唯一的规格：站点名和入口都是 10px + 0.12em 字距、方块 6px 红、
+ * 一条发丝线收尾。市集页与管理页是手写的，照着这段抄了一份（market/index.html 里
+ * 有注释指回来），改这里记得两边一起改。
+ */
+/* 报头也钉住（用户 2026-10-01 要求：往下滑也要看到 GoodPrices 和那几个入口）。
+   两个要点：
+   1. 它**不能**待在一个只有它自己高的 .wrap 里 —— sticky 只能在父盒范围内移动，
+      那样写根本粘不住（原来正是这样）。所以报头自带 .wrap，外层那层去掉了。
+   2. 顶部那 44px 从 padding 改成 margin：margin 不跟着粘，往下滚时它会走掉，
+      钉住的只是「站点名 + 发丝线」这一条。 */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--white);
+  padding: 0;
+  margin-top: var(--nav-gap, 44px);
+}
+.masthead__eyebrow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-4);
+}
+.masthead__dot { flex: none; width: 6px; height: 6px; background: var(--red); }
+/* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
+   迪卡侬 13px ink-2），而报头必须两家一模一样。 */
+.masthead__text {
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  color: var(--ink-4);
+}
+/* 左上角那格是品牌名，也是回首页的入口：比右侧入口深一点，看得出是可点的 */
+/* 品牌名：粗体 + 品牌蓝。用复合选择器是为了压过上面 `.masthead__text` 里的
+     font-weight: 400 —— 那条规则在本文件里位置更靠后，单靠 `.masthead__home` 会被它盖掉。 */
+/* 品牌名：粗体 + 红。色值带字面兜底 —— 这个项目里已经栽过两次
+     「var() 解析不到 → 整条声明失效」（降幅条灰底、页签边框），所以不再裸用变量。 */
+.masthead__text.masthead__home { color: var(--red, #e20c18); font-weight: 700; text-decoration: none; }
+.masthead__home:hover { text-decoration: underline; }
+/* 行尾那组入口（兄弟报告 + 尾货市集）。
+   ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
+   flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
+   之后露出来的）。后面的紧挨着排，间距就是 eyebrow 的 gap。 */
+.masthead__cross {
+  color: var(--blue);
+  text-decoration: none;
+}
+/* GoodPrices 留在左边，其余（各页入口）由它推到右边。
+   ⚠️ 原来写的是 `.masthead__cross:first-of-type { margin-left: auto }`——那个
+   `:first-of-type` 数的是「父元素里第一个 <a>」，品牌名换成 <a> 之后第一个 <a>
+   就成了 GoodPrices 自己，于是整组被推到右边、左边空着（2026-10-01 用户报的）。
+   现在让品牌名吃掉右侧空白，语义也更直白：它左边、其余右边。 */
+.masthead__home { margin-right: auto; }
+.masthead__cross:hover { text-decoration: underline; }
+
+  /* 手机上：入口**紧跟站点名**排，不推到行尾。
+     推到行尾（margin-left: auto）在窄屏上很脆：中文标签 + 两个入口一旦超出可用宽度，
+     flex 就会把它折到第二行（用户报的「优衣库比价、迪卡侬比价另起一行」）。
+     桌面版仍然推到行尾——那是用户 2026-09-30 明确要的「右对齐、间距不要太大」。 */
+
+
