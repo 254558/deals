@@ -739,5 +739,6 @@ body {
    上限设在 560px：再宽一点（小平板）两列反而挤，那时保持一列。
    放在文件末尾是刻意的 —— 媒体查询按顺序覆盖，放最后才压得住上面那些。 */
 @media (max-width: 560px) {
-  .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  /* gap 也跟着收紧（12 → 6）：手机上图片更大一点，靠的就是内衬 + 间隙这两处 */
+  .grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
 }
