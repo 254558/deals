@@ -18,7 +18,13 @@ import { readFileSync } from 'node:fs';
 const ROOT = new URL('..', import.meta.url).pathname;
 // shell.css 是外壳（令牌 + .wrap + 报头）的**唯一出处**，必须一起扫：
 // 令牌定义搬过去之后，只扫 styles.css 会误报「用到了却没定义」（这条测试自己抓到过一次）。
-const FILES = ['web/src/shell.css', 'web/src/styles.css', 'market/index.html', 'market/admin/index.html'];
+const FILES = [
+  'web/src/shell.css',
+  'web/src/styles.css',
+  'market/market.css',   // 2026-10-01 从 market/index.html 拆出来
+  'market/index.html',
+  'market/admin/index.html',
+];
 
 /**
  * 有些变量**不来自 CSS**，而是运行时写上去的，必须列白名单：

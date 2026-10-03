@@ -70,7 +70,7 @@ async function startServer() {
 
   // 先把市集页铺进 reports/（注入 shell），否则本地起的服务用的是旧拷贝
   const { stageMarketPages } = await import('../src/core/report.mjs');
-  const staged = stageMarketPages(join(ROOT, 'reports'), ROOT);
+  const staged = stageMarketPages(join(ROOT, 'reports'), ROOT, { beacon: false }); // 本地不插统计
   console.log('  已铺 ' + staged + ' 个市集页到 reports/market/');
 
   console.log('  正在起 wrangler pages dev（本地真 D1，端口 ' + port + '）…');

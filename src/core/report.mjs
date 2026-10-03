@@ -387,11 +387,21 @@ p{color:#616161}ul{padding-left:1.2em}li{margin:6px 0}a{color:#3643ba}</style>
  * 只在这里注入（不在源码里）：本地直接打开 market/index.html 时看到的是没有外壳的样子，
  * 这是刻意的 —— 源码保持「只有这个页面自己的东西」。
  */
-export function stageMarketPages(dir, root) {
+export function stageMarketPages(dir, root, { beacon = true } = {}) {
   const shellPath = join(root, 'web/src/shell.css');
   const shell = existsSync(shellPath) ? readFileSync(shellPath, 'utf8') : '';
   const marketSrc = join(root, 'market');
   if (!existsSync(marketSrc)) return 0;
+
+  // 页面自己的 .css / .js 也一起铺（market/index.html 拆出来的那两个）
+  let assets = 0;
+  for (const name of readdirSync(marketSrc)) {
+    if (!/\.(css|js)$/.test(name)) continue;
+    const out = join(dir, 'market', name);
+    mkdirSync(dirname(out), { recursive: true });
+    copyFileSync(join(marketSrc, name), out);
+    assets++;
+  }
 
   let n = 0;
   for (const rel of htmlUnder(marketSrc)) {
@@ -404,12 +414,13 @@ export function stageMarketPages(dir, root) {
     // 部署产物里给市集页插一份访问统计；管理页不加（私人的）。
     // 源码 market/index.html 保持干净——本地 wrangler pages dev 不该往线上报数据。
     const isAdmin = rel.includes('admin');
-    if (!isAdmin && src.includes('</body>')) src = src.replace('</body>', BEACON + '\n</body>');
+    // beacon 只在真正部署时插：本地 wrangler pages dev 不该往线上报数据
+    if (beacon && !isAdmin && src.includes('</body>')) src = src.replace('</body>', BEACON + '\n</body>');
 
     writeFileSync(out, src, 'utf8');
     n++;
   }
-  return n;
+  return n + assets;
 }
 
 const SHELL_MARK = '<!-- @shell -->';
@@ -461,6 +472,9 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
     '/api/*\n  Cache-Control: no-store\n',
     ...sites.map((x) => `/${x.id}/\n${html}`),
     '/market/\n' + html,
+    // 拆出来的两个静态资源：名字是固定的，跟着 HTML 一起短缓存
+    '/market/market.css\n' + html,
+    '/market/market.js\n' + html,
     '/market/admin/\n  Cache-Control: no-store\n',
     '/\n' + html,
     '/*.html\n' + html,
