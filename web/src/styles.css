@@ -290,6 +290,10 @@ button {
   text-overflow: ellipsis;
   /* 商品名加粗（用户 2026-10-01：「还有货物标题加粗」） */
   font-weight: 700;
+  /* 字与字之间松一点（用户 2026-10-01：「标题字与字之间的间距大一点」）。
+     中文小字号下 0.04em 大约是半个像素，肉眼能看出松紧但不会散。
+     代价：名字变长 → 需要省略号截断的卡片会多一点。 */
+  letter-spacing: 0.04em;
   color: var(--ink);
 }
 .card__name:hover { color: var(--blue); }
