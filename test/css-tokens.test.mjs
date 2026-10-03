@@ -16,7 +16,9 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 
 const ROOT = new URL('..', import.meta.url).pathname;
-const FILES = ['web/src/styles.css', 'market/index.html', 'market/admin/index.html'];
+// shell.css 是外壳（令牌 + .wrap + 报头）的**唯一出处**，必须一起扫：
+// 令牌定义搬过去之后，只扫 styles.css 会误报「用到了却没定义」（这条测试自己抓到过一次）。
+const FILES = ['web/src/shell.css', 'web/src/styles.css', 'market/index.html', 'market/admin/index.html'];
 
 /**
  * 有些变量**不来自 CSS**，而是运行时写上去的，必须列白名单：
@@ -60,6 +62,11 @@ function definedTokens(css) {
 for (const file of FILES) {
   test(`${file}：用到的 CSS 变量都有定义`, () => {
     let css = readFileSync(ROOT + file, 'utf8');
+    // 外壳抽到 shell.css 之后，扫 styles.css 时得把它一并算上：令牌定义在那边。
+    // （只支持这一层 @import —— 多一层就该改用构建期的方案了）
+    if (css.includes("'./shell.css'")) {
+      css = readFileSync(ROOT + 'web/src/shell.css', 'utf8') + '\n' + css;
+    }
     // HTML 文件只取 <style> 里的部分
     if (file.endsWith('.html')) {
       css = [...css.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
@@ -88,7 +95,7 @@ for (const file of FILES) {
 test('没有哪个变量是靠「兜底值」硬撑的（有的话说明定义丢了）', () => {
   // 这条是提醒，不是硬约束：兜底值本来就是防事故的。但**每个**用到的地方都靠兜底，
   // 就说明定义确实丢了 —— 那种情况应该补定义，而不是靠兜底混过去。
-  const css = readFileSync(ROOT + 'web/src/styles.css', 'utf8');
+  const css = readFileSync(ROOT + 'web/src/shell.css', 'utf8') + '\n' + readFileSync(ROOT + 'web/src/styles.css', 'utf8');
   const defined = definedTokens(css);
   const onlyFallback = [];
   for (const [name, alwaysHasFallback] of usedTokens(css)) {
