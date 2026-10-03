@@ -77,7 +77,6 @@
       钉住的只是「站点名 + 发丝线」这一条。 */
 /* 名称后面跟的「剩余尺码」。名称永远在前，所以这里只需要一个左间距 */
 .cardsizes { margin-left: 6px; white-space: normal; }
-.cardsizes__lead { color: var(--ink-4); }
 
 .masthead {
   position: sticky;

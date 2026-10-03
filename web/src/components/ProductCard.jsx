@@ -130,8 +130,9 @@ export function ProductCard({ deal, index, onPick, onHide }) {
             显示的是 shownName（官网原名去掉斜杠后半段），断码时把剩余尺码跟在名称后面。 */}
         {shownName}
         {sizeLine && (
+          // 「剩余」这两个字不显示（用户 2026-10-01：「删掉剩余两个字，感觉影响美观」）；
+          // 它仍留在 aria-label 里，读屏听到的是「商品名　剩余：S M L」。
           <span className="cardsizes">
-            {sizeLine.lead && <span className="cardsizes__lead">{sizeLine.lead}</span>}
             {/* 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
                 语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观——
                 它没有 ARIA role，读屏不会多念什么。 */}
