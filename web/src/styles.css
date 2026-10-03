@@ -347,7 +347,8 @@ button {
 /* 标尺的卡片版：一根细横条，条的长度就是降幅 */
 .card__bar {
   display: block;
-  height: 4px;
+  /* 4 → 3px（用户 2026-10-01：「底下的那个进度条更纤细一点」） */
+  height: 3px;
   background: var(--rule-soft);
 }
 .card__bar > i {
@@ -610,7 +611,14 @@ body {
   font-variant-numeric: tabular-nums;
 }
 /* 标尺的卡片版：一根细横条，条的长度就是降幅，红色降幅数字贴在条尾 */
-.card__deal { display: flex; align-items: center; margin-top: 2px; } /* 价格 → 比例条：7 → 3 → 2 */
+.card__deal {
+  display: flex;
+  align-items: center;
+  margin-top: 2px;
+  /* 原来没写 font-size，继承卡片正文（约 15px）；显式收到 13px
+     （用户 2026-10-01：「左边的 - 百分之多少更小一点」） */
+  font-size: 13px;
+}
 .card__bar { flex: 1; min-width: 40px; }
 .card__bar > i { background: #e20c18 !important; }
 
