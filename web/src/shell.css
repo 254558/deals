@@ -61,6 +61,29 @@
   :root { --pad: 8px; }
 }
 
+/* ----------------------------------------------------------------------------
+ * 手机端的两个「像淘宝那样」的固定：
+ *   1. 不显示滚动条
+ *   2. 不允许放大缩小（双指缩放、双击放大都挡掉）
+ *
+ * 用户 2026-10-01：「滑动的时候不要显示右边的滑动条，禁用放大缩小，比如淘宝就不能
+ * 放大或者缩小，一直都是那样的比例」。
+ *
+ * ⚠️ 缩放的兜底是两层：viewport 里的 maximum-scale/user-scalable（在各页的 <meta> 里）
+ * 加这里的 touch-action。
+ *   - Chrome / Android：两层都认，缩放被完全挡住
+ *   - iOS Safari：从 iOS 10 起为了无障碍**会忽略** user-scalable=no 与 maximum-scale，
+ *     双指缩放仍然可用（这是系统的决定，网页挡不住）。能挡住的是双击放大。
+ *   - touch-action 不继承，所以写在 * 上；它只禁掉缩放，平移与滚动照旧
+ *     （市集页的输入框仍可滚动）。
+ * ------------------------------------------------------------------------- */
+html {
+  scrollbar-width: none;   /* Firefox */
+  -ms-overflow-style: none; /* 老 Edge / IE */
+}
+html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safari */
+* { touch-action: pan-x pan-y; }
+
 /* ---------------- 报头 ---------------- */
 
 /**

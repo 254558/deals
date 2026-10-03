@@ -277,7 +277,7 @@ export function renderHtml({ js, css, fontCss, payload, beacon = null, origin = 
 <html lang="zh-CN" data-site="${payload.site}" style="--card-min:${payload.meta.cardMin ?? '258px'};--card-aspect:${payload.meta.imageAspect ?? '3/4'}">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>GoodPrices · ${payload.meta.pageTitle} · ${when}</title>
 ${seo}
 <style>${criticalCss(payload.site)}</style>
@@ -319,7 +319,7 @@ export function renderRootRedirect({ defaultSite, sites = [] }) {
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <meta http-equiv="refresh" content="0; url=${href}">
 <title>GoodPrices · 正在打开${labelOf(defaultSite)}</title>
 <style>body{margin:0;font:400 16px/1.7 -apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;color:#000f17;background:#fff}
@@ -351,7 +351,7 @@ export function renderNotFound({ sites = [] } = {}) {
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>这个地址不存在 · 捡漏榜</title>
 <style>body{margin:0;font:400 16px/1.7 -apple-system,'PingFang SC','Hiragino Sans GB',sans-serif;color:#000f17;background:#fff}
 main{max-width:32rem;margin:18vh auto;padding:0 24px}h1{font-size:20px;margin:0 0 12px}
