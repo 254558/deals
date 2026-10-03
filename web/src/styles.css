@@ -675,10 +675,11 @@ body {
   /* --pad 的三档已挪到 shell.css（唯一的出处） */
   .masthead { margin-top: 26px; }
 
-  /* 往下滑过 40px（App 里给 <html> 加 .nav-hidden）就收起报头、工具条顶到 0。
-     窄屏专用：手机上这 30px 等于屏幕的 3.5%，桌面端不缺这点地方。 */
-  .nav-hidden .masthead { display: none; }
-  .nav-hidden .toolbar { top: 0; }
+  /* ⚠️ 这里曾经有一条「往下滑就收起报头」的规则（给 <html> 加 .nav-hidden）。
+     2026-10-01 撤掉了：用户当初的要求就是「往下滑也要一直能看到 GoodPrices 和那几个入口」，
+     我为了省 30px 自作主张收起来，等于把那个要求做没了 —— 用户报「导航栏被推上去了」。
+     现在报头与工具条都常驻吸附（手机上合计约 87px、屏幕的 10%，这是他明确要的）。
+     教训：**用户明确要过的东西，不要为了自己算出来的收益去动它。** */
   .topranks { padding: 18px 0 16px; }
   /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */
   .rank__row { grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; }
