@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { META } from '../lib/site.js';
-import { pct, price } from '../lib/format.js';
+import { num, price } from '../lib/format.js';
 
 /** 「几件」用汉字，词随实际条数走——只剩 3 件的时候不该写成「五件」 */
 const CN = ['一', '二', '三', '四', '五'];
@@ -81,7 +81,8 @@ export function RankBoard({ deals }) {
               <span className="rank__now n">{price(d.price)}</span>
               {/* 降幅＝黄底角标。卡片和列表的降幅都改成了红字（.card__off / .scale__off），
                   黄角标只剩榜单上这一个 */}
-              <span className="rank__off n">-{pct(d.rate)}</span>
+              {/* 和卡片同一个口径：说「降 190 元」而不是百分比 */}
+              <span className="rank__off n">降 {num(Math.round(d.saving))} 元</span>
             </span>
           </li>
         ))}

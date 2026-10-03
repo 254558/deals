@@ -1,4 +1,4 @@
-import { priceParts, pct, tagLabel, chips, goneNote } from '../lib/format.js';
+import { priceParts, tagLabel, chips, goneNote } from '../lib/format.js';
 import { META } from '../lib/site.js';
 import { CardActions } from './CardActions.jsx';
 
@@ -36,7 +36,7 @@ import { CardActions } from './CardActions.jsx';
 const MAX_SIZE_LABELS = 5;
 
 export function ProductCard({ deal, index, onPick, onHide }) {
-  const { url, image, name, brand, tags, tracked, rate, sizes } = deal;
+  const { url, image, name, brand, tags, tracked, rate, saving, sizes } = deal;
 
   /**
    * 图片左下角那块「剩下哪些尺码」（2026-10-01 起压在图上，不再占名字那一行）：
@@ -171,7 +171,7 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         </span>
         {/* 迪卡侬：官网把折扣写成「6.0折」，这里写降幅，和榜单、排序的口径一致 */}
         {feats.priceOffBadge && rate > 0 && !gone && (
-          <span className="offbadge n">-{pct(rate)}</span>
+          <span className="offbadge n">降 {num(Math.round(saving))} 元</span>
         )}
         {cut && (
           <span className="card__was n">
@@ -194,7 +194,10 @@ export function ProductCard({ deal, index, onPick, onHide }) {
             <span className="card__bar" aria-hidden="true">
               <i style={{ '--w': `${Math.min(1, rate) * 100}%`, animationDelay: `${delay}ms` }} />
             </span>
-            <span className="card__off n">-{pct(rate)}</span>
+            {/* 直接说「降 190 元」（用户 2026-10-01：「百分数直接改成降 39 元这种，让人更明显的
+                看清楚降了多少钱，百分比直觉不明」）。省下的钱是实打实的数，
+                百分比还得自己换算。千分位走 num()，大额价格也读得清。 */}
+            <span className="card__off n">降 {num(Math.round(saving))} 元</span>
           </div>
         ) : (
           /* 迪卡侬：只有一根条，长度同样等于降幅（数字在价格行的黄角标里） */
