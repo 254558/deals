@@ -103,53 +103,44 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         pic
       )}
 
-      {feats.brandMark ? (
-        /* 迪卡侬：品牌内联在名称前面，整块是一个 <p>（官网卡片就是 p + 内联品牌） */
-        <p className="card__name">
-          {brand && <span className="brandmark">{brand}</span>}
-          <a className="card__namelink" href={url} target="_blank" rel="noreferrer">
-            {name}
-          </a>
-          {/* 「尾货 / 新品」用一个小标记跟在名字后面。迪卡侬一半的卖点就是尾货清仓，
-              而这个信息在统一皮肤那轮丢过一次；这里刻意做得轻（一个小方块 + 两个字）。 */}
-          {tags.includes('endlife') && <span className="card__flag">尾货</span>}
-          {tags.includes('new_arrival') && <span className="card__flag card__flag--new">新品</span>}
-        </p>
-      ) : (
-        /* 优衣库：整行是链接（两行截断由 CSS 兜住）。
-           断码时这一行显示剩下的尺码、不显示名字——名字留给 title / aria-label
-           （鼠标停一下就能看到，读屏也读得到）。 */
-        <a
-          className="card__name"
-          href={url}
-          target="_blank"
-          rel="noreferrer"
-          title={sizeLine ? name : undefined}
-          // 方块之间没有分隔符，读屏/悬停要的是连成一句话的 plain
-          aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.plain}` : undefined}
-        >
-          {sizeLine ? (
-            <>
-              {sizeLine.lead && <span className="cardsizes__lead">{sizeLine.lead}</span>}
-              {/* 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
-                  语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观——
-                  它没有 ARIA role，读屏不会多念什么；用真元素而不是 span 还白拿一层
-                  兜底（样式没加载时它是等宽字，仍然读得出来） */}
-              {sizeLine.labels
-                ? sizeLine.labels.map((l) => (
-                    <kbd className="sizekey" key={l}>
-                      {l}
-                    </kbd>
-                  ))
-                : <span className="cardsizes__list">{sizeLine.text}</span>}
-            </>
-          ) : (
-            name
-          )}
-        </a>
-      )}
-        {tags.includes('endlife') && <span className="card__flag">尾货</span>}
-        {tags.includes('new_arrival') && <span className="card__flag card__flag--new">新品</span>}
+      {/* 名称那一行：**整行是链接**（两行截断由 CSS 兜住）。
+          断码时这一行显示剩下的尺码、不显示名字——名字留给 title / aria-label
+          （鼠标停一下就能看到，读屏也读得到）。
+
+          ⚠️ 这里原本是「品牌内联 / 整行链接」两套分支，用 feats.brandMark 二选一。
+          两站的 brandMark 都是 false，那一支是死代码，却让「尾货」标记被我插错两次
+          （一次插进没用到的分支，一次用 includes('card__name') 定位又落回它）。
+          2026-10-01 直接删掉合成一份：要恢复就去 git 里找。 */}
+      <a
+        className="card__name"
+        href={url}
+        target="_blank"
+        rel="noreferrer"
+        title={sizeLine ? name : undefined}
+        aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.plain}` : undefined}
+      >
+        {sizeLine ? (
+          <>
+            {sizeLine.lead && <span className="cardsizes__lead">{sizeLine.lead}</span>}
+            {/* 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
+                语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观——
+                它没有 ARIA role，读屏不会多念什么。 */}
+            {sizeLine.labels
+              ? sizeLine.labels.map((l) => (
+                  <kbd className="sizekey" key={l}>
+                    {l}
+                  </kbd>
+                ))
+              : <span className="cardsizes__list">{sizeLine.text}</span>}
+          </>
+        ) : (
+          name
+        )}
+      </a>
+      {/* 「尾货 / 新品」的小标记。迪卡侬一半的卖点就是尾货清仓；做得轻（一个小方块 + 两个字），
+          而且**只此一份** —— 不要再往别的分支里抄第二份。 */}
+      {tags.includes('endlife') && <span className="card__flag">尾货</span>}
+      {tags.includes('new_arrival') && <span className="card__flag card__flag--new">新品</span>}
 
       {/* 价格三件套，右端跟着收藏 / 不再出现两个动作——动作挨着价格，
           不用单独再占一行，卡片下半截也就少一层 */}
