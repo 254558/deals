@@ -83,6 +83,25 @@ export function ProductCard({ deal, index, onPick, onHide }) {
             （优衣库 3:4、迪卡侬 1:1），所以这里只给 src */}
         <img className="card__img" src={image} alt="" loading="lazy" decoding="async" />
       </a>
+          {/* 断码的剩余尺码压在**图片左下角**（用户 2026-10-01：「弄到图片左下角，和图片重叠在一起，
+              不要占标题的位置」）。它排在 <a> 外面，不改变链接的点击范围；
+              CSS 里再补 pointer-events: none，点它等于点图片。 */}
+          {sizeLine && (
+            // 「剩余」这两个字不显示（用户 2026-10-01：「删掉剩余两个字，感觉影响美观」）；
+            // 它仍留在 aria-label 里，读屏听到的是「商品名　剩余：S M L」。
+            <span className="card__sizes">
+              {/* 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
+                  语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观——
+                  它没有 ARIA role，读屏不会多念什么。 */}
+              {sizeLine.labels
+                ? sizeLine.labels.map((l) => (
+                    <kbd className="sizekey" key={l}>
+                      {l}
+                    </kbd>
+                  ))
+                : <span className="cardsizes__list">{sizeLine.text}</span>}
+            </span>
+          )}
     </div>
   ) : (
     /* 兜底，正常情况下用不到：payload 里不会有没图的商品（生成时就剔掉了，见
@@ -129,22 +148,6 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         {/* 名称**永远显示**（原来断码时会被尺码顶掉，优衣库有 26% 的卡片因此没有名字），
             显示的是 shownName（官网原名去掉斜杠后半段），断码时把剩余尺码跟在名称后面。 */}
         {shownName}
-        {sizeLine && (
-          // 「剩余」这两个字不显示（用户 2026-10-01：「删掉剩余两个字，感觉影响美观」）；
-          // 它仍留在 aria-label 里，读屏听到的是「商品名　剩余：S M L」。
-          <span className="cardsizes">
-            {/* 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
-                语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观——
-                它没有 ARIA role，读屏不会多念什么。 */}
-            {sizeLine.labels
-              ? sizeLine.labels.map((l) => (
-                  <kbd className="sizekey" key={l}>
-                    {l}
-                  </kbd>
-                ))
-              : <span className="cardsizes__list">{sizeLine.text}</span>}
-          </span>
-        )}
       </a>
       {/* 「尾货 / 新品」的小标记。迪卡侬一半的卖点就是尾货清仓；做得轻（一个小方块 + 两个字），
           而且**只此一份** —— 不要再往别的分支里抄第二份。 */}
