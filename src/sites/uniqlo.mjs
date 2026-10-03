@@ -74,7 +74,11 @@ function normalize(p) {
     // 「高性能修身防皱衬衫/长袖衬衣商务通勤」——斜线后面那截是给搜索/分类用的，
     // 卡片上没人看（图片比字清楚）。只留斜线前面那一段，实测这样读起来正好。
     // 完整名字没丢：它照旧进 extra.fullName。
-    name: shortName(p.name4zhCN || p.name || ''),
+    // 直接用官网的中文名，**不做任何缩写**。
+    // 原先是 shortName()（取第一个 / 之前那半段），把「AIRism棉混纺圆领T恤/短袖」
+    // 砍成了「AIRism棉混纺圆领T恤」——版面好看了，但和官网不一致（用户 2026-10-01 要求
+    // 「所有商品都要有产品名称，并且和官网一致」）。版面上的截断交给 CSS 与 title 提示。
+    name: String(p.name4zhCN || p.name || '').trim(),
     fullName: (p.productName4zhCN || p.productName || '').trim(),
     season: p.season4zhCN || p.season || '',
     sex: p.sex4zhCN || '',
@@ -264,7 +268,6 @@ const tableColumns = [
  */
 
 /** 站点的商品名：只留斜线前面那截 */
-const shortName = (name) => String(name || '').split('/')[0].trim();
 
 /**
  * 词表里的显示名取一段，**尽量给出厘米**——'W28' 这种美制腰围码没人读得出来

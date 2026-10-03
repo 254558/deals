@@ -116,11 +116,17 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         href={url}
         target="_blank"
         rel="noreferrer"
-        title={sizeLine ? name : undefined}
-        aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.plain}` : undefined}
+        title={name}
+        aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.plain}` : name}
       >
-        {sizeLine ? (
-          <>
+        {/* ⚠️ 名称**永远显示**，而且是官网原名。
+            原来这里是 sizeLine ? 尺码 : 名称 —— 断码的商品就只剩尺码、没有名字了，
+            优衣库那 868 件里有 227 件（26%）是这样（用户 2026-10-01 报的
+            「所有的商品都要有产品名称，并且和官网一致」）。现在名称在前，
+            断码时把剩余尺码跟在名称后面。 */}
+        {name}
+        {sizeLine && (
+          <span className="cardsizes">
             {sizeLine.lead && <span className="cardsizes__lead">{sizeLine.lead}</span>}
             {/* 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
                 语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观——
@@ -132,9 +138,7 @@ export function ProductCard({ deal, index, onPick, onHide }) {
                   </kbd>
                 ))
               : <span className="cardsizes__list">{sizeLine.text}</span>}
-          </>
-        ) : (
-          name
+          </span>
         )}
       </a>
       {/* 「尾货 / 新品」的小标记。迪卡侬一半的卖点就是尾货清仓；做得轻（一个小方块 + 两个字），

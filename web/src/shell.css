@@ -75,6 +75,10 @@
       那样写根本粘不住（原来正是这样）。所以报头自带 .wrap，外层那层去掉了。
    2. 顶部那 44px 从 padding 改成 margin：margin 不跟着粘，往下滚时它会走掉，
       钉住的只是「站点名 + 发丝线」这一条。 */
+/* 名称后面跟的「剩余尺码」。名称永远在前，所以这里只需要一个左间距 */
+.cardsizes { margin-left: 6px; white-space: normal; }
+.cardsizes__lead { color: var(--ink-4); }
+
 .masthead {
   position: sticky;
   top: 0;
