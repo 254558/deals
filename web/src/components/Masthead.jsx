@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { num } from '../lib/format.js';
 import { META } from '../lib/site.js';
 
@@ -28,12 +29,27 @@ import { META } from '../lib/site.js';
  * 后者说这一期筛出来多少。（工具栏右端那句「显示全部 N 件」2026-09-30 撤了。）契约里 `payload.recorded` 就是为这一格准备的。
  */
 export function Masthead({ recorded }) {
+  // 报头自己量高度，写成 --nav-h：下面那条工具条也是粘性的，它的 top 得正好接在报头下沿。
+  // 写死一个数会在窄屏/字体不同时错位，所以交给 ResizeObserver 一直盯着。
+  const navRef = useRef(null);
+  useEffect(() => {
+    const el = navRef.current;
+    if (!el) return;
+    const set = () =>
+      document.documentElement.style.setProperty('--nav-h', Math.ceil(el.getBoundingClientRect().height) + 'px');
+    set();
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(set) : null;
+    if (ro) ro.observe(el);
+    window.addEventListener('resize', set);
+    return () => { if (ro) ro.disconnect(); window.removeEventListener('resize', set); };
+  }, []);
   // 行尾那组入口：另一家的报告 + 尾货市集（核心拼好的数组，见 report.mjs 的 buildPayload）。
   // 老的 meta.crossLink 还兼容着——万一有旧 payload 进来，别把入口弄没了。
   const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink] : [];
   return (
-    <header className="masthead">
-      <div className="masthead__eyebrow">
+    <header className="masthead" ref={navRef}>
+      <div className="wrap">
+        <div className="masthead__eyebrow">
         <span className="masthead__dot" />
         <a className="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
         {META.showRecorded && <span className="label">共记录 {num(recorded)} 件</span>}
@@ -50,6 +66,7 @@ export function Masthead({ recorded }) {
             {l.label}
           </a>
         ))}
+      </div>
       </div>
     </header>
   );

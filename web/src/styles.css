@@ -183,7 +183,20 @@ button {
  * 一条发丝线收尾。市集页与管理页是手写的，照着这段抄了一份（market/index.html 里
  * 有注释指回来），改这里记得两边一起改。
  */
-.masthead { padding: 44px 0 0; }
+/* 报头也钉住（用户 2026-10-01 要求：往下滑也要看到 GoodPrices 和那几个入口）。
+   两个要点：
+   1. 它**不能**待在一个只有它自己高的 .wrap 里 —— sticky 只能在父盒范围内移动，
+      那样写根本粘不住（原来正是这样）。所以报头自带 .wrap，外层那层去掉了。
+   2. 顶部那 44px 从 padding 改成 margin：margin 不跟着粘，往下滚时它会走掉，
+      钉住的只是「站点名 + 发丝线」这一条。 */
+.masthead {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: var(--white);
+  padding: 0;
+  margin-top: var(--nav-gap, 44px);
+}
 .masthead__eyebrow {
   display: flex;
   align-items: center;
@@ -238,8 +251,9 @@ button {
    窄屏（≤760px）它换到三四行，粘着等于常驻占掉手机屏幕的一大块，那时改回 static ——
    见文件末尾的窄屏段 */
 .toolbar {
+  /* top 用报头实测高度（Masthead 里的 ResizeObserver 写 --nav-h）：两个粘性盒子要接得上 */
   position: sticky;
-  top: 0;
+  top: var(--nav-h, 40px);
   z-index: 20;
   background: var(--white);
 }
@@ -728,7 +742,7 @@ body {
   .search { display: none; }
 
     :root { --pad: 16px; }
-  .masthead { padding-top: 26px; }
+  .masthead { margin-top: 26px; }
   .topranks { padding: 18px 0 16px; }
   /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */
   .rank__row { grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; }

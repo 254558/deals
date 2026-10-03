@@ -234,12 +234,10 @@ export default function App() {
 
   return (
     <>
-      <div className="wrap">
-        <Masthead recorded={DATA.recorded ?? deals.length} />
-      </div>
+      <Masthead recorded={DATA.recorded ?? deals.length} />
 
       {/* 榜单在整页最上面：报头之下、筛选页签之上，打开就先看见这一期哪儿在塌。
-          它在粘性盒子外面，所以往下滚时它走掉、页签留在顶上。
+          它在粘性盒子外面，所以往下滚时它走掉；报头与页签都钉在顶上。
           `features.rankBoard` 关掉的那一站（迪卡侬）一点也不渲染——
           它的首屏第一个元素就是筛选页签 */}
       {META.features.rankBoard && (

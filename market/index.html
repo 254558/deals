@@ -52,7 +52,13 @@
   /* ---- 报头 ----
      和两份报告**完全同一套**：规格抄自 web/src/styles.css 的 .masthead 那一段。
      改那边记得改这里（两边都是这几行，注释互相指着）。 */
-  .masthead { padding: 44px 0 0; }
+  /* 报头钉住：往下滑也看得见品牌名和入口。顶部间距用 margin（不跟着粘） */
+  .masthead {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--white);
+    padding: 0;
+    margin-top: 44px;
+  }
   .masthead__eyebrow {
     display: flex; align-items: center; flex-wrap: wrap; gap: 14px;
     padding-bottom: 14px; border-bottom: 1px solid var(--rule); color: var(--ink-4);
@@ -79,7 +85,7 @@
      flex 就会把它折到第二行（用户报的「优衣库比价、迪卡侬比价另起一行」）。
      桌面版仍然推到行尾——那是用户 2026-09-30 明确要的「右对齐、间距不要太大」。 */
 
-  @media (max-width: 760px) { .masthead { padding-top: 26px; } }
+  @media (max-width: 760px) { .masthead { margin-top: 26px; } }
 
 
 
