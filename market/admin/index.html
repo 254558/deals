@@ -12,13 +12,11 @@
   Settings → Variables，或见 docs/MARKET.md）。页面把你填的口令存在**这个浏览器**的
   localStorage 里，每次请求带在 x-admin-token 头上。
 -->
+<!-- @shell -->
 <style>
+    /* 这个页面自己的两个令牌。其余（颜色、--pad、报头…）全部来自上面的 @shell ── 那一段是部署时注入的 */
   :root {
-    --white: #fff; --ink: #000f17; --ink-2: #616161; --ink-4: #b3bac3; --rule: #d9dde1;
-    --surface: #f5f4f5; --surface-2: #fafafa; --blue: #3643ba; --red: #e20c18;
     --font: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
-    /* 页面外壳的左右内边距：**和两份报告同一套**（web/src/styles.css 的共用骨架） */
-    --pad: 40px;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
@@ -28,39 +26,19 @@
   a { color: inherit; text-decoration: none; }
   a:hover { color: var(--blue); }
   button, input { font: inherit; color: inherit; border-radius: 0; }
-  /* 外壳：和两份报告同一套（1560 + --pad），报头那条发丝线的长度才对得上 */
-  .wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }
-  @media (max-width: 1180px) { :root { --pad: 24px; } }
-  @media (max-width: 760px) { :root { --pad: 16px; } }
   /* ---- 报头（和市集页、报告同一套）----
      和两份报告**完全同一套**：规格抄自 web/src/styles.css 的 .masthead 那一段。
      改那边记得改这里（两边都是这几行，注释互相指着）。 */
   /* 报头钉住：往下滑也看得见品牌名和入口。顶部间距用 margin（不跟着粘） */
-  .masthead {
-    position: sticky; top: 0; z-index: 20;
-    background: var(--white);
-    padding: 0;
-    margin-top: 44px;
-  }
-  .masthead__eyebrow {
-    display: flex; align-items: center; flex-wrap: wrap; gap: 14px;
-    padding-bottom: 14px; border-bottom: 1px solid var(--rule); color: var(--ink-4);
-  }
-  .masthead__dot { flex: none; width: 6px; height: 6px; background: var(--red); }
-  .masthead__text { font-size: 10px; font-weight: 400; letter-spacing: 0.12em; color: var(--ink-4); }
-  .masthead__cross { color: var(--blue); text-decoration: none; }
   /* GoodPrices 留在左边，其余（各页入口）由它推到右边。
    ⚠️ 原来写的是 `.masthead__cross:first-of-type { margin-left: auto }`——那个
    `:first-of-type` 数的是「父元素里第一个 <a>」，品牌名换成 <a> 之后第一个 <a>
    就成了 GoodPrices 自己，于是整组被推到右边、左边空着（2026-10-01 用户报的）。
    现在让品牌名吃掉右侧空白，语义也更直白：它左边、其余右边。 */
-.masthead__home { margin-right: auto; }
-  .masthead__cross:hover { text-decoration: underline; }
   /* 品牌名：粗体 + 品牌蓝。用复合选择器是为了压过上面 `.masthead__text` 里的
      font-weight: 400 —— 那条规则在本文件里位置更靠后，单靠 `.masthead__home` 会被它盖掉。 */
 /* 品牌名：粗体 + 红。色值带字面兜底 —— 这个项目里已经栽过两次
      「var() 解析不到 → 整条声明失效」（降幅条灰底、页签边框），所以不再裸用变量。 */
-.masthead__text.masthead__home { color: var(--red, #e20c18); font-weight: 700; text-decoration: none; }
   .masthead__home:hover { text-decoration: underline; }
 
   /* 手机上：入口**紧跟站点名**排，不推到行尾。

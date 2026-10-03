@@ -68,6 +68,11 @@ async function startServer() {
     seed.on('error', () => resolve());
   });
 
+  // 先把市集页铺进 reports/（注入 shell），否则本地起的服务用的是旧拷贝
+  const { stageMarketPages } = await import('../src/core/report.mjs');
+  const staged = stageMarketPages(join(ROOT, 'reports'), ROOT);
+  console.log('  已铺 ' + staged + ' 个市集页到 reports/market/');
+
   console.log('  正在起 wrangler pages dev（本地真 D1，端口 ' + port + '）…');
   const child = spawn('npx', ['--yes', 'wrangler@latest', 'pages', 'dev', 'reports',
     '--port', String(port), '--compatibility-date=2026-09-01'],

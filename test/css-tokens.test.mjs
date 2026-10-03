@@ -62,15 +62,14 @@ function definedTokens(css) {
 for (const file of FILES) {
   test(`${file}：用到的 CSS 变量都有定义`, () => {
     let css = readFileSync(ROOT + file, 'utf8');
-    // 外壳抽到 shell.css 之后，扫 styles.css 时得把它一并算上：令牌定义在那边。
-    // （只支持这一层 @import —— 多一层就该改用构建期的方案了）
-    if (css.includes("'./shell.css'")) {
-      css = readFileSync(ROOT + 'web/src/shell.css', 'utf8') + '\n' + css;
-    }
-    // HTML 文件只取 <style> 里的部分
+    // HTML 文件先只取 <style> 里的部分（顺序很重要：必须先滤，再拼 shell，
+    // 否则 shell 会被 <style> 正则一起滤掉 —— 这条我写错过一次）
     if (file.endsWith('.html')) {
       css = [...css.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
     }
+    // 外壳（令牌 + .wrap + 报头）是唯一出处 web/src/shell.css：报告的 styles.css 用
+    // @import 拿，市集页与管理页在部署时注入。扫任何页面都要把它算上，否则误报「没定义」。
+    css = readFileSync(ROOT + 'web/src/shell.css', 'utf8') + '\n' + css;
 
     const used = usedTokens(css);
     const defined = definedTokens(css);

@@ -377,6 +377,43 @@ p{color:#616161}ul{padding-left:1.2em}li{margin:6px 0}a{color:#3643ba}</style>
  *
  * @returns {string[]} 写出去的文件路径
  */
+/**
+ * 把 market/*.html 铺进部署目录，并把共享的「外壳 CSS」注入到它们 HTML 里 `<!-- @shell -->` 的位置。
+ *
+ * 为什么是注入而不是让它们各留一份：报头的样式原来在三个文件里各抄一份，改一次要改三处
+ * （漏过）；四次令牌回归也全是「令牌定义散落」引起的。现在 web/src/shell.css 是唯一出处：
+ * 报告的 styles.css 用 `@import` 拿，市集页与管理页在部署时注入同一份 —— 三处再也不会走偏。
+ *
+ * 只在这里注入（不在源码里）：本地直接打开 market/index.html 时看到的是没有外壳的样子，
+ * 这是刻意的 —— 源码保持「只有这个页面自己的东西」。
+ */
+export function stageMarketPages(dir, root) {
+  const shellPath = join(root, 'web/src/shell.css');
+  const shell = existsSync(shellPath) ? readFileSync(shellPath, 'utf8') : '';
+  const marketSrc = join(root, 'market');
+  if (!existsSync(marketSrc)) return 0;
+
+  let n = 0;
+  for (const rel of htmlUnder(marketSrc)) {
+    const out = join(dir, 'market', rel);
+    mkdirSync(dirname(out), { recursive: true });
+
+    let src = readFileSync(join(marketSrc, rel), 'utf8');
+    // 注入外壳（在页面自己的 <style> 之前 → 页面自己的规则仍然压得住）
+    if (src.includes(SHELL_MARK)) src = src.replace(SHELL_MARK, shell ? `<style>\n${shell}</style>` : '');
+    // 部署产物里给市集页插一份访问统计；管理页不加（私人的）。
+    // 源码 market/index.html 保持干净——本地 wrangler pages dev 不该往线上报数据。
+    const isAdmin = rel.includes('admin');
+    if (!isAdmin && src.includes('</body>')) src = src.replace('</body>', BEACON + '\n</body>');
+
+    writeFileSync(out, src, 'utf8');
+    n++;
+  }
+  return n;
+}
+
+const SHELL_MARK = '<!-- @shell -->';
+
 /** market/ 下所有 .html 的相对路径（递归）。schema.sql 这类东西不发布 */
 function htmlUnder(base, prefix = '') {
   const out = [];
@@ -395,18 +432,7 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   // 尾货市集：手写的页面（market/*.html，含 market/admin/）+ Pages Functions（仓库根的 functions/）。
   // 页面不是报告，但和报告同一个域名、同一套视觉语言，所以跟着一起部署。
   // 只拷 .html：market/schema.sql 是给 wrangler 建表用的，不该出现在网站上。
-  const marketSrc = join(root, 'market');
-  if (existsSync(marketSrc)) {
-    for (const rel of htmlUnder(marketSrc)) {
-      const out = join(dir, 'market', rel);
-      mkdirSync(dirname(out), { recursive: true });
-      // 部署产物里给市集页插一份访问统计；管理页不加（私人的）。
-      // 源码 market/index.html 保持干净——本地 wrangler pages dev 不该往线上报数据。
-      const src = readFileSync(join(marketSrc, rel), 'utf8');
-      const isAdmin = rel.includes('admin');
-      writeFileSync(out, isAdmin || !src.includes('</body>') ? src : src.replace('</body>', BEACON + '\n</body>'), 'utf8');
-    }
-  }
+  stageMarketPages(dir, root);
 
   // 只有 /api/* 需要走 Functions——其余（两份报告、图片、落地页）让 Pages 直接发静态文件，
   // 不为了市集给整站加一层函数调用。
