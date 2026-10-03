@@ -110,6 +110,10 @@ export function ProductCard({ deal, index, onPick, onHide }) {
           <a className="card__namelink" href={url} target="_blank" rel="noreferrer">
             {name}
           </a>
+          {/* 「尾货 / 新品」用一个小标记跟在名字后面。迪卡侬一半的卖点就是尾货清仓，
+              而这个信息在统一皮肤那轮丢过一次；这里刻意做得轻（一个小方块 + 两个字）。 */}
+          {tags.includes('endlife') && <span className="card__flag">尾货</span>}
+          {tags.includes('new_arrival') && <span className="card__flag card__flag--new">新品</span>}
         </p>
       ) : (
         /* 优衣库：整行是链接（两行截断由 CSS 兜住）。
