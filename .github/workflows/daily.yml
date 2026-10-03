@@ -66,6 +66,12 @@ jobs:
         # 都在 test/ 里，零依赖。挂了就早失败，别把坏数据推上线。
         run: npm test
 
+      - name: 市集接口冒烟（真 D1，会自己起 wrangler）
+        # 单测里的 D1 是手写的假货、SQL 根本不执行 —— 2026-10-01 线上发帖 500 挂了几个小时，
+        # 而当时 43 条单测全绿。只有这一步能挡住「列数和占位符对不上」这类错。
+        # 它只碰自己建的那几条数据，跑完自己删；新环境会先按 market/schema.sql 建表。
+        run: node scripts/market-smoke.mjs
+
       - name: 抓价写库
         run: node src/cli.mjs all sync
 
