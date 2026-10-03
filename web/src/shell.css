@@ -79,8 +79,10 @@
    2. 顶部那 44px 从 padding 改成 margin：margin 不跟着粘，往下滚时它会走掉，
       钉住的只是「站点名 + 发丝线」这一条。 */
 /* 断码的剩余尺码：压在图片**左下角**（用户 2026-10-01：「弄到图片左下角，和图片重叠在一起，
-   不要占标题的位置」）。压在商品照片上要读得清，所以垫一层薄黑、字用白色、
-   方块换成半透明白 —— 与页面里那套「浅底细边」的键帽正好反过来。
+   不要占标题的位置」）。
+   **不要底色**（同日追加：「断码的这个，不要有背景的色」）—— 那块半透明黑条压在商品图上太重，
+   而两家官网的商品图基本都是白底，深色字直接放上去就够清楚。
+   因此方块也回到页面里那套默认的「浅底细边」键帽（不再反向改成白字）。
    它挂在 .picframe（position: relative）里，所以 left/bottom 就是图片的左下角。 */
 .card__sizes {
   position: absolute;
@@ -90,20 +92,15 @@
   display: flex;
   align-items: center;
   gap: 3px;
-  padding: 3px 6px 4px;
-  background: rgba(15, 23, 31, .62);
-  color: #fff;
+  padding: 4px 6px;
+  background: none;
+  color: var(--ink);
   font-size: 11px;
   line-height: 1.45;
   /* 让点击穿过它落到图片链接上（这里是子元素，与「压在链接自己身上」那次的坑不同） */
   pointer-events: none;
 }
-.card__sizes .sizekey {
-  background: rgba(255, 255, 255, .18);
-  border-color: rgba(255, 255, 255, .36);
-  color: #fff;
-}
-.card__sizes__text { color: #fff; }
+.card__sizes__text { color: var(--ink); }
 
 .masthead {
   position: sticky;
