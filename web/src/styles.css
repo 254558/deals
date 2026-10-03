@@ -322,7 +322,9 @@ button {
   line-height: 1.15;
 }
 .card__now { font-weight: 600; }
-.card__now .now__sym { font-size: 18px; }
+/* ¥ 只有数字的一半多点（用户 2026-10-01：「人民币的符号缩小，淘宝那个符号就非常小」）。
+   22px 的数字配 13px 的符号（59%），淘宝就是这个比例 —— 符号退成标记，数字才是主角。 */
+.card__now .now__sym { font-size: 13px; }
 /* 现价 16 → 19px（用户 2026-10-01：「价格放大」）。数字用的是 DIN Alternate 这类窄体，
    放大之后仍然不占地方；符号与划线价各提一档，主次关系不变。 */
 .card__now .now__int,
