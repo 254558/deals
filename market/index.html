@@ -231,6 +231,8 @@
   .cmt__del { border: 0; background: none; color: var(--ink-4); font-size: 12px; cursor: pointer; padding: 0; }
   .cmt__del:hover { color: var(--red); }
   .cmts__empty { font-size: 13px; color: var(--ink-4); }
+  .cmt__more { border: 0; background: none; padding: 0; text-align: left; font-size: 13px; color: var(--blue); cursor: pointer; }
+  .cmt__more:hover { text-decoration: underline; }
   .cmts__form { display: flex; gap: 8px; align-items: stretch; }
   /* 输入框照旧 16px：iOS 小于这个数一聚焦就把整页放大（见上面那条注释） */
   .cmts__form input { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid var(--rule); font-size: 16px; background: var(--white); }
@@ -590,10 +592,19 @@
     get: (id) => cmtTokens.all()[id] || null,
   };
 
+  // 一件商品的评论缓存：默认只渲染前 3 条，点「还有 N 条」再全渲染
+  const commentsById = {};
+
   function renderComments(box, items) {
     const list = box.querySelector(".cmts__list");
+    const id = box.getAttribute("data-cmts");
+    commentsById[id] = items;
     if (!items.length) { list.innerHTML = '<div class="cmts__empty">还没有人评论</div>'; return; }
-    list.innerHTML = items.map((c) => {
+    // 默认展开（用户要的），但别让一张卡被评论撑太长：只摆前 3 条
+    const expanded = box.dataset.expanded === "1";
+    const shown = expanded ? items : items.slice(0, 3);
+    const rest = items.length - shown.length;
+    list.innerHTML = shown.map((c) => {
       const mine = !!cmtTokens.get(c.id);
       return '<div class="cmt" data-cid="' + esc(c.id) + '">' +
         '<div class="cmt__body">' + esc(c.body) + "</div>" +
@@ -601,7 +612,10 @@
         (c.bySeller ? '<span class="cmt__seller">卖家</span>' : "") +
         (mine ? '<button class="cmt__del" type="button" data-cdel="' + esc(c.id) + '">删除</button>' : "") +
         "</div></div>";
-    }).join("");
+    }).join("") +
+      (rest > 0
+        ? '<button class="cmt__more" type="button" data-more="' + esc(id) + '">还有 ' + rest + ' 条评论</button>'
+        : "");
   }
 
   /**
@@ -656,6 +670,14 @@
     const edit = e.target.closest('[data-edit]');
     const del = e.target.closest('[data-del]');
     const rep = e.target.closest('[data-report]');
+    const moreBtn = e.target.closest('[data-more]');
+    if (moreBtn) {
+      const id = moreBtn.getAttribute("data-more");
+      const box = document.querySelector('[data-cmts="' + id + '"]');
+      box.dataset.expanded = "1"; // 之后再渲染（比如自己删了一条）也保持全展开
+      renderComments(box, commentsById[id] || []);
+      return;
+    }
     if (cmtBtn) {
       const id = cmtBtn.getAttribute("data-comments");
       const box = document.querySelector('[data-cmts="' + id + '"]');

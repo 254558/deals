@@ -232,6 +232,15 @@ export default function App() {
     setQuery('');
   }
 
+  // 窄屏往下滑就收起报头，只留工具条：顶部固定区从 87px 降到 57px（屏幕的 10% → 7%）。
+  // 滑回顶部（< 40px）就恢复，不会让人找不着「回首页」的入口。
+  useEffect(() => {
+    const onScroll = () => document.documentElement.classList.toggle('nav-hidden', window.scrollY > 40);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
   return (
     <>
       <Masthead recorded={DATA.recorded ?? deals.length} />

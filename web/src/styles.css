@@ -743,6 +743,11 @@ body {
 
     :root { --pad: 16px; }
   .masthead { margin-top: 26px; }
+
+  /* 往下滑过 40px（App 里给 <html> 加 .nav-hidden）就收起报头、工具条顶到 0。
+     窄屏专用：手机上这 30px 等于屏幕的 3.5%，桌面端不缺这点地方。 */
+  .nav-hidden .masthead { display: none; }
+  .nav-hidden .toolbar { top: 0; }
   .topranks { padding: 18px 0 16px; }
   /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */
   .rank__row { grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; }
