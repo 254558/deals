@@ -148,6 +148,8 @@ export function ProductCard({ deal, index, onPick, onHide }) {
           )}
         </a>
       )}
+        {tags.includes('endlife') && <span className="card__flag">尾货</span>}
+        {tags.includes('new_arrival') && <span className="card__flag card__flag--new">新品</span>}
 
       {/* 价格三件套，右端跟着收藏 / 不再出现两个动作——动作挨着价格，
           不用单独再占一行，卡片下半截也就少一层 */}
