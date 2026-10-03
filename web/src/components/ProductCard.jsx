@@ -39,22 +39,29 @@ export function ProductCard({ deal, index, onPick, onHide }) {
   const { url, image, name, brand, tags, tracked, rate, sizes } = deal;
 
   /**
-   * 名字那一行**二选一**（2026-09-30 用户定的）：
-   *   码全 / 没有尺码信息 → 显示**商品名**（绝大多数商品，名字是它唯一的身份）
-   *   断码                → 显示**剩下哪些尺码**，不显示名字（图片已经看得够清楚，
-   *                         这时真正决定买不买的是「我的码还在不在」）
+   * 图片左下角那块「剩下哪些尺码」（2026-10-01 起压在图上，不再占名字那一行）：
+   *   码全 / 没有尺码信息 → 不显示
+   *   断码                → 显示剩下哪些尺码（图片已经看得够清楚，这时真正决定买不买的是
+   *                         「我的码还在不在」）
+   *   **全是 cm 的量体尺码 → 不显示**：优衣库有一批用「53cm / 58cm」这种身长尺码，
+   *   压在商品图上很难看（用户 2026-10-01：「遇到 cm 的断码的，就别显示了，很难看」）。
+   *   混着的时候只去掉 cm 那几个，正常的 S / M / L 照旧显示。
    *
    * 尺码是适配器算好的（见 src/sites/uniqlo.mjs 的 sizeInfo）：接口给的是**有货的
-   * 内部码**，翻译成人话才到这儿。名字没丢——它在链接的 title / aria-label 上，
-   * 鼠标停一下就能看到。
+   * 内部码**，翻译成人话才到这儿。商品名不受影响 —— 它在上面一行，完整名字在 title 里。
    */
-  const sizeLine = !sizes || sizes.full
-    ? null
-    : sizes.labels.length > MAX_SIZE_LABELS
-      ? { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` } // 太长，只报个数（不拆方块）
-      : sizes.labels.length
-        ? { lead: '剩余：', labels: sizes.labels, plain: sizes.labels.join(' · ') } // 一档一个 kbd 小方块
-        : { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` };
+  const allLabels = sizes?.labels ?? [];
+  const sizeLabels = allLabels.filter((l) => !/cm/i.test(String(l)));
+  const sizeLine =
+    !sizes || sizes.full
+      ? null
+      : allLabels.length > 0 && sizeLabels.length === 0
+        ? null // 全是 cm：整条不显示
+        : sizeLabels.length > MAX_SIZE_LABELS
+          ? { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` } // 太长，只报个数（不拆方块）
+          : sizeLabels.length
+            ? { lead: '剩余：', labels: sizeLabels, plain: sizeLabels.join(' · ') } // 一档一个 kbd 小方块
+            : { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` };
   // 动效错开只给前几行，否则滚到下面时动画早跑完了
   const delay = Math.min(index, 11) * 40;
   const now = priceParts(deal.price);
