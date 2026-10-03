@@ -288,9 +288,24 @@ button {
   display: block;
   white-space: nowrap;
   text-overflow: ellipsis;
+  /* 商品名加粗（用户 2026-10-01：「还有货物标题加粗」） */
+  font-weight: 700;
   color: var(--ink);
 }
 .card__name:hover { color: var(--blue); }
+
+/* 价格与降幅数字走「价格数字字体」栈。
+ *
+ * 用户 2026-10-01：「这个数字字体能用淘宝的那种数字字体吗」。
+ * 淘宝那套（Alibaba Sans / Taobao Number）是自家定制字体、不对外，所以这里用同类：
+ *   DIN Alternate —— iOS / macOS 自带的窄体数字，电商价格最经典的那一款（本机可见效）
+ *   Roboto Condensed / Roboto —— Android 常见
+ *   最后退到 Helvetica / 系统默认
+ * 数字一律 tabular（见 .n），所以纵向仍然对齐。
+ * 想要「所有设备完全一致」就只能内嵌一个免费窄体数字子集（约 10KB），那是另一件事。 */
+.card__now, .card__was, .offbadge, .card__deal, .rank__now, .rank__off {
+  font-family: "DIN Alternate", "DIN Condensed", "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
 
 /* 价格行：现价 + （黄角标 / 划线上市价）+ 两个动作，按 baseline 对齐 */
 .card__prices {
