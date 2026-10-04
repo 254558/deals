@@ -59,8 +59,15 @@
   
   
   
-  .card__head[aria-expanded="true"] 
-  .card__body { padding: 2px 22px 22px; border-top: 1px solid var(--rule-soft); }
+  /* 表单内容的左右内衬（用户 2026-10-01 报「手机端除了返回按钮别的都没有左右边距」）。
+    原来这条规则的选择器**跨了两行**，实际是
+      `.card__head[aria-expanded="true"] .card__body { … }`
+    —— 那是老式「可折叠卡片」的写法：只有 head 带 aria-expanded 时才给 body 内衬。
+    后来 head 换成一个「返回」按钮、aria-expanded 没了，内衬就**永远不生效**：
+    于是标题栏里的返回按钮有 22px 边距（它来自 .card__head 自己的 padding），
+    下面整张表单却贴着屏幕边。现在去掉那个前置条件。
+    （原规则里的 border-top 没跟着带出来：它以前从没显示过，带出来会在按钮下凭空多一条线。） */
+  .card__body { padding: 2px 22px 22px; }
   label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
   /* 输入框一律 16px：**iOS 只认这个数**——小于 16px 的输入框一被聚焦，Safari 会
      自动把整页放大一点（用户报的「点一下商品名，屏幕突然放大一点」就是这个），
