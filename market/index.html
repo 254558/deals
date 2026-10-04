@@ -36,8 +36,10 @@
        2026-10-01 用户要「打开就是满屏刷」，于是把它改成弹层 + 一个悬浮按钮 -->
   <div class="card card--form" id="postCard">
     <div class="card__head">
-      <span class="card__title">我要出一件</span>
-      <button class="card__close" type="button" id="postClose" aria-label="收起">×</button>
+      <!-- 顶部这个 2026-10-01 按用户要求换掉：「最顶部的我要出一件，换成和最下面的发布
+           一样的返回按钮」。用同一个 .btn，所以上下看起来是一对。
+           id 仍是 postClose（JS 里那个收起弹层的监听挂在它身上）。 -->
+      <button class="btn" type="button" id="postClose">返回</button>
     </div>
     <div class="card__body" id="postBody">
     <form id="form" autocomplete="off">
@@ -47,19 +49,17 @@
              它跟的是对方的标签，看着就是错位的）。
              原生 file 输入藏在框里，看得见的是这块虚线区 -->
         <div class="field field--photo">
-          <label for="photo">商品照片</label>
+          
           <div class="photo" id="photoBox">
             <input type="file" id="photo" accept="image/*">
             <label class="photo__pick" for="photo" id="pick">
               <span class="photo__icon">＋</span>
               <span class="photo__text">选择照片</span>
-              <span class="photo__hint">也可以把图片拖进来</span>
             </label>
             <img id="previewImg" alt="预览" hidden>
             <button class="photo__swap" type="button" id="swap" hidden>换一张</button>
           </div>
         </div>
-        <p class="hint">照片请自己拍，别用官网图——盗图被举报就下架。</p>
 
         <div class="fields">
           <div class="field field--full">
