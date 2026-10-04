@@ -478,13 +478,6 @@
     const edit = e.target.closest('[data-edit]');
     const del = e.target.closest('[data-del]');
     const rep = e.target.closest('[data-report]');
-    if (e.target.closest('[data-close-comments]')) {
-      const id = e.target.closest('[data-comments]') ? null : null;
-      const box = e.target.closest('.cmts');
-      if (box) box.hidden = true;
-      return;
-    }
-
     const moreBtn = e.target.closest('[data-more]');
     if (moreBtn) {
       const id = moreBtn.getAttribute("data-more");
@@ -494,13 +487,18 @@
       return;
     }
     if (cmtBtn) {
-      const id = cmtBtn.getAttribute("data-comments");
+      // **评论永远展开**（用户 2026-10-01：「不要展开评论这个，永远展开」），
+      // 所以这个按钮不再是开关 —— 点它只是把光标送到输入框。
+      //
+      // 顺带修掉一笔旧账：这里原先是 `cmtBtn.textContent = '展开评论（3）'`，
+      // 把按钮里的内容**整段重写**。换成 lucide 图标之后那个写法更明显 ——
+      // 点一下图标就没了。现在只操作输入框，按钮原样不动。
+      const id = cmtBtn.getAttribute('data-comments');
       const box = document.querySelector('[data-cmts="' + id + '"]');
-      box.hidden = !box.hidden;
-      cmtBtn.setAttribute("aria-expanded", String(!box.hidden));
-      const n = (box.querySelectorAll(".cmt").length) || 0;
-      cmtBtn.textContent = (box.hidden ? "展开评论" : "收起评论") + (n ? "（" + n + "）" : "");
-      if (!box.hidden && box.dataset.loaded !== "1") loadComments(box, id);
+      if (!box) return;
+      if (box.dataset.loaded !== '1') loadComments(box, id);
+      const input = box.querySelector('input');
+      if (input) input.focus();
       return;
     }
     if (sendBtn) {
