@@ -25,3 +25,6 @@ logs/
 # 本地 wrangler pages dev 用的环境变量（含管理口令），绝不进仓库
 .dev.vars
 .DS_Store
+
+# 临时探针脚本（我跑完就该删；万一漏了也别进仓库）
+tmp-*
