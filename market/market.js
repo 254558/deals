@@ -108,9 +108,23 @@
 
   const postToggle = $('postToggle');
   const postCard = $('postCard');
+
+  /**
+   * 弹层开着的时候，别让滚动穿透到背后的瀑布流 ——
+   * 用户 2026-10-01：「我点我要出一件的时候，上下滑动的时候，并不是出一件页面在滑，
+   * 而是尾货市集的商品在滑」。原因是只有详情锁了 body 滚动，表单弹层没锁。
+   * 现在两个弹层共用这一个判断：**只要有一个开着就锁**（所以关掉其中一个、
+   * 另一个还开着的时候不会误开）。
+   */
+  function syncScrollLock() {
+    const open = postCard.classList.contains('is-open') || !$('detail').hidden;
+    document.body.style.overflow = open ? 'hidden' : '';
+  }
+
   function setForm(open) {
     postCard.classList.toggle('is-open', open);
     postToggle.setAttribute('aria-expanded', String(open));
+    syncScrollLock();
     if (open) $('postClose').focus?.();
   }
   postToggle.addEventListener('click', () => setForm(true));
@@ -254,6 +268,7 @@
   function openForm() {
     $('postCard').classList.add('is-open');
     $('postToggle').setAttribute('aria-expanded', 'true');
+    syncScrollLock();
   }
 
   function startEdit(id) {
@@ -427,14 +442,14 @@
     const box = $('detail');
     box.innerHTML = detailHtml(it);
     box.hidden = false;
-    document.body.style.overflow = 'hidden'; // 详情打开时别让背后的瀑布流跟着滚
+    syncScrollLock(); // 详情打开时别让背后的瀑布流跟着滚
     loadComments(box.querySelector('.cmts'), id);
   }
   function closeDetail() {
     const box = $('detail');
     box.hidden = true;
     box.innerHTML = '';
-    document.body.style.overflow = '';
+    syncScrollLock();
   }
 
   // ⚠️ 委托挂在 document 上，而不是 #list：

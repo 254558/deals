@@ -516,3 +516,9 @@
   color: var(--ink-4);
 }
 .detail__acts .btn--ghost:hover { color: var(--ink-2); }
+
+/* 两个弹层都挡住滚动链：只把 body 的 overflow 设成 hidden 不够 ——
+   手机上的手势会沿「可滚动祖先」继续往上找，于是弹层滑到头之后
+   背后那一屏还是会跟着动。contain 就是让滚动到此为止。 */
+.card--form,
+.detail { overscroll-behavior: contain; }
