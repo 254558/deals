@@ -319,21 +319,25 @@
 .feed { height: calc(100dvh - var(--nav-h, 59px)); }
 #listTitle { display: none; }
 
+/* 发帖表单：**导航栏以下的整页**（不是底部弹层）。
+   用户 2026-10-01：「点我要出一件的时候还是能看到下面的商品，这个页面没有完全覆盖，
+   我要的是 goodprice 导航栏下面，完全就是出一件的页面」。
+   所以 top 顶到导航栏下沿（--nav-h 由 JS 量出来），bottom 贴屏幕底，max-height 去掉。
+   导航栏本身（sticky、z-index 30）正好露在上面不动 —— 这也是他要的。 */
 .card--form {
   position: fixed;
   left: 0;
   right: 0;
+  top: var(--nav-h, 59px);
   bottom: 0;
   z-index: 45;
-  max-height: 88dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   margin: 0;
   max-width: none;
-  border-left: 0;
-  border-right: 0;
-  border-bottom: 0;
+  border: 0;
+  border-top: 1px solid var(--rule);
   background: var(--white);
-  box-shadow: 0 -8px 28px rgba(0, 0, 0, .2);
   display: none;
 }
 .card--form.is-open { display: block; }
@@ -347,7 +351,15 @@
   cursor: pointer;
 }
 @media (min-width: 720px) {
-  .card--form { max-width: 430px; left: 50%; transform: translateX(-50%); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+  /* 桌面端居中成一条；top 仍是导航栏下沿，所以两边加竖线才不显得空 */
+  .card--form {
+    max-width: 560px;
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    border-left: 1px solid var(--rule);
+    border-right: 1px solid var(--rule);
+  }
 }
 
 /* 悬浮发帖按钮：贴在 feed 右下角，不挡动作栏（动作栏在右侧中部往上） */

@@ -101,7 +101,14 @@
   // （和报告那边的 Masthead 同一个套路，只是这里不需要 ResizeObserver）
   function measureNav() {
     const mh = document.querySelector('.masthead');
-    if (mh) document.documentElement.style.setProperty('--nav-h', Math.ceil(mh.getBoundingClientRect().height) + 'px');
+    // ⚠️ 记的是导航栏的**下沿在文档里的位置**，不是它的高度。
+    // 高度只有 31px，而它上面还有 26px 的上边距（手机端）——
+    // 用高度当偏移，表单页会从 31px 开始、把导航栏下半截盖住（截图里量出来的）。
+    // 顺带：瀑布流高度用同一个值算，也就不会再多出那 26px 了。
+    if (mh) {
+      const r = mh.getBoundingClientRect();
+      document.documentElement.style.setProperty('--nav-h', Math.ceil(r.bottom + window.scrollY) + 'px');
+    }
   }
   measureNav();
   window.addEventListener('resize', measureNav);
