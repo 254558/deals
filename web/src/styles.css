@@ -311,11 +311,14 @@ button {
 .card__now { font-weight: 600; }
 /* ¥ 只有数字的一半多点（用户 2026-10-01：「人民币的符号缩小，淘宝那个符号就非常小」）。
    22px 的数字配 13px 的符号（59%），淘宝就是这个比例 —— 符号退成标记，数字才是主角。 */
-.card__now .now__sym { font-size: 13px; }
+/* ¥ 是 13px 的窄符号，紧贴 22px 的数字会糊在一起，留 1px 呼吸 */
+.card__now .now__sym { font-size: 13px; margin-right: 1px; }
 /* 现价 16 → 19px（用户 2026-10-01：「价格放大」）。数字用的是 DIN Alternate 这类窄体，
    放大之后仍然不占地方；符号与划线价各提一档，主次关系不变。 */
 .card__now .now__int,
-.card__now .now__dec { font-size: 22px; }
+/* 22px 的 DIN Alternate 是窄体，不加字距会挤在一起（用户 2026-10-01：
+   「价格的字间距大一点，现在有点拥挤」）。0.02em 在 22px 下约 0.44px，松开但不散。 */
+.card__now .now__dec { font-size: 22px; letter-spacing: 0.02em; }
 /* 没降价的不配红：退回次级灰 */
 .card__now--flat { color: var(--ink-2); }
 /* 上市价划删除线，只在真降了的时候才画（见 ProductCard 的 cut 判断）。
