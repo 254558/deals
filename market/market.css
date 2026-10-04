@@ -357,7 +357,12 @@
   align-items: center;
   gap: 3px;
   padding: 14px 12px;
-  margin: -14px -12px -14px auto;
+  /* ⚠️ 右边不能探出去：原来写的是 margin: -14px -12px -14px auto，
+     负的右边距让按钮右边界比封面多出 12px，而封面本来就贴着页面右内衬 ——
+     于是整页横向溢出 4px（手机上多出一条横向滚动）。
+     390 下量到：点赞按钮右边界 394 > 视口 390。
+     现在只往**左**探（右边距 0），热区仍有约 36×47，比原来的 24×23 大得多。 */
+  margin: -14px 0 -14px auto;
   border: 0;
   background: none;
   color: var(--ink-4);
