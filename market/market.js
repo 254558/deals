@@ -176,6 +176,14 @@
   }
 
   // 详情里的那一块（图 + 信息 + 动作栏）—— 点开封面时才搭，省得一开始就渲染 15 份
+  // 详情动作栏：**没有点赞和评论按钮**（用户 2026-10-01：「点进详情，不需要点赞和
+  // 评论的 logo」）—— 那两个数字封面上已经有，详情里再摆一排图标只是噪音。
+  // 编辑 / 下架 / 举报换成同一套 lucide 图标（原来编辑和下架是文字按钮，夹在图标之间不统一）；
+  // 只剩图标之后，含义靠 aria-label 与 title 说清楚。
+  //
+  // ⚠️ 模板字符串里**只能**用 ${} 插值：写 {/* … */} 会被当成正文原样渲染出来
+  // （这个坑我在这一个文件里踩了三次，所以下面加了一条测试盯着它）。
+  //
   // 详情里的按钮：点赞 / 评论 / 举报（收藏按钮 2026-10-01 按用户要求去掉，
   // 接口与数据都还在 —— /api/react 仍接受 kind=save，只是详情里不再有入口；
   // 模板字符串里**不能**写 {/* … */}，那不是注释、会原样渲染出来）。
@@ -190,10 +198,6 @@
         <div class="detail__price">¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? ' <span class="detail__size">' + esc(it.size) + '</span>' : ''}</div>
         <div class="detail__meta">${it.contact ? '联系：<b>' + esc(it.contact) + '</b> · ' : ''}${ago(it.created_at)}</div>
         ${it.note ? `<div class="detail__note">${esc(it.note)}</div>` : ''}
-        {/* 动作栏：**没有点赞和评论按钮**（用户 2026-10-01：「点进详情，不需要点赞和评论的
-            logo」）—— 那两个数字在封面上已经有，详情里再摆一排图标只是噪音。
-            编辑 / 下架 / 举报换成同一套 lucide 图标（原来编辑和下架是文字按钮，
-            夹在图标中间不统一）；只剩图标之后，含义靠 aria-label 与 title 说清楚。 */}
         <div class="detail__acts">
           ${mine
             ? `<button class="act" type="button" data-edit="${esc(it.id)}" aria-label="编辑" title="编辑">${icon('pencil', 20)}</button>
