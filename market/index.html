@@ -24,6 +24,11 @@
   <div class="masthead__eyebrow">
     <span class="masthead__dot"></span>
     <a class="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
+    <!-- 「我的」：同一页的另一个视图（?mine=1）。点进去只看自己发的，
+         发帖入口也挪到这一页（用户 2026-10-01：「在顶部的导航栏加一个：我的…
+         我要出一件这个功能也已到这个页面」）。做成同页视图而不是新页面，
+         是为了让表单、压图、编辑那套逻辑只有一份。 -->
+    <a class="masthead__text masthead__cross" href="?mine=1" id="navMine">我的</a>
     <a class="masthead__text masthead__cross" href="/uniqlo/" target="_blank" rel="noreferrer">优衣库比价</a>
     <a class="masthead__text masthead__cross" href="/decathlon/" target="_blank" rel="noreferrer">迪卡侬比价</a>
   </div>

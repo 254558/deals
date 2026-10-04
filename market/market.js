@@ -209,13 +209,46 @@
   });
 
   // ---- 列表 ----
+  // ---- 「我的」视图：/market/?mine=1 ----
+  // 只列自己发过的（凭据在 localStorage 的 tokens 里），发帖入口也只在这页出现。
+  const mineMode = new URLSearchParams(location.search).get('mine') === '1';
+  if (mineMode) {
+    document.body.classList.add('mine');
+    const navMine = document.getElementById('navMine');
+    if (navMine) navMine.setAttribute('aria-current', 'page');
+    $('listTitle').textContent = '我发的';
+  } else {
+    // 市场页不再放发帖按钮（入口按要求挪到「我的」）。
+    // 表单本身还在 DOM 里 —— 从详情点「编辑」照样能打开它。
+    $('postToggle').style.display = 'none';
+  }
+
   async function load() {
     $('loading').style.display = 'block';
     try {
       const r = await fetch('/api/listings', { headers: { Accept: 'application/json' } });
       const data = await r.json();
       if (!data.ok) throw new Error(data.error || '读取失败');
-      render(data.items || []);
+      const items = data.items || [];
+      if (mineMode) {
+        // 自己发的：本地凭据里记着 id。市场一次只给 60 条，
+        // 更早发的那些按 id 单条补回来（接口支持 ?id=）。
+        const myTokens = tokens.all(); // { id: 凭据 }
+        const mineIds = Object.keys(myTokens);
+        const have = items.filter((x) => myTokens[x.id]);
+        const missing = mineIds.filter((id) => !items.some((x) => x.id === id));
+        const extra = await Promise.all(missing.map((id) =>
+          fetch('/api/listings?id=' + encodeURIComponent(id), { headers: { Accept: 'application/json' } })
+            .then((r) => r.json())
+            .then((d) => (d.items || [])[0])
+            .catch(() => null)
+        ));
+        const mine = have.concat(extra.filter(Boolean));
+        mine.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+        render(mine);
+      } else {
+        render(items);
+      }
       loadAllComments();
     } catch (e) {
       $('loading').textContent = '读不出来了：' + e.message;
@@ -354,7 +387,10 @@
     const list = $('list');
     list.innerHTML = '';
     $('empty').style.display = items.length ? 'none' : 'block';
-    $('listTitle').textContent = items.length ? '大家在出' : '大家在出';
+    $('empty').textContent = mineMode
+      ? '你还没发过东西。点右下角「＋我要出一件」发一件试试。'
+      : '还没有人发。你要是在店里捡到漏，点上面的「我的」去发一件。';
+    $('listTitle').textContent = mineMode ? '我发的' : '大家在出';
     shown = 0;
     appendPage(); // 第一页
     maybeOpenFromUrl(); // 分享进来的深链

@@ -492,3 +492,10 @@
    只加一个很轻的图片变淡，别做出位移 —— 瀑布流是绝对定位，位移容易和邻卡叠上。 */
 .note__open { transition: opacity .15s ease; }
 .note__open:hover .note__pic { opacity: .86; }
+
+/* 导航里「当前所在的那一项」——目前只有「我的」用得到 */
+.masthead__text[aria-current="page"] { color: var(--ink); font-weight: 600; }
+
+/* 「我的」视图：把「我发的」这个小标题显出来。
+   瀑布流那边它是藏着的（图墙自己说话），但这页需要一个标题交代「这是哪一页」。 */
+body.mine #listTitle { display: block; }
