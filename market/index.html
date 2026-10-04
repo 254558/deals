@@ -70,15 +70,9 @@
             <label for="price">价格（元）</label>
             <input type="number" id="price" min="0" step="1" placeholder="如：299">
           </div>
-          <div class="field">
-            <label for="size">尺码</label>
-            <input type="text" id="size" maxlength="24" placeholder="M / 165/88A">
-          </div>
-          <div class="field field--full">
-            <label for="contact">联系方式（会公开显示）</label>
-            <input type="text" id="contact" maxlength="80" placeholder="微信号 / 手机号 / 闲鱼链接">
-            <div class="hint">买家直接找你交易。本站不经手钱、不担保。介意就别填太细。</div>
-          </div>
+          <!-- 尺码与联系方式这两个字段 2026-10-01 按用户要求去掉：
+               表单只留 图片 / 商品名 / 详情，其余（尺码、联系方式…）都写进详情里。
+               老帖子里的这两个字段仍然照常显示。 -->
           <div class="field field--full">
             <label for="note">说明</label>
             <textarea id="note" maxlength="240" placeholder="包邮还是到付、有没有瑕疵、吊牌还在不在…"></textarea>

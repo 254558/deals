@@ -88,7 +88,11 @@ export function validate(input, { imageOptional = false } = {}) {
   if (len(title) < 2) return { ok: false, error: '商品名太短了（至少 2 个字）' };
   if (!Number.isFinite(price) || price <= 0) return { ok: false, error: '价格没填对' };
   if (price > 99999) return { ok: false, error: '价格超出范围' };
-  if (len(contact) < 2) return { ok: false, error: '留个联系方式吧，不然没人找得到你（微信 / 手机号都行）' };
+  // 联系方式**不再必填**（2026-10-01 用户要求表单只留 图片 / 标题 / 详情：
+  // 「联系方式尺码等等都可以写到详情里面」）。老帖子里的 contact 仍然照常显示，
+  // 新帖子多半是空的 —— 前端那时候会把「联系：」那一段整块省掉。
+  // 长度不用在这里判：上面 clean(contact, 80) 已经截断了（我一开始写了条
+  // 「超过 80 字就报错」，测试立刻指出那永远不会触发 —— 死代码，删掉）。
   if (len(note) > 240) return { ok: false, error: '说明太长了' };
   if (!m) {
     if (imageOptional && !image) return { ok: true, value: { title, price, size, note, contact, mime: null, b64: null } };

@@ -141,7 +141,11 @@ test('validate：不合格的输入每条都有话说明白', () => {
   assert.equal(validate({ ...good, title: '一' }).error.includes('太短'), true);
   assert.equal(validate({ ...good, price: 0 }).error.includes('价格'), true);
   assert.equal(validate({ ...good, price: 'abc' }).error.includes('价格'), true);
-  assert.equal(validate({ ...good, contact: '' }).error.includes('联系方式'), true);
+  // 联系方式 2026-10-01 改成选填（表单只留 图片 / 标题 / 详情），空着应该**通过**
+  assert.equal(validate({ ...good, contact: '' }).ok, true, '联系方式空着也应该能发');
+  // 超长不是报错而是**截断**（clean(x, 80) 的语义）—— 一开始我写成「要挡住」，
+  // 测试立刻证明那条永远不会触发
+  assert.equal(validate({ ...good, contact: '长'.repeat(81) }).value.contact.length, 80, '超长联系方式被截到 80 字');
   assert.equal(validate({ ...good, image: 'data:image/gif;base64,R0lGOD' }).error.includes('格式'), true);
   assert.equal(validate({ ...good, image: '' }).error.includes('格式'), true);
   const big = validate({ ...good, image: 'data:image/jpeg;base64,' + 'A'.repeat(700 * 1024) });
@@ -359,7 +363,7 @@ test('编辑：凭据不对 / 找不到 / 字段不合法都要挡住', async ()
   assert.equal((await edit({ token: 'wrong', title: '正常的名字', price: 10, contact: 'wx: ok' })).status, 403, '凭据不对');
   assert.equal((await edit({ title: '短', price: 10, contact: 'wx: ok' })).status, 400, '商品名只有一个字，太短');
   assert.equal((await edit({ title: '正常的名字', price: 0, contact: 'wx: ok' })).status, 400, '价格不对');
-  assert.equal((await edit({ title: '正常的名字', price: 10, contact: 'x' })).status, 400, '联系方式太短');
+  assert.equal((await edit({ title: '正常的名字', price: 100000 })).status, 400, '价格超上限');
   assert.equal(
     (await edit({ title: '正常的名字', price: 10, contact: 'wx: ok', image: 'data:image/gif;base64,AAA' })).status,
     400,

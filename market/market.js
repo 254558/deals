@@ -184,7 +184,7 @@
       <div class="detail__body">
         <div class="detail__title">${esc(it.title)}</div>
         <div class="detail__price">¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? ' <span class="detail__size">' + esc(it.size) + '</span>' : ''}</div>
-        <div class="detail__meta">联系：<b>${esc(it.contact)}</b> · ${ago(it.created_at)}</div>
+        <div class="detail__meta">${it.contact ? '联系：<b>' + esc(it.contact) + '</b> · ' : ''}${ago(it.created_at)}</div>
         ${it.note ? `<div class="detail__note">${esc(it.note)}</div>` : ''}
         <div class="detail__acts">
           <button class="act${it.liked ? ' act--on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${it.liked ? 'true' : 'false'}">
@@ -288,8 +288,8 @@
     openForm();
     $('title').value = it.title || '';
     $('price').value = it.price ?? '';
-    $('size').value = it.size || '';
-    $('contact').value = it.contact || '';
+    // 尺码与联系方式不再是表单字段（都写进详情里），所以编辑时也不再回填 ——
+    // 它们仍然存在库里，详情页照常显示。
     $('note').value = it.note || '';
     // 不换图：image 留 null，预览直接显示库里那张，提交时后端沿用
     image = null;
@@ -333,8 +333,8 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: $('title').value, price: $('price').value, size: $('size').value,
-          contact: $('contact').value, note: $('note').value,
+          title: $('title').value, price: $('price').value,
+          size: '', contact: '', note: $('note').value,
           // 编辑时不换图就别带 image：后端沿用库里那张（不用重传一遍图）
           ...(editingId && !image ? {} : { image }),
           ...(editingId ? { id: editingId, token: tokens.get(editingId) } : { website: $('website').value }),
