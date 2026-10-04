@@ -151,9 +151,11 @@
   }
 
   // 详情里的那一块（图 + 信息 + 动作栏）—— 点开封面时才搭，省得一开始就渲染 15 份
+  // 详情里的按钮：点赞 / 评论 / 举报（收藏按钮 2026-10-01 按用户要求去掉，
+  // 接口与数据都还在 —— /api/react 仍接受 kind=save，只是详情里不再有入口；
+  // 模板字符串里**不能**写 {/* … */}，那不是注释、会原样渲染出来）。
   function detailHtml(it) {
     const likes = Number(it.likes) || 0;
-    const saves = Number(it.saves) || 0;
     const mine = !!tokens.get(it.id);
     return `
       <button class="detail__close" type="button" data-close-detail aria-label="关闭">${icon('x', 20)}</button>
@@ -166,9 +168,6 @@
         <div class="detail__acts">
           <button class="act${it.liked ? ' act--on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${it.liked ? 'true' : 'false'}">
             ${icon('heart', 18)}<span data-count="like">${likes || ''}</span>
-          </button>
-          <button class="act${it.saved ? ' act--on' : ''}" type="button" data-react="save" data-id="${esc(it.id)}" aria-pressed="${it.saved ? 'true' : 'false'}">
-            ${icon('bookmark', 18)}<span data-count="save">${saves || ''}</span>
           </button>
           <button class="act" type="button" data-comments="${esc(it.id)}" aria-expanded="true">
             ${icon('message-circle', 18)}<span data-count="comment">${it.comments || ''}</span>
