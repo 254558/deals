@@ -361,7 +361,9 @@
   gap: 4px;
   padding: 10px 16px;
   border: 0;
-  border-radius: 999px;
+  /* 直角（用户 2026-10-01：「我要出一件不要有圆角」）——全站都是直角，
+     这里原来写了个 999px 的胶囊，是这轮加悬浮按钮时我自己带进来的 */
+  border-radius: 0;
   background: var(--red);
   color: #fff;
   font-size: 14px;
