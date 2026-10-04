@@ -64,7 +64,7 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 
 - **[docs/DESIGN-UNIQLO.md](docs/DESIGN-UNIQLO.md)** —— 优衣库这一半：3:4 网格、页顶榜单、红色标尺、内嵌思源黑体
 - **[docs/DESIGN-DECATHLON.md](docs/DESIGN-DECATHLON.md)** —— 迪卡侬这一半：方图卡片、图上角标、黄底降幅角标、墨色标尺
-- **[docs/MARKET.md](docs/MARKET.md)** —— 惊鸿一瞥：为什么要后端、接口、防刷与审核、以及它的边界
+- **[docs/MARKET.md](docs/MARKET.md)** —— 有品：为什么要后端、接口、防刷与审核、以及它的边界
 
 两边都有的东西：
 
@@ -149,7 +149,7 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 ## 目录结构
 
 ```
-market/              惊鸿一瞥（手写单页 + D1 表结构，见 docs/MARKET.md）
+market/              有品（手写单页 + D1 表结构，见 docs/MARKET.md）
 functions/           市集的 Pages Functions（/api/*，跑在同一个 Pages 项目里）
 wrangler.toml        Pages/D1 配置（本地 dev 与部署都用它）
 src/cli.mjs          命令行入口：解析「站点 + 命令」，调度下面两层
@@ -267,7 +267,7 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 - **收藏 / 不再出现不会跟过去。** 两本账存在 localStorage 里、按域名隔离；Cloudflare 与 Vercel 是两个域名，各是一本账。
 - 部署**默认是公开的**：拿到链接的人都能看。要收起来，Vercel 走项目的 Deployment Protection，Cloudflare 走 Cloudflare Access。
 
-## 惊鸿一瞥
+## 有品
 
 两份报告记的是**线上**的价；线下门店货架上的尾货，线上永远看不到。所以另有一页
 **<https://goodprices.online/market/>**：谁在店里捡到漏，拍照、标价、留个联系方式发上去，
