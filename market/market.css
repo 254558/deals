@@ -103,10 +103,6 @@
     display: flex; flex-direction: column; min-height: 240px;
   }
   .field--photo .photo { flex: 1 1 auto; min-height: 200px; }
-  /* 桌面版要它撑满列高，就得关掉 1:1——留着宽高比的话，高度被撑到多少、宽度就跟到多少，
-     盒子会溢出一列（实测 339 宽挤在 240 的列里）。选择器多两层是为了压过
-     下面那条 `.photo { aspect-ratio: 1/1 }`（它在本文件里更靠后） */
-  @media (min-width: 821px) { .poster .field--photo .photo { aspect-ratio: auto; } }
   .poster .hint { grid-area: 2 / 1 / 3 / 2; margin: 0; }
   .submit-row { grid-area: 3 / 1 / 4 / 2; }
   .fields { grid-area: 1 / 2 / 4 / 3; }
@@ -117,17 +113,27 @@
     .fields { grid-template-columns: 1fr; margin-top: 18px; }
     .poster .hint { margin-top: 8px; }
     .submit-row { margin-top: 16px; }
+    /* 空框矮下来（用户 2026-10-01：「那个选择照片的框有点大」）：
+       原来是 1:1，手机上就是 374×374 的巨框，光一个空框占掉大半屏。
+       桌面版仍然保持和右边字段那列等高，只收手机这一档。 */
+    .field--photo { min-height: 0; }
+    .field--photo .photo { min-height: 150px; }
   }
 
   /* 照片区：虚线框，点一下选、也能把图拖进来。原生 file 输入藏起来——
      它自带一句英文「Choose File / No file chosen」，丑且没法改文案 */
   .photo {
     position: relative; border: 1px dashed var(--rule); background: var(--surface-2);
-    aspect-ratio: 1/1; display: grid; overflow: hidden; cursor: pointer;
+    display: grid; overflow: hidden; cursor: pointer;
   }
   .photo:hover { border-color: var(--ink-4); }
   .photo--dragover { border-color: var(--blue); background: #f2f3fb; }
   .photo--has { border-style: solid; border-color: var(--rule); background: none; cursor: default; }
+  /* 选好图之后盒子不再撑高、也不留空白 —— 高度完全由图片决定（正方形进＝正方形出） */
+  .photo--has { flex: 0 0 auto; min-height: 0; }
+  /* 有图时藏掉「选择照片」那行：宽而矮的图（比那行字还矮）否则会在下面露出半行字。
+     换图走右下角的「换一张」。 */
+  .photo--has .photo__pick { display: none; }
   .photo input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; font-size: 16px; }
   /* 标签铺满整块虚线区：点框里任何地方都能唤起选图，不是只有中间那行字能点。
      ⚠️ 这里**不能**写 `pointer-events: none`——当初为了让拖拽落到外层框上加了它，
@@ -140,7 +146,10 @@
   .photo__icon { display: block; font-size: 24px; line-height: 1; color: var(--ink-4); margin-bottom: 8px; }
   .photo__text { display: block; font-size: 14px; color: var(--ink); }
   
-  .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* 图**按自己的比例显示**（用户 2026-10-01：「用户上传正方形，就显示正方形，
+     用户上传长方形，就显示长方形」）。以前是 height:100% + object-fit:cover ——
+     长方形照片会被裁成方框的形状，看到的不是全部。现在宽度铺满、高度由图片自己定。 */
+  .photo img { width: 100%; height: auto; display: block; }
   .photo__swap {
     position: absolute; right: 0; bottom: 0; border: 0; border-top: 1px solid var(--rule);
     border-left: 1px solid var(--rule); background: rgba(255,255,255,.92); font-size: 12px;
