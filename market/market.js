@@ -88,6 +88,10 @@
     'message-circle': '<path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>',
     x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
     plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+    // 详情动作栏用的三个：编辑 / 下架 / 举报（同样取自 lucide）
+    pencil: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+    'circle-x': '<circle cx="12" cy="12" r="10"/><path d="m15 9-6 6"/><path d="m9 9 6 6"/>',
+    flag: '<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/>',
   };
   const icon = (name, size = 20) =>
     '<svg class="ico" viewBox="0 0 24 24" width="' + size + '" height="' + size +
@@ -186,16 +190,15 @@
         <div class="detail__price">¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? ' <span class="detail__size">' + esc(it.size) + '</span>' : ''}</div>
         <div class="detail__meta">${it.contact ? '联系：<b>' + esc(it.contact) + '</b> · ' : ''}${ago(it.created_at)}</div>
         ${it.note ? `<div class="detail__note">${esc(it.note)}</div>` : ''}
+        {/* 动作栏：**没有点赞和评论按钮**（用户 2026-10-01：「点进详情，不需要点赞和评论的
+            logo」）—— 那两个数字在封面上已经有，详情里再摆一排图标只是噪音。
+            编辑 / 下架 / 举报换成同一套 lucide 图标（原来编辑和下架是文字按钮，
+            夹在图标中间不统一）；只剩图标之后，含义靠 aria-label 与 title 说清楚。 */}
         <div class="detail__acts">
-          <button class="act${it.liked ? ' act--on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${it.liked ? 'true' : 'false'}">
-            ${icon('heart', 18)}<span data-count="like">${likes || ''}</span>
-          </button>
-          <button class="act" type="button" data-comments="${esc(it.id)}" aria-expanded="true">
-            ${icon('message-circle', 18)}<span data-count="comment">${it.comments || ''}</span>
-          </button>
           ${mine
-            ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
-            : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
+            ? `<button class="act" type="button" data-edit="${esc(it.id)}" aria-label="编辑" title="编辑">${icon('pencil', 20)}</button>
+               <button class="act" type="button" data-del="${esc(it.id)}" aria-label="下架" title="下架">${icon('circle-x', 20)}</button>`
+            : `<button class="act" type="button" data-report="${esc(it.id)}" aria-label="举报" title="举报">${icon('flag', 20)}</button>`}
         </div>
         <div class="cmts" data-cmts="${esc(it.id)}">
           <div class="cmts__list"></div>
