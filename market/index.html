@@ -107,6 +107,22 @@
   <div id="loading" class="empty">正在加载…</div>
   <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，点右下角发一件试试。</div>
 
+  <!-- 「我的」转移码。凭据只存在这个浏览器里，换手机或清缓存就找不回来
+       （服务端只存哈希，救不回）。这里给一个把凭据搬过去的出口 ——
+       它不是账号，但能解决「换设备就丢」这件最痛的事。 -->
+  <div class="transfer" id="transfer" hidden>
+    <div class="transfer__row">
+      <button class="btn btn--ghost btn--sm" type="button" id="exportBtn">转到别的设备</button>
+      <button class="btn btn--ghost btn--sm" type="button" id="importBtn">从别的设备导入</button>
+    </div>
+    <p class="hint" id="transferHint">换手机、清了缓存，「我的」就会空。用上面这两颗按钮把凭据搬过去。</p>
+    <textarea id="transferCode" rows="3" spellcheck="false" placeholder="（点「从别的设备导入」之后，把码粘在这里）"></textarea>
+    <div class="transfer__row">
+      <button class="btn btn--sm" type="button" id="copyCode" hidden>复制</button>
+      <button class="btn btn--sm" type="button" id="importGo" hidden>导入</button>
+    </div>
+  </div>
+
   <footer>
     <b>这里只是把东西摆出来，交易是你和买家之间的事。</b>
     <ol>

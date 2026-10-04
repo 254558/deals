@@ -223,6 +223,85 @@
     $('postToggle').style.display = 'none';
   }
 
+  // ---- 「我的」转移码 ----
+  // 凭据（能改能删的钥匙）只存在这一个浏览器里，换手机或清缓存就找不回来 ——
+  // 服务端只存哈希，救不回。所以给一个把它搬走的出口：
+  // 把本地那份凭据打成一串码，在别的设备上粘回来。
+  //
+  // ⚠️ 它不是账号：**谁拿到这串码，谁就能删你发的东西**。文案里要把这点说清楚。
+  // 之所以能零服务端改动做完，是因为凭据本来就是客户端持有的 —— 这里只是让它可以搬。
+  const TX_PREFIX = 'GP1.';
+  const b64e = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  const b64d = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
+  function txCode() {
+    return TX_PREFIX + b64e(JSON.stringify(tokens.all()));
+  }
+  function txApply(code) {
+    const raw = String(code || '').trim().replace(/\s+/g, '');
+    if (!raw.startsWith(TX_PREFIX)) return '这段码不对（应该以 GP1. 开头）';
+    let obj;
+    try {
+      obj = JSON.parse(b64d(raw.slice(TX_PREFIX.length)));
+    } catch {
+      return '这段码读不出来，可能复制时缺了字符';
+    }
+    if (!obj || typeof obj !== 'object') return '这段码里没有凭据';
+    // 合并：已有的不动（同一台设备重复导入不会出问题）
+    const all = tokens.all();
+    let n = 0;
+    for (const [id, token] of Object.entries(obj)) {
+      if (typeof id === 'string' && typeof token === 'string' && id && !all[id]) {
+        all[id] = token;
+        n++;
+      }
+    }
+    localStorage.setItem('market.tokens', JSON.stringify(all));
+    return n ? '导入了 ' + n + ' 条，马上刷新…' : '这段码里的帖子，这台设备上已经有了';
+  }
+  if (mineMode) {
+    const txBox = $('transfer');
+    if (txBox) {
+      txBox.hidden = false;
+      const ta = $('transferCode');
+      const hint = $('transferHint');
+      $('exportBtn').addEventListener('click', () => {
+        ta.readOnly = true;
+        ta.value = txCode();
+        ta.select();
+        $('importGo').hidden = true;
+        $('copyCode').hidden = false;
+        hint.textContent = '这串码就是钥匙，别公开贴。发到新设备（微信传给自己就行），在那台设备的这一页点「从别的设备导入」再粘进去。';
+      });
+      $('importBtn').addEventListener('click', () => {
+        ta.readOnly = false;
+        ta.value = '';
+        ta.focus();
+        $('importGo').hidden = false;
+        $('copyCode').hidden = true;
+        hint.textContent = '把旧设备上生成的那串码粘进来，再点「导入」。';
+      });
+      $('copyCode').addEventListener('click', async () => {
+        ta.select();
+        try {
+          await navigator.clipboard.writeText(ta.value);
+          hint.textContent = '已复制 ✅';
+        } catch {
+          try {
+            document.execCommand('copy');
+            hint.textContent = '已复制 ✅';
+          } catch {
+            hint.textContent = '自动复制不行，手动选中复制吧';
+          }
+        }
+      });
+      $('importGo').addEventListener('click', () => {
+        const msg = txApply(ta.value);
+        hint.textContent = msg;
+        if (msg.startsWith('导入了')) setTimeout(() => location.reload(), 900);
+      });
+    }
+  }
+
   async function load() {
     $('loading').style.display = 'block';
     try {

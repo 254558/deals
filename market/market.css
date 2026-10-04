@@ -504,3 +504,17 @@
 /* 「我的」视图：把「我发的」这个小标题显出来。
    瀑布流那边它是藏着的（图墙自己说话），但这页需要一个标题交代「这是哪一页」。 */
 body.mine #listTitle { display: block; }
+
+/* 「我的」页的转移码面板：只在 .mine 下出现（HTML 里也有 hidden 兜底） */
+.transfer { margin: 0 0 18px; padding: 12px; border: 1px solid var(--rule); }
+.transfer__row { display: flex; gap: 8px; flex-wrap: wrap; }
+.transfer .hint { margin: 8px 0 0; }
+.transfer textarea {
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px;
+  border: 1px solid var(--rule);
+  font: 12px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+  color: var(--ink-2);
+}
