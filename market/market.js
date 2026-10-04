@@ -216,9 +216,8 @@
     document.body.classList.add('mine');
     const navMine = document.getElementById('navMine');
     if (navMine) navMine.setAttribute('aria-current', 'page');
-    $('listTitle').textContent = '我发的';
   } else {
-    // 市场页不再放发帖按钮（入口按要求挪到「我的」）。
+    // 发帖入口现在在「我的」页的**顶部**（原来是个右下角的悬浮按钮）。
     // 表单本身还在 DOM 里 —— 从详情点「编辑」照样能打开它。
     $('postToggle').style.display = 'none';
   }
@@ -469,7 +468,6 @@
     $('empty').textContent = mineMode
       ? '你还没发过东西。点右下角「＋我要出一件」发一件试试。'
       : '还没有人发。你要是在店里捡到漏，点上面的「我的」去发一件。';
-    $('listTitle').textContent = mineMode ? '我发的' : '大家在出';
     shown = 0;
     appendPage(); // 第一页
     maybeOpenFromUrl(); // 分享进来的深链

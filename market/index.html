@@ -95,15 +95,15 @@
     </div><!-- /.card__body -->
   </div>
 
-  <h2 id="listTitle">上下滑着看</h2>
+  <!-- 发帖入口：放在「我的」页的顶部，样式与表单里的「返回」「发布」同一套 .btn
+       （用户 2026-10-01：「把我要出一件这个按钮放到最顶部，也就是我发的这里，
+       就不要我发的这几个字了，样式仿照发布或者返回按钮」）。
+       市场页上它是隐藏的 —— 这个入口只属于「我的」这一页。 -->
+  <button class="btn" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">我要出一件</button>
   <!-- 小红书那种：两列瀑布流封面，点开看详情 -->
   <div id="list" class="wall"></div>
   <div id="detail" class="detail" hidden></div>
 
-  <!-- 悬浮的发帖入口：feed 占满屏之后就靠它开弹层 -->
-  <button class="fab" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">
-    <svg class="ico" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/><path d="M12 5v14"/></svg>我要出一件
-  </button>
   <div id="loading" class="empty">正在加载…</div>
   <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，点右下角发一件试试。</div>
 

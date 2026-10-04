@@ -219,7 +219,6 @@
  * release 之前要确认：footer（那些免责说明）还能滚到，别被弹层挡住
  * ========================================================================= */
 
-#listTitle { display: none; }
 
 /* 发帖表单：**导航栏以下的整页**（不是底部弹层）。
    用户 2026-10-01：「点我要出一件的时候还是能看到下面的商品，这个页面没有完全覆盖，
@@ -262,28 +261,7 @@
 }
 
 /* 悬浮发帖按钮：贴在 feed 右下角，不挡动作栏（动作栏在右侧中部往上） */
-.fab {
-  position: fixed;
-  right: 14px;
-  bottom: 18px;
-  z-index: 35;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 16px;
-  border: 0;
-  /* 直角（用户 2026-10-01：「我要出一件不要有圆角」）——全站都是直角，
-     这里原来写了个 999px 的胶囊，是这轮加悬浮按钮时我自己带进来的 */
-  border-radius: 0;
-  background: var(--red);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, .28);
-}
 
-.card--form.is-open ~ .fab { display: none; }
 
 /* ============================================================================
  * 小红书那种：两列瀑布流封面 + 点开看详情
@@ -473,7 +451,7 @@
    实心靠 fill: currentColor —— 点赞/收藏的「已选」就是这个观感） */
 .ico { display: block; flex: none; }
 
-.fab .ico { width: 16px; height: 16px; }
+
 .detail__close .ico { width: 20px; height: 20px; margin: 0 auto; }
 .note__like { display: inline-flex; align-items: center; gap: 3px; }
 .note__like .ico { width: 13px; height: 13px; }
@@ -503,7 +481,6 @@
 
 /* 「我的」视图：把「我发的」这个小标题显出来。
    瀑布流那边它是藏着的（图墙自己说话），但这页需要一个标题交代「这是哪一页」。 */
-body.mine #listTitle { display: block; }
 
 /* 「我的」页的转移码面板：只在 .mine 下出现（HTML 里也有 hidden 兜底） */
 .transfer { margin: 0 0 18px; padding: 12px; border: 1px solid var(--rule); }
@@ -518,3 +495,9 @@ body.mine #listTitle { display: block; }
   word-break: break-all;
   color: var(--ink-2);
 }
+
+/* 「我的」页顶部的发帖入口：和表单里的「返回」「发布」同一个 .btn 观感 ——
+   整行宽、深色实心。市场页上由 JS 设成 display:none（入口只在这一页）。 */
+#postToggle { display: block; width: 100%; margin: 10px 0 14px; }
+/* 表单铺满导航栏以下时把它收起来 —— 留着也点不到 */
+.card--form.is-open ~ #postToggle { display: none; }
