@@ -197,3 +197,110 @@
   footer b { color: var(--ink); }
   footer ol { margin: 8px 0 0; padding-left: 20px; }
   footer li { margin-bottom: 4px; }
+
+/* ============================================================================
+ * 全屏上下刷（2026-10-01 用户要的「抖音那样」）
+ *
+ * 结构：.feed 自己是一个 100dvh 的滚动容器，里面每条 .slot 也是一屏高，
+ * scroll-snap 让松手就停在整条上（scroll-snap-stop: always 防止一次滑过好几条）。
+ * 图用 contain：商品图比例不一时不裁切（裁了就看不出衣服的样子了）。
+ * 评论面板仍是原来那套 .cmts DOM，这里把它改成**底部弹层** ——
+ * 所以那 200 行评论逻辑（加载/分页/删除/举报）一行都没动。
+ * ========================================================================= */
+.feed {
+  height: 100dvh;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  background: #0b0f14;
+  /* 滚动条不显示（和报告那边一致） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.feed::-webkit-scrollbar { width: 0; height: 0; display: none; }
+
+.slot {
+  position: relative;
+  height: 100dvh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.slot__pic {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+/* 信息压在底部，垫一层渐变保证白字读得清 */
+.slot__info {
+  position: absolute;
+  left: 0;
+  right: 68px;
+  bottom: 0;
+  padding: 40px 16px 18px;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, .72), rgba(0, 0, 0, 0));
+}
+.slot__title { font-size: 16px; font-weight: 700; letter-spacing: .02em; }
+.slot__price { margin-top: 6px; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.slot__size { font-size: 13px; font-weight: 400; opacity: .85; margin-left: 4px; }
+.slot__meta { margin-top: 8px; font-size: 13px; opacity: .9; }
+.slot__note { margin-top: 4px; font-size: 13px; line-height: 1.5; opacity: .82; }
+.slot__foot { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: .8; }
+.slot__foot .btn { color: #fff; border-color: rgba(255, 255, 255, .5); }
+
+/* 右侧动作栏 */
+.rail {
+  position: absolute;
+  right: 6px;
+  bottom: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  align-items: center;
+}
+.rail__btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 56px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
+}
+.rail__ico { font-size: 26px; line-height: 1.1; opacity: .92; }
+.rail__btn--on .rail__ico { opacity: 1; }
+.rail__btn--on { color: #ff2d55; }
+.rail__n { min-height: 14px; font-variant-numeric: tabular-nums; opacity: .9; }
+.rail__btn:disabled { opacity: .6; }
+
+/* 评论弹层（复用原来的 .cmts DOM） */
+.cmts {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  max-height: 72dvh;
+  overflow-y: auto;
+  padding: 12px 14px 14px;
+  background: var(--white);
+  border-top: 1px solid var(--rule);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, .18);
+}
+.cmts__head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; letter-spacing: .12em; color: var(--ink-4); margin-bottom: 8px; }
+.cmts__close { border: 0; background: none; font-size: 20px; line-height: 1; color: var(--ink-4); cursor: pointer; }
+
+/* 桌面端：做成居中的一条（像抖音网页版），不然一张图铺满 1440 宽太怪 */
+@media (min-width: 720px) {
+  .feed { max-width: 430px; margin: 0 auto; border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+  .cmts { left: 50%; transform: translateX(-50%); max-width: 430px; }
+}

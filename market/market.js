@@ -123,38 +123,53 @@
     const list = $('list');
     list.innerHTML = '';
     $('empty').style.display = items.length ? 'none' : 'block';
-    $('listTitle').textContent = items.length ? `大家在出（${items.length}）` : '大家在出';
+    $('listTitle').textContent = items.length ? `上下滑着看（${items.length}）` : '上下滑着看';
     for (const it of items) {
       const el = document.createElement('article');
-      el.className = 'item';
+      el.className = 'slot';
       const mine = !!tokens.get(it.id);
+      const likes = Number(it.likes) || 0;
+      const saves = Number(it.saves) || 0;
+      // 一屏一条：图铺满、信息压在底部、动作栏贴右边。
+      // 评论面板还是原来那套 DOM（.cmts），只是 CSS 把它变成底部弹层 ——
+      // 所以加载/分页/删除那条链路一行都不用改。
       el.innerHTML = `
-        <img src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy" decoding="async">
-        <div class="item__body">
-          <div class="item__title">${esc(it.title)}</div>
-          <div class="item__price">¥${Number(it.price).toLocaleString('zh-CN')}</div>
-          <div class="item__meta">
-            ${it.size ? '<span class="kbd">' + esc(it.size) + '</span>' : ''}
-          </div>
-          ${it.note ? `<div class="item__note">${esc(it.note)}</div>` : ''}
-          <div class="item__meta">联系：<b>${esc(it.contact)}</b></div>
-          <div class="item__foot">
+        <img class="slot__pic" src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy" decoding="async">
+        <div class="rail">
+          <button class="rail__btn${it.liked ? ' rail__btn--on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${it.liked ? 'true' : 'false'}" aria-label="点赞">
+            <span class="rail__ico" aria-hidden="true">♥</span>
+            <span class="rail__n" data-count="like">${likes || ''}</span>
+          </button>
+          <button class="rail__btn${it.saved ? ' rail__btn--on' : ''}" type="button" data-react="save" data-id="${esc(it.id)}" aria-pressed="${it.saved ? 'true' : 'false'}" aria-label="收藏">
+            <span class="rail__ico" aria-hidden="true">★</span>
+            <span class="rail__n" data-count="save">${saves || ''}</span>
+          </button>
+          <button class="rail__btn" type="button" data-comments="${esc(it.id)}" aria-expanded="false" aria-label="评论">
+            <span class="rail__ico" aria-hidden="true">💬</span>
+            <span class="rail__n" data-count="comment">${it.comments || ''}</span>
+          </button>
+        </div>
+        <div class="slot__info">
+          <div class="slot__title">${esc(it.title)}</div>
+          <div class="slot__price">¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? ' <span class="slot__size">' + esc(it.size) + '</span>' : ''}</div>
+          <div class="slot__meta">联系：<b>${esc(it.contact)}</b></div>
+          ${it.note ? `<div class="slot__note">${esc(it.note)}</div>` : ''}
+          <div class="slot__foot">
             <span>${ago(it.created_at)}</span>
-            ${it.comments ? '<button class="btn btn--ghost btn--sm" type="button" data-comments="' + esc(it.id) + '" aria-expanded="true">收起评论</button>' : ''}
-            <span style="margin-left:auto"></span>
             ${mine
               ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
               : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
           </div>
+        </div>
+        <div class="cmts" data-cmts="${esc(it.id)}" hidden>
+          <div class="cmts__head">评论<button class="cmts__close" type="button" data-close-comments aria-label="收起">×</button></div>
+          <div class="cmts__list"></div>
+          <div class="cmts__form">
+            <input type="text" maxlength="200" placeholder="说点什么…（别人也看得到）" aria-label="评论">
+            <button class="btn btn--sm" type="button" data-send>发表</button>
           </div>
-          <div class="cmts" data-cmts="${esc(it.id)}">
-            <div class="cmts__list"></div>
-            <div class="cmts__form">
-              <input type="text" maxlength="200" placeholder="说点什么…（别人也看得到）" aria-label="评论">
-              <button class="btn btn--sm" type="button" data-send>发表</button>
-            </div>
-          </div>`;
-        list.appendChild(el);
+        </div>`;
+      list.appendChild(el);
     }
   }
 
@@ -320,18 +335,55 @@
     const btn = document.querySelector('[data-comments="' + id + '"]');
     const box = document.querySelector('[data-cmts="' + id + '"]');
     if (!btn || !box) return;
-    const n = Math.max(0, box.querySelectorAll(".cmt").length + delta);
-    btn.textContent = (box.hidden ? "展开评论" : "收起评论") + (n ? "（" + n + "）" : "");
+    // 动作栏上的按钮由图标 + 数字两块组成，所以只改那个数字，
+    // 别像原来那样把整个按钮的文字重写一遍（那会把图标也冲掉）
+    const n = Math.max(0, box.querySelectorAll('.cmt').length + delta);
+    const out = btn.querySelector('[data-count="comment"]');
+    if (out) out.textContent = n ? String(n) : '';
   }
 
   // ---- 下架 / 举报 ----
   $('list').addEventListener('click', async (e) => {
+    // ---- 点赞 / 收藏：服务端是「切换」语义，回的 on 与计数就是最终状态 ----
+    const reactBtn = e.target.closest('[data-react]');
+    if (reactBtn) {
+      const id = reactBtn.getAttribute('data-id');
+      const kind = reactBtn.getAttribute('data-react');
+      reactBtn.disabled = true;
+      try {
+        const r = await fetch('/api/react', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listingId: id, kind }),
+        });
+        const data = await r.json();
+        if (data.ok) {
+          reactBtn.classList.toggle('rail__btn--on', !!data.on);
+          reactBtn.setAttribute('aria-pressed', data.on ? 'true' : 'false');
+          const n = reactBtn.querySelector('[data-count="' + kind + '"]');
+          const v = kind === 'like' ? data.likes : data.saves;
+          if (n) n.textContent = v ? String(v) : '';
+        }
+      } catch (err) {
+        // 点不动就算了，不弹窗打断「刷」这个动作
+      }
+      reactBtn.disabled = false;
+      return;
+    }
+
     const cmtBtn = e.target.closest('[data-comments]');
     const sendBtn = e.target.closest('[data-send]');
     const delBtn = e.target.closest('[data-cdel]');
     const edit = e.target.closest('[data-edit]');
     const del = e.target.closest('[data-del]');
     const rep = e.target.closest('[data-report]');
+    if (e.target.closest('[data-close-comments]')) {
+      const id = e.target.closest('[data-comments]') ? null : null;
+      const box = e.target.closest('.cmts');
+      if (box) box.hidden = true;
+      return;
+    }
+
     const moreBtn = e.target.closest('[data-more]');
     if (moreBtn) {
       const id = moreBtn.getAttribute("data-more");
