@@ -239,7 +239,8 @@ test('列表：只给在售的，且不带图片字节', async () => {
   const { db } = fakeDB();
   const env = { DB: db };
   await createListing({ request: req({ ...good, title: '在售的' }), env });
-  const live = await (await listListings({ env })).json();
+  // 列表接口现在要按 IP 算「我点过没」，所以得给它一个真的 request
+  const live = await (await listListings({ env, request: new Request('https://example.test/api/listings') })).json();
   assert.equal(live.ok, true);
   assert.equal(live.items.length, 1);
   assert.equal(live.items[0].image_bytes, undefined, '图片另走 /api/img');
@@ -410,7 +411,7 @@ test('评论：发一条、按件正序取回、列表带评论数', async () =>
   assert.ok(!('ip_hash' in got.items[0]), '不把 ip_hash 回给前端');
   assert.equal(got.items[0].bySeller, true, '同一 IP 发的标成卖家');
 
-  const listed = await (await list({ env })).json();
+  const listed = await (await list({ env, request: new Request('https://example.test/api/listings') })).json();
   assert.equal(listed.items[0].comments, 2, '列表带评论数');
 });
 

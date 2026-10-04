@@ -147,6 +147,30 @@ async function main() {
     check('改动生效了', after?.title === '冒烟测试 · 改过了' && Number(after?.price) === 2,
       '标题=' + after?.title + ' 价格=' + after?.price);
 
+    // ── 5b. 点赞 / 收藏：切换语义 + 计数 + 「我点过没」──
+    const like1 = await api('/api/react', { listingId: created.listingId, kind: 'like' });
+    check('点赞成功（on=true、计数 1）', like1.status === 200 && like1.json?.on === true && like1.json?.likes === 1,
+      'HTTP ' + like1.status + ' ' + JSON.stringify(like1.json));
+
+    const like2 = await api('/api/react', { listingId: created.listingId, kind: 'like' });
+    check('再点一次＝取消（on=false、计数 0）', like2.status === 200 && like2.json?.on === false && like2.json?.likes === 0,
+      'HTTP ' + like2.status + ' ' + JSON.stringify(like2.json));
+
+    const save1 = await api('/api/react', { listingId: created.listingId, kind: 'save' });
+    check('收藏成功（on=true、计数 1）', save1.status === 200 && save1.json?.on === true && save1.json?.saves === 1,
+      'HTTP ' + save1.status + ' ' + JSON.stringify(save1.json));
+
+    const listR = await api('/api/listings');
+    const mineR = listR.json?.items?.find((x) => x.id === created.listingId);
+    check('列表里带上计数与我点过没', Number(mineR?.saves) === 1 && Number(mineR?.saved) === 1 && Number(mineR?.likes) === 0,
+      'likes=' + mineR?.likes + ' saves=' + mineR?.saves + ' liked=' + mineR?.liked + ' saved=' + mineR?.saved);
+
+    const badKind = await api('/api/react', { listingId: created.listingId, kind: 'whatever' });
+    check('kind 不对被挡（400）', badKind.status === 400, 'HTTP ' + badKind.status);
+
+    const noTarget = await api('/api/react', { listingId: 'nope-nope-nope', kind: 'like' });
+    check('点一条不存在的（404）', noTarget.status === 404, 'HTTP ' + noTarget.status);
+
     // ── 6. 权限：错凭据必须被拒（403），别把「谁都能改」放出去 ──
     const badEdit = await api('/api/edit', { id: created.listingId, token: 'wrong-token', title: 'x' });
     check('错的凭据改不动（403）', badEdit.status === 403, 'HTTP ' + badEdit.status);
