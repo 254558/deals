@@ -73,6 +73,27 @@
     if (h < 24) return h + ' 小时前';
     return Math.floor(h / 24) + ' 天前';
   };
+  /* ------------------------------------------------------------------
+   * 图标：全部取自 **lucide**（项目本来就依赖 lucide-react，报告卡片在用）。
+   * 市集页是纯 JS（不是 React），所以这里把它同一份 SVG 路径原样内联，
+   * 不再引一个 vanilla 包 —— 图标本来就只是几段 path。
+   *
+   * 统一成一套：24×24 视框、currentColor 描边、stroke-width 2、圆头圆角。
+   * 之前这里是 emoji（💬）和文字符号（♥ ★ × ＋）混着 —— 字形来自不同字体、
+   * 粗细与基线都不一致，所以「点进去图标风格大不统一」（用户 2026-10-01）。
+   * ------------------------------------------------------------------ */
+  const LUCIDE = {
+    heart: '<path d="M2 9.5a5.5 5.5 0 0 1 9.591-3.676.56.56 0 0 0 .818 0A5.49 5.49 0 0 1 22 9.5c0 2.29-1.5 4-3 5.5l-5.492 5.313a2 2 0 0 1-3 .019L5 15c-1.5-1.5-3-3.2-3-5.5"/>',
+    bookmark: '<path d="M17 3a2 2 0 0 1 2 2v15a1 1 0 0 1-1.496.868l-4.512-2.578a2 2 0 0 0-1.984 0l-4.512 2.578A1 1 0 0 1 5 20V5a2 2 0 0 1 2-2z"/>',
+    'message-circle': '<path d="M2.992 16.342a2 2 0 0 1 .094 1.167l-1.065 3.29a1 1 0 0 0 1.236 1.168l3.413-.998a2 2 0 0 1 1.099.092 10 10 0 1 0-4.777-4.719"/>',
+    x: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+    plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  };
+  const icon = (name, size = 20) =>
+    '<svg class="ico" viewBox="0 0 24 24" width="' + size + '" height="' + size +
+    '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    (LUCIDE[name] || '') + '</svg>';
+
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   // ---- 发帖弹层：开关都走这里 ----
@@ -135,7 +156,7 @@
     const saves = Number(it.saves) || 0;
     const mine = !!tokens.get(it.id);
     return `
-      <button class="detail__close" type="button" data-close-detail aria-label="关闭">×</button>
+      <button class="detail__close" type="button" data-close-detail aria-label="关闭">${icon('x', 20)}</button>
       <img class="detail__pic" src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" decoding="async">
       <div class="detail__body">
         <div class="detail__title">${esc(it.title)}</div>
@@ -144,13 +165,13 @@
         ${it.note ? `<div class="detail__note">${esc(it.note)}</div>` : ''}
         <div class="detail__acts">
           <button class="act${it.liked ? ' act--on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${it.liked ? 'true' : 'false'}">
-            <span aria-hidden="true">♥</span><span data-count="like">${likes || ''}</span>
+            ${icon('heart', 18)}<span data-count="like">${likes || ''}</span>
           </button>
           <button class="act${it.saved ? ' act--on' : ''}" type="button" data-react="save" data-id="${esc(it.id)}" aria-pressed="${it.saved ? 'true' : 'false'}">
-            <span aria-hidden="true">★</span><span data-count="save">${saves || ''}</span>
+            ${icon('bookmark', 18)}<span data-count="save">${saves || ''}</span>
           </button>
           <button class="act" type="button" data-comments="${esc(it.id)}" aria-expanded="true">
-            <span aria-hidden="true">💬</span><span data-count="comment">${it.comments || ''}</span>
+            ${icon('message-circle', 18)}<span data-count="comment">${it.comments || ''}</span>
           </button>
           ${mine
             ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
@@ -219,7 +240,7 @@
         <div class="note__title">${esc(it.title)}</div>
         <div class="note__foot">
           <span class="note__price">¥${Number(it.price).toLocaleString('zh-CN')}</span>
-          <span class="note__like">${likes ? '♥ ' + likes : ''}</span>
+          <span class="note__like">${likes ? icon('heart', 13) + likes : ''}</span>
         </div>`;
       const pic = card.querySelector('.note__pic');
       // 图一加载完就重排（这时才知道它多高）；已经缓存好的图 complete 直接为真

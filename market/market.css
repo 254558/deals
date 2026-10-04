@@ -488,3 +488,15 @@
   .detail { max-width: 560px; left: 50%; transform: translateX(-50%); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
   .detail__close { right: calc(50% - 268px); }
 }
+
+/* lucide 图标（内联 SVG）的统一规格：
+   竖向居中的块、跟随 currentColor、点过之后**变实心**（lucide 是描边图标，
+   实心靠 fill: currentColor —— 点赞/收藏的「已选」就是这个观感） */
+.ico { display: block; flex: none; }
+.act .ico { width: 18px; height: 18px; }
+.act.is-on .ico,
+.act[aria-pressed="true"] .ico { fill: currentColor; }
+.fab .ico { width: 16px; height: 16px; }
+.detail__close .ico { width: 20px; height: 20px; margin: 0 auto; }
+.note__like { display: inline-flex; align-items: center; gap: 3px; }
+.note__like .ico { width: 13px; height: 13px; }
