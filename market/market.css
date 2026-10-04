@@ -401,8 +401,11 @@
   position: relative;
   margin: 10px 0 24px;
 }
+/* 宽屏不再限宽：页面壳本来就是 1560（和报告一致），这里再套一个 1100
+   就变成「两边留一大片白」（用户 2026-10-01：「电脑版的这个页面，页面左右留白太多」）。
+   列数由 JS 按目标封面宽算（见 layoutWall），所以铺开之后是更多列，而不是更大的封面。 */
 @media (min-width: 720px) {
-  .wall { max-width: 1100px; margin: 14px auto 30px; }
+  .wall { margin: 14px 0 30px; }
 }
 
 .note {
@@ -503,9 +506,40 @@
 .act.is-on,
 .act[aria-pressed="true"] { color: var(--red); border-color: var(--red); }
 .detail .cmts { position: static; border: 0; box-shadow: none; padding: 14px 0 0; max-height: none; }
-@media (min-width: 720px) {
+/* 窄屏（720～899）：详情仍是一条居中的竖页，读起来舒服 */
+@media (min-width: 720px) and (max-width: 899px) {
   .detail { max-width: 560px; left: 50%; transform: translateX(-50%); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
   .detail__close { right: calc(50% - 268px); }
+}
+
+/* 宽屏（≥900）：**详情就是整个窗口**（用户 2026-10-01：「电脑的详情页面应该和电脑窗口一样大」）。
+   铺满之后一张图会变成一整屏巨图，所以做成两栏：左边图（深底、contain、占满高度），
+   右边信息自己滚。这也正是小红书网页版详情的样子。 */
+@media (min-width: 900px) {
+  .detail {
+    max-width: none;
+    left: 0;
+    transform: none;
+    border: 0;
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 460px;
+    align-items: start;
+  }
+  .detail__pic {
+    width: 100%;
+    height: 100dvh;
+    object-fit: contain;
+    background: #0b0f14;
+  }
+  .detail__body {
+    height: 100dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 30px 34px 48px;
+    border-left: 1px solid var(--rule);
+  }
+  .detail__close { right: 14px; top: 14px; }
 }
 
 /* lucide 图标（内联 SVG）的统一规格：

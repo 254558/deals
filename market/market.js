@@ -224,7 +224,10 @@
     const notes = [...wall.querySelectorAll('.note')];
     if (!notes.length) return;
     const gap = 8;
-    const cols = wall.clientWidth >= 900 ? 4 : 2;
+    // 列数按「一张封面大约多宽」算，而不是写死 2/4：
+    // 页面壳放宽到 1560 之后，写死 4 列会让每张封面 380px 宽（太大了）。
+    // 目标 250px 一张 → 1440 的窗口约 5~6 列，和手机上的观感一致。
+    const cols = Math.max(2, Math.round(wall.clientWidth / 250));
     const colW = Math.floor((wall.clientWidth - gap * (cols - 1)) / cols);
     const heights = new Array(cols).fill(0);
     for (const n of notes) {
