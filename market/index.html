@@ -32,13 +32,14 @@
 
 <div class="wrap">
 
-  <div class="card">
-    <button class="card__head" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">
+  <!-- 发帖表单：**底部弹层**（原来是一张内联卡，压在 feed 上面，进页面要先滚一下才看得见刷）
+       2026-10-01 用户要「打开就是满屏刷」，于是把它改成弹层 + 一个悬浮按钮 -->
+  <div class="card card--form" id="postCard">
+    <div class="card__head">
       <span class="card__title">我要出一件</span>
-      <span class="card__hint">拍张照、标个价</span>
-      <span class="card__arrow" aria-hidden="true"></span>
-    </button>
-    <div class="card__body" id="postBody" hidden>
+      <button class="card__close" type="button" id="postClose" aria-label="收起">×</button>
+    </div>
+    <div class="card__body" id="postBody">
     <form id="form" autocomplete="off">
       <div class="poster">
         <!-- 照片也是一个「字段」：**有标签**，标签和右边「商品名」并排，
@@ -98,7 +99,14 @@
   </div>
 
   <h2 id="listTitle">上下滑着看</h2>
-  <div id="list" class="feed"></div>
+  <!-- 小红书那种：两列瀑布流封面，点开看详情 -->
+  <div id="list" class="wall"></div>
+  <div id="detail" class="detail" hidden></div>
+
+  <!-- 悬浮的发帖入口：feed 占满屏之后就靠它开弹层 -->
+  <button class="fab" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">
+    <span class="fab__plus" aria-hidden="true">＋</span>我要出一件
+  </button>
   <div id="loading" class="empty">正在加载…</div>
   <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，上面发一件试试。</div>
 

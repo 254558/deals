@@ -75,14 +75,25 @@
   };
   const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  // ---- 展开 / 收起发帖表单（平时就一行「我要出一件」）----
+  // ---- 发帖弹层：开关都走这里 ----
+  // 报头是常驻 sticky 的，feed 的高度要用「视口 − 报头」算，所以量一次写进 --nav-h
+  // （和报告那边的 Masthead 同一个套路，只是这里不需要 ResizeObserver）
+  function measureNav() {
+    const mh = document.querySelector('.masthead');
+    if (mh) document.documentElement.style.setProperty('--nav-h', Math.ceil(mh.getBoundingClientRect().height) + 'px');
+  }
+  measureNav();
+  window.addEventListener('resize', measureNav);
+
   const postToggle = $('postToggle');
-  postToggle.addEventListener('click', () => {
-    const open = postToggle.getAttribute('aria-expanded') === 'true';
-    postToggle.setAttribute('aria-expanded', String(!open));
-    $('postBody').hidden = open;
-    // 不自动聚焦「商品名」：手机上会立刻弹出键盘、还会把页面顶一下，展开就是展开
-  });
+  const postCard = $('postCard');
+  function setForm(open) {
+    postCard.classList.toggle('is-open', open);
+    postToggle.setAttribute('aria-expanded', String(open));
+    if (open) $('postClose').focus?.();
+  }
+  postToggle.addEventListener('click', () => setForm(true));
+  $('postClose').addEventListener('click', () => setForm(false));
 
   $('cancelEdit').addEventListener('click', () => {
     stopEdit();
@@ -118,65 +129,71 @@
     $('loading').style.display = 'none';
   }
 
-  function render(items) {
-    lastItems = items;
-    const list = $('list');
-    list.innerHTML = '';
-    $('empty').style.display = items.length ? 'none' : 'block';
-    $('listTitle').textContent = items.length ? `上下滑着看（${items.length}）` : '上下滑着看';
-    for (const it of items) {
-      const el = document.createElement('article');
-      el.className = 'slot';
-      const mine = !!tokens.get(it.id);
-      const likes = Number(it.likes) || 0;
-      const saves = Number(it.saves) || 0;
-      // 一屏一条：图铺满、信息压在底部、动作栏贴右边。
-      // 评论面板还是原来那套 DOM（.cmts），只是 CSS 把它变成底部弹层 ——
-      // 所以加载/分页/删除那条链路一行都不用改。
-      el.innerHTML = `
-        <img class="slot__pic" src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy" decoding="async">
-        <div class="rail">
-          <button class="rail__btn${it.liked ? ' rail__btn--on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${it.liked ? 'true' : 'false'}" aria-label="点赞">
-            <span class="rail__ico" aria-hidden="true">♥</span>
-            <span class="rail__n" data-count="like">${likes || ''}</span>
+  // 详情里的那一块（图 + 信息 + 动作栏）—— 点开封面时才搭，省得一开始就渲染 15 份
+  function detailHtml(it) {
+    const likes = Number(it.likes) || 0;
+    const saves = Number(it.saves) || 0;
+    const mine = !!tokens.get(it.id);
+    return `
+      <button class="detail__close" type="button" data-close-detail aria-label="关闭">×</button>
+      <img class="detail__pic" src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" decoding="async">
+      <div class="detail__body">
+        <div class="detail__title">${esc(it.title)}</div>
+        <div class="detail__price">¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? ' <span class="detail__size">' + esc(it.size) + '</span>' : ''}</div>
+        <div class="detail__meta">联系：<b>${esc(it.contact)}</b> · ${ago(it.created_at)}</div>
+        ${it.note ? `<div class="detail__note">${esc(it.note)}</div>` : ''}
+        <div class="detail__acts">
+          <button class="act${it.liked ? ' act--on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${it.liked ? 'true' : 'false'}">
+            <span aria-hidden="true">♥</span><span data-count="like">${likes || ''}</span>
           </button>
-          <button class="rail__btn${it.saved ? ' rail__btn--on' : ''}" type="button" data-react="save" data-id="${esc(it.id)}" aria-pressed="${it.saved ? 'true' : 'false'}" aria-label="收藏">
-            <span class="rail__ico" aria-hidden="true">★</span>
-            <span class="rail__n" data-count="save">${saves || ''}</span>
+          <button class="act${it.saved ? ' act--on' : ''}" type="button" data-react="save" data-id="${esc(it.id)}" aria-pressed="${it.saved ? 'true' : 'false'}">
+            <span aria-hidden="true">★</span><span data-count="save">${saves || ''}</span>
           </button>
-          <button class="rail__btn" type="button" data-comments="${esc(it.id)}" aria-expanded="false" aria-label="评论">
-            <span class="rail__ico" aria-hidden="true">💬</span>
-            <span class="rail__n" data-count="comment">${it.comments || ''}</span>
+          <button class="act" type="button" data-comments="${esc(it.id)}" aria-expanded="true">
+            <span aria-hidden="true">💬</span><span data-count="comment">${it.comments || ''}</span>
           </button>
+          ${mine
+            ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
+            : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
         </div>
-        <div class="slot__info">
-          <div class="slot__title">${esc(it.title)}</div>
-          <div class="slot__price">¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? ' <span class="slot__size">' + esc(it.size) + '</span>' : ''}</div>
-          <div class="slot__meta">联系：<b>${esc(it.contact)}</b></div>
-          ${it.note ? `<div class="slot__note">${esc(it.note)}</div>` : ''}
-          <div class="slot__foot">
-            <span>${ago(it.created_at)}</span>
-            ${mine
-              ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
-              : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
-          </div>
-        </div>
-        <div class="cmts" data-cmts="${esc(it.id)}" hidden>
-          <div class="cmts__head">评论<button class="cmts__close" type="button" data-close-comments aria-label="收起">×</button></div>
+        <div class="cmts" data-cmts="${esc(it.id)}">
           <div class="cmts__list"></div>
           <div class="cmts__form">
             <input type="text" maxlength="200" placeholder="说点什么…（别人也看得到）" aria-label="评论">
             <button class="btn btn--sm" type="button" data-send>发表</button>
           </div>
+        </div>
+      </div>`;
+  }
+
+  function render(items) {
+    lastItems = items;
+    const list = $('list');
+    list.innerHTML = '';
+    $('empty').style.display = items.length ? 'none' : 'block';
+    $('listTitle').textContent = items.length ? '大家在出' : '大家在出';
+    for (const it of items) {
+      // 封面卡：图 + 标题 + 价格 + 赞数。整块是一个按钮（点开详情）
+      const card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'note';
+      card.setAttribute('data-open', it.id);
+      const likes = Number(it.likes) || 0;
+      card.innerHTML = `
+        <img class="note__pic" src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy" decoding="async">
+        <div class="note__title">${esc(it.title)}</div>
+        <div class="note__foot">
+          <span class="note__price">¥${Number(it.price).toLocaleString('zh-CN')}</span>
+          <span class="note__like">${likes ? '♥ ' + likes : ''}</span>
         </div>`;
-      list.appendChild(el);
+      list.appendChild(card);
     }
   }
 
   // ---- 编辑：把这一件填回表单，提交时走 /api/edit ----
   function openForm() {
+    $('postCard').classList.add('is-open');
     $('postToggle').setAttribute('aria-expanded', 'true');
-    $('postBody').hidden = false;
   }
 
   function startEdit(id) {
@@ -343,7 +360,30 @@
   }
 
   // ---- 下架 / 举报 ----
-  $('list').addEventListener('click', async (e) => {
+  // ---- 点封面 → 打开详情（整屏覆盖）；关掉就是把 hidden 放回去 ----
+  function openDetail(id) {
+    const it = lastItems.find((x) => x.id === id);
+    if (!it) return;
+    const box = $('detail');
+    box.innerHTML = detailHtml(it);
+    box.hidden = false;
+    document.body.style.overflow = 'hidden'; // 详情打开时别让背后的瀑布流跟着滚
+    loadComments(box.querySelector('.cmts'), id);
+  }
+  function closeDetail() {
+    const box = $('detail');
+    box.hidden = true;
+    box.innerHTML = '';
+    document.body.style.overflow = '';
+  }
+
+  // ⚠️ 委托挂在 document 上，而不是 #list：
+  // 详情（#detail）是 #list 的**兄弟节点**，挂在 #list 上的话，
+  // 详情里的点赞 / 收藏 / 评论 / 关闭一个都收不到事件（改版时踩过这个坑）。
+  document.addEventListener('click', async (e) => {
+    const openBtn = e.target.closest('[data-open]');
+    if (openBtn) { openDetail(openBtn.getAttribute('data-open')); return; }
+    if (e.target.closest('[data-close-detail]')) { closeDetail(); return; }
     // ---- 点赞 / 收藏：服务端是「切换」语义，回的 on 与计数就是最终状态 ----
     const reactBtn = e.target.closest('[data-react]');
     if (reactBtn) {
@@ -358,7 +398,7 @@
         });
         const data = await r.json();
         if (data.ok) {
-          reactBtn.classList.toggle('rail__btn--on', !!data.on);
+          reactBtn.classList.toggle('is-on', !!data.on);
           reactBtn.setAttribute('aria-pressed', data.on ? 'true' : 'false');
           const n = reactBtn.querySelector('[data-count="' + kind + '"]');
           const v = kind === 'like' ? data.likes : data.saves;

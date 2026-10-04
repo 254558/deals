@@ -304,3 +304,184 @@
   .feed { max-width: 430px; margin: 0 auto; border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
   .cmts { left: 50%; transform: translateX(-50%); max-width: 430px; }
 }
+
+/* ============================================================================
+ * 「打开就是满屏刷」
+ *
+ * 用户 2026-10-01：「进页面要先往下滚一下 feed 才占满屏，手机上多了一次滚动」。
+ * 改法：
+ *   1. feed 高度 = 100dvh − 报头高度（报头是常驻的 sticky，所以这个减法要准；
+ *      高度由 JS 量出来写进 --nav-h，和报告那边同一个套路）
+ *   2. 发帖表单从内联卡改成**底部弹层**，入口收成一个悬浮按钮
+ *   3. 「上下滑着看（N）」那行小标题藏起来 —— 满屏刷不需要它
+ * release 之前要确认：footer（那些免责说明）还能滚到，别被弹层挡住
+ * ========================================================================= */
+.feed { height: calc(100dvh - var(--nav-h, 59px)); }
+#listTitle { display: none; }
+
+.card--form {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 45;
+  max-height: 88dvh;
+  overflow-y: auto;
+  margin: 0;
+  max-width: none;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: var(--white);
+  box-shadow: 0 -8px 28px rgba(0, 0, 0, .2);
+  display: none;
+}
+.card--form.is-open { display: block; }
+.card--form .card__head { justify-content: space-between; }
+.card__close {
+  border: 0;
+  background: none;
+  font-size: 22px;
+  line-height: 1;
+  color: var(--ink-4);
+  cursor: pointer;
+}
+@media (min-width: 720px) {
+  .card--form { max-width: 430px; left: 50%; transform: translateX(-50%); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+}
+
+/* 悬浮发帖按钮：贴在 feed 右下角，不挡动作栏（动作栏在右侧中部往上） */
+.fab {
+  position: fixed;
+  right: 14px;
+  bottom: 18px;
+  z-index: 35;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--red);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, .28);
+}
+.fab__plus { font-size: 16px; }
+.card--form.is-open ~ .fab { display: none; }
+
+/* ============================================================================
+ * 小红书那种：两列瀑布流封面 + 点开看详情
+ *
+ * 2026-10-01 用户先要「抖音那样」（全屏一条一条），看过之后改成「小红书那种」。
+ * 上一版的详情块（图 + 信息 + 动作栏 + 评论）**整个留用**，只是从"一屏一条"改成
+ * "点封面才打开"——所以点赞/收藏/评论那套逻辑没有返工。
+ * 两列宽度靠 grid 的 1fr，图用固定 3:4 画框（和报告里的卡片同一套做法），
+ * 这样瀑布流不会因为图片加载先后而跳动。
+ * ========================================================================= */
+.wall {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin: 10px 0 24px;
+}
+@media (min-width: 720px) {
+  .wall { grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 1100px; margin: 14px auto 30px; }
+}
+
+.note {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+.note__pic {
+  display: block;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  background: var(--surface);
+}
+.note__title {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  line-height: 1.35;
+  color: var(--ink);
+  /* 两行就够，超出省略（和报告卡片同一个口径） */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.note__foot {
+  margin-top: 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+}
+.note__price { color: var(--red); font-weight: 600; font-variant-numeric: tabular-nums; }
+.note__like { margin-left: auto; color: var(--ink-4); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+/* 详情：整屏覆盖，自己滚 */
+.detail {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  background: var(--white);
+  scrollbar-width: none;
+}
+.detail::-webkit-scrollbar { width: 0; height: 0; }
+.detail__close {
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  z-index: 2;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, .45);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.detail__pic { display: block; width: 100%; background: var(--surface); }
+.detail__body { padding: 14px var(--pad) 40px; }
+.detail__title { font-size: 17px; font-weight: 700; letter-spacing: .02em; line-height: 1.4; }
+.detail__price { margin-top: 6px; font-size: 24px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--red); }
+.detail__size { font-size: 14px; font-weight: 400; color: var(--ink-2); margin-left: 4px; }
+.detail__meta { margin-top: 8px; font-size: 13px; color: var(--ink-2); }
+.detail__note { margin-top: 8px; font-size: 14px; line-height: 1.6; }
+.detail__acts { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
+.act {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 1px solid var(--rule);
+  background: none;
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+/* 点过之后变红。钩子用 .is-on（JS 里 toggle 的就是它）——
+   原来这里写的是 .act--on、而 JS toggle 的是 .rail__btn--on（抖音版留下的名字），
+   于是「数字变了、按钮没红」。这类「两边名字不一致」下次直接看 aria-pressed 也行 */
+.act.is-on,
+.act[aria-pressed="true"] { color: var(--red); border-color: var(--red); }
+.detail .cmts { position: static; border: 0; box-shadow: none; padding: 14px 0 0; max-height: none; }
+@media (min-width: 720px) {
+  .detail { max-width: 560px; left: 50%; transform: translateX(-50%); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
+  .detail__close { right: calc(50% - 268px); }
+}
