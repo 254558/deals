@@ -5,8 +5,8 @@ const LIMIT = 200;
 
 /** GET /api/listings —— 在售列表，最新在前（不含图片数据，图片走 /api/img/<id>） */
 export async function onRequestGet({ request, env }) {
-  // 顺手带上评论数与点赞/收藏数 —— 全是子查询，别为这几个数字再开几趟请求。
-  // liked / saved 是「这个 IP 点过没」：全屏刷的界面上，图标要一眼看出填没填。
+  // 顺手带上评论数与点赞数 —— 全是子查询，别为这几个数字再开几趟请求。
+  // liked 是「这个 IP 点过没」：瀑布流的封面上，那个心要一眼看出点没点。
   const hash = await ipHash(request);
   // 两个查询参数：
   //   id=<id>     只取这一条 —— 分享出去的深链可能指向很旧的一条，翻页翻不到它
@@ -18,13 +18,11 @@ export async function onRequestGet({ request, env }) {
     `SELECT id, created_at, title, price, size, note, contact, reports,
             (SELECT COUNT(*) FROM comments c WHERE c.listing_id = listings.id AND c.hidden = 0) AS comments,
             (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'like') AS likes,
-            (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'save') AS saves,
-            (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'like' AND r.ip_hash = ?) AS liked,
-            (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'save' AND r.ip_hash = ?) AS saved
+            (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'like' AND r.ip_hash = ?) AS liked
        FROM listings WHERE ${oneId ? 'id = ? AND ' : ''}hidden = 0
        ORDER BY created_at DESC LIMIT ? OFFSET ?`
   )
-    .bind(...(oneId ? [hash, hash, oneId, 1, 0] : [hash, hash, LIMIT, offset]))
+      .bind(...(oneId ? [hash, oneId, 1, 0] : [hash, LIMIT, offset]))
     .all();
   return json({ ok: true, items: (results || []).map((r) => ({ ...r, hasImage: true })) });
 }

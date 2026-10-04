@@ -716,7 +716,7 @@
       return;
     }
     if (e.target.closest('[data-close-detail]')) { closeDetail(); return; }
-    // ---- 点赞 / 收藏：服务端是「切换」语义，回的 on 与计数就是最终状态 ----
+    // ---- 点赞：服务端是「切换」语义，回的 on 与计数就是最终状态 ----
     const reactBtn = e.target.closest('[data-react]');
     if (reactBtn) {
       const id = reactBtn.getAttribute('data-id');
@@ -733,7 +733,7 @@
           reactBtn.classList.toggle('is-on', !!data.on);
           reactBtn.setAttribute('aria-pressed', data.on ? 'true' : 'false');
           const n = reactBtn.querySelector('[data-count="' + kind + '"]');
-          const v = kind === 'like' ? data.likes : data.saves;
+            const v = data.likes;
           if (n) n.textContent = v ? String(v) : '';
         }
       } catch (err) {

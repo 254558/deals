@@ -294,7 +294,7 @@ button {
  *   最后退到 Helvetica / 系统默认
  * 数字一律 tabular（见 .n），所以纵向仍然对齐。
  * 想要「所有设备完全一致」就只能内嵌一个免费窄体数字子集（约 10KB），那是另一件事。 */
-.card__now, .card__was, .offbadge, .card__deal, .rank__now, .rank__off {
+.card__now, .card__was, .offbadge, .card__deal {
   font-family: "DIN Alternate", "DIN Condensed", "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -617,7 +617,6 @@ body {
        就自动把整页放大一点（手机端搜索是隐藏的，见下面那条，所以这条只管平板）。 */
     [data-site] .search { font-size: 16px; }
   /* 五格还是五格，只是每格的内衬收一收——换列数会让格与格之间的竖线断在换行处 */
-  .topranks { gap: 16px; }
 
 }
 
@@ -676,8 +675,7 @@ body {
    把优衣库原来自带的红色弄丢了（两边的价格都变成墨色），这里显式补回来。
    「没有降幅」的卡片走 .card__now--flat，仍然是灰的，别一起红掉。
    ------------------------------------------------------------------ */
-.card__now:not(.card__now--flat),
-.rank__now { color: #e20c18 !important; }
+  .card__now:not(.card__now--flat) { color: #e20c18 !important; }
 .card__bar > i { background: #e20c18 !important; }
 
 /* 手机端改成**两列**。

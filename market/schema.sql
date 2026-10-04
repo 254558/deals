@@ -47,11 +47,11 @@ CREATE INDEX IF NOT EXISTS idx_comments_ip ON comments (ip_hash, created_at);
 -- 点赞 / 收藏。没有账号体系，所以防重复只能靠 IP：
 -- 主键 (listing_id, ip_hash, kind) → 同一个 IP 对同一条同一种动作只能留一行，
 -- 再点一次就是把这行删掉（接口是「切换」语义）。
--- 收藏与点赞共用这张表，靠 kind 区分，以后加新动作不用改表。
+-- 点赞用这张表，靠 kind 区分，以后加新动作不用改表。
 CREATE TABLE IF NOT EXISTS reactions (
   listing_id TEXT NOT NULL,
   ip_hash    TEXT NOT NULL,
-  kind       TEXT NOT NULL,           -- 'like' | 'save'
+  kind       TEXT NOT NULL,           -- 'like'
   created_at TEXT NOT NULL,
   PRIMARY KEY (listing_id, ip_hash, kind)
 );

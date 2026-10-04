@@ -142,7 +142,7 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
    */
   meta.links = [
     ...(meta.crossLink ? [meta.crossLink] : []),
-    ...(marketHref ? [{ href: marketHref, label: '有品', title: '大家出的尾货：谁要谁寄（新标签打开）' }] : []),
+    ...(marketHref ? [{ href: marketHref, label: '有品', title: '有品：大家出的闲置' }] : []),
   ];
 
   return {

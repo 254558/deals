@@ -24,6 +24,7 @@ import { META } from './site.js';
  * 零值仍由各自的 `currency.zero` 负责（标尺右端那格），不走这里。
  * **只影响显示**：降幅、排序、榜单名次用的都是 payload 里的原始数值。
  */
+
 export const amount = (n) => Math.trunc(Number(n) || 0).toLocaleString('zh-CN');
 
 /**
@@ -59,9 +60,6 @@ export function price(n) {
 
 /** 条数、销量这类计数不要小数，和价格分开 */
 export const num = (n) => (Number(n) || 0).toLocaleString('zh-CN');
-
-/** 降幅按整数百分比显示（排序仍然用精确值，见 App 的 compare） */
-export const pct = (r) => `${Math.round((Number(r) || 0) * 100)}%`;
 
 /**
  * 「已不在特价 · 最后见到 9/25」——手动 track 的商品从抓取池里消失了才用得上。

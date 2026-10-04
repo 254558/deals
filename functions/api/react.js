@@ -1,7 +1,7 @@
 import { json, fail, ipHash } from './_lib.mjs';
 
 /**
- * POST /api/react —— 点赞 / 收藏，**再点一次就是取消**。
+ * POST /api/react —— 点赞，**再点一次就是取消**。
  *
  * 为什么用「切换」而不是点赞/取消两个接口：这种全屏刷的界面里，用户只会点那一下，
  * 前端也不需要先记「我到底点没点」——服务端查一行就知道，回的 `on` 直接决定图标填不填。
@@ -11,9 +11,9 @@ import { json, fail, ipHash } from './_lib.mjs';
  * 代价要如实说：**同一个 WiFi 下的人算一个**（都走同一个出口 IP），
  * 换手机流量又是另一个。真要做准，就得上账号体系，那是另一件事。
  *
- * 收藏和点赞共用这张表（`kind` 区分），所以以后再加「想要」这种动作不用改表结构。
+ * 点赞用这张表（`kind` 区分），以后加新动作也不用改表结构。
  */
-const KINDS = new Set(['like', 'save']);
+const KINDS = new Set(['like']);
 
 export async function onRequestPost({ request, env }) {
   let body;
@@ -25,7 +25,7 @@ export async function onRequestPost({ request, env }) {
 
   const listingId = String(body.listingId || '').trim();
   const kind = String(body.kind || '').trim();
-  if (!listingId || !KINDS.has(kind)) return fail('缺少 listingId，或者 kind 不是 like / save');
+  if (!listingId || !KINDS.has(kind)) return fail('缺少 listingId，或者 kind 不是 like');
 
   const exists = await env.DB.prepare('SELECT id FROM listings WHERE id = ?').bind(listingId).first();
   if (!exists) return fail('这条已经不在了', 404);
@@ -58,5 +58,5 @@ export async function onRequestPost({ request, env }) {
   const by = {};
   for (const r of counts.results || []) by[r.kind] = r.n;
 
-  return json({ ok: true, on: !mine, likes: by.like || 0, saves: by.save || 0 });
+  return json({ ok: true, on: !mine, likes: by.like || 0 });
 }

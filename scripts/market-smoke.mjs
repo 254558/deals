@@ -147,7 +147,7 @@ async function main() {
     check('改动生效了', after?.title === '冒烟测试 · 改过了' && Number(after?.price) === 2,
       '标题=' + after?.title + ' 价格=' + after?.price);
 
-    // ── 5b. 点赞 / 收藏：切换语义 + 计数 + 「我点过没」──
+    // ── 5b. 点赞：切换语义 + 计数 + 「我点过没」──
     const like1 = await api('/api/react', { listingId: created.listingId, kind: 'like' });
     check('点赞成功（on=true、计数 1）', like1.status === 200 && like1.json?.on === true && like1.json?.likes === 1,
       'HTTP ' + like1.status + ' ' + JSON.stringify(like1.json));
@@ -156,14 +156,12 @@ async function main() {
     check('再点一次＝取消（on=false、计数 0）', like2.status === 200 && like2.json?.on === false && like2.json?.likes === 0,
       'HTTP ' + like2.status + ' ' + JSON.stringify(like2.json));
 
-    const save1 = await api('/api/react', { listingId: created.listingId, kind: 'save' });
-    check('收藏成功（on=true、计数 1）', save1.status === 200 && save1.json?.on === true && save1.json?.saves === 1,
-      'HTTP ' + save1.status + ' ' + JSON.stringify(save1.json));
+      // （收藏 2026-10-01 已彻底删掉：UI 与后端都清了，这里只测点赞）
 
     const listR = await api('/api/listings');
     const mineR = listR.json?.items?.find((x) => x.id === created.listingId);
-    check('列表里带上计数与我点过没', Number(mineR?.saves) === 1 && Number(mineR?.saved) === 1 && Number(mineR?.likes) === 0,
-      'likes=' + mineR?.likes + ' saves=' + mineR?.saves + ' liked=' + mineR?.liked + ' saved=' + mineR?.saved);
+      check('列表里带上计数与我点过没（只剩点赞）', Number(mineR?.likes) === 0 && Number(mineR?.liked) === 0 && mineR?.saves === undefined,
+        'likes=' + mineR?.likes + ' liked=' + mineR?.liked + ' saves=' + mineR?.saves);
 
     const badKind = await api('/api/react', { listingId: created.listingId, kind: 'whatever' });
     check('kind 不对被挡（400）', badKind.status === 400, 'HTTP ' + badKind.status);
