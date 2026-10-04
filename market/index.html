@@ -104,7 +104,11 @@
   <!-- 转移码入口：收成一颗按钮，放在「我要出一件」下面（用户 2026-10-01：
        「可以收起来，一颗按钮即可」）。凭据只存在这个浏览器里，换手机或清缓存
        就找不回来（服务端只存哈希，救不回）。平时只占一行，点开才展开下面那套。 -->
-  <button class="transfer-toggle" type="button" id="transferToggle" aria-expanded="false" aria-controls="transfer">转移码（换手机不丢）</button>
+  <button class="transfer-toggle" type="button" id="transferToggle" aria-expanded="false" aria-controls="transfer">
+    <span>转移码（换手机不丢）</span>
+    <!-- 展开时翻过来（CSS 按 aria-expanded 控制），让人知道这是个开关 -->
+    <svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+  </button>
   <div class="transfer" id="transfer" hidden>
     <div class="transfer__row">
       <button class="btn btn--ghost btn--sm" type="button" id="exportBtn">转到别的设备</button>
