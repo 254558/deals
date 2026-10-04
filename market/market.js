@@ -166,6 +166,41 @@
       </div>`;
   }
 
+  /**
+   * 瀑布流（小红书那种）：**每张封面按图片自己的比例**排，两列各自往下堆。
+   *
+   * 所以左右两列不对齐、图片也一张都不用裁 —— 用户发什么比例都行。
+   *
+   * 为什么用 JS 定位而不是 CSS 的 `column-count`：后者会把顺序变成「竖着排」
+   * （最新的 8 张全挤在左列），这个页面按时间倒序，那样读起来是乱的。
+   * 定位用绝对坐标，容器高度自己算出来。
+   *
+   * 图片是异步加载的，加载完高度才会对，所以每张图 onload 都重排一次
+   * （先乱一下再定格，小红书也是这个行为）。
+   */
+  function layoutWall() {
+    const wall = $('list');
+    const notes = [...wall.querySelectorAll('.note')];
+    if (!notes.length) return;
+    const gap = 8;
+    const cols = wall.clientWidth >= 900 ? 4 : 2;
+    const colW = Math.floor((wall.clientWidth - gap * (cols - 1)) / cols);
+    const heights = new Array(cols).fill(0);
+    for (const n of notes) {
+      n.style.width = colW + 'px';
+      let col = 0;
+      for (let i = 1; i < cols; i++) if (heights[i] < heights[col]) col = i;
+      n.style.left = col * (colW + gap) + 'px';
+      n.style.top = heights[col] + 'px';
+      heights[col] += n.offsetHeight + gap;
+    }
+    wall.style.height = Math.max(...heights) + 'px';
+  }
+
+  // 视口变了要重排（列数、列宽都会变）；图片加载完也要（这时高度才是真的）
+  window.addEventListener('resize', layoutWall);
+  window.addEventListener('load', layoutWall);
+
   function render(items) {
     lastItems = items;
     const list = $('list');
@@ -186,8 +221,13 @@
           <span class="note__price">¥${Number(it.price).toLocaleString('zh-CN')}</span>
           <span class="note__like">${likes ? '♥ ' + likes : ''}</span>
         </div>`;
+      const pic = card.querySelector('.note__pic');
+      // 图一加载完就重排（这时才知道它多高）；已经缓存好的图 complete 直接为真
+      if (pic) pic.addEventListener('load', layoutWall);
       list.appendChild(card);
     }
+    // 先按「图还没加载」的状态排一次（至少把左右列分好），图加载完再逐步校正
+    requestAnimationFrame(layoutWall);
   }
 
   // ---- 编辑：把这一件填回表单，提交时走 /api/edit ----

@@ -381,19 +381,21 @@
  * 两列宽度靠 grid 的 1fr，图用固定 3:4 画框（和报告里的卡片同一套做法），
  * 这样瀑布流不会因为图片加载先后而跳动。
  * ========================================================================= */
+/* 瀑布流容器：子项由 JS 绝对定位（见 market.js 的 layoutWall），
+   所以这里只需要一个定位上下文，高度由 JS 写进 style */
 .wall {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  position: relative;
   margin: 10px 0 24px;
 }
 @media (min-width: 720px) {
-  .wall { grid-template-columns: repeat(4, 1fr); gap: 14px; max-width: 1100px; margin: 14px auto 30px; }
+  .wall { max-width: 1100px; margin: 14px auto 30px; }
 }
 
 .note {
+  position: absolute;
+  top: 0;
+  left: 0;
   display: block;
-  width: 100%;
   padding: 0;
   border: 0;
   background: none;
@@ -403,8 +405,9 @@
 .note__pic {
   display: block;
   width: 100%;
-  aspect-ratio: 3 / 4;
-  object-fit: cover;
+  /* **不裁、不定比例**：按图片自己的高度排，这就是瀑布流的要点
+     （原来写死 aspect-ratio: 3/4 + object-fit: cover，方图和长图都会被裁） */
+  height: auto;
   background: var(--surface);
 }
 .note__title {
