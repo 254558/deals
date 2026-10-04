@@ -297,11 +297,6 @@
 .cmts__head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; letter-spacing: .12em; color: var(--ink-4); margin-bottom: 8px; }
 .cmts__close { border: 0; background: none; font-size: 20px; line-height: 1; color: var(--ink-4); cursor: pointer; }
 
-/* 桌面端：做成居中的一条（像抖音网页版），不然一张图铺满 1440 宽太怪 */
-@media (min-width: 720px) {
-  .feed { max-width: 430px; margin: 0 auto; border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
-  .cmts { left: 50%; transform: translateX(-50%); max-width: 430px; }
-}
 
 /* ============================================================================
  * 「打开就是满屏刷」
@@ -508,7 +503,20 @@
 .detail__acts { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
 
 
-.detail .cmts { position: static; border: 0; box-shadow: none; padding: 14px 0 0; max-height: none; }
+/* 详情里的评论块：它的 DOM 复用自「底部弹层」那一版，所以要把弹层几何**整套**清掉。
+   只写 position: static 是不够的 —— transform 对 static 元素照样生效，
+   left/right/max-width 也会继续影响布局（这就是上面那条 transform 造成的错位）。 */
+.detail .cmts {
+  position: static;
+  left: auto;
+  right: auto;
+  transform: none;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  box-shadow: none;
+  padding: 14px 0 0;
+}
 /* 窄屏（720～899）：详情仍是一条居中的竖页，读起来舒服 */
 @media (min-width: 720px) and (max-width: 899px) {
   .detail { max-width: 560px; left: 50%; transform: translateX(-50%); border-left: 1px solid var(--rule); border-right: 1px solid var(--rule); }
