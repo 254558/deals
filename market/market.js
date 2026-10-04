@@ -310,8 +310,44 @@
   window.addEventListener('scroll', () => {
     if (shown >= lastItems.length) return;
     if (window.innerHeight + window.scrollY < document.body.scrollHeight - 700) return;
-    render(lastItems); // render 自己会多放一页（shown + PAGE）
+    appendPage();
   }, { passive: true });
+
+  /**
+   * 造一张封面卡。抽出来是为了「追加」——原来翻页是整墙重渲染，
+   * 屏幕会白闪一下、图片也要重新挂一遍；现在只往墙上再贴几张。
+   */
+  function makeCard(it) {
+        const card = document.createElement('article');
+        card.className = 'note';
+        const liked = !!it.liked;
+        const likes = Number(it.likes) || 0;
+        card.innerHTML = `
+          <a class="note__open" href="?item=${encodeURIComponent(it.id)}" data-open="${esc(it.id)}">
+            <img class="note__pic" src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy" decoding="async">
+            <div class="note__title">${esc(it.title)}</div>
+          </a>
+          <div class="note__foot">
+            <span class="note__price">¥${Number(it.price).toLocaleString('zh-CN')}</span>
+            <button class="note__like${liked ? ' is-on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${liked ? 'true' : 'false'}" aria-label="点赞">
+              ${icon('heart', 14)}<span data-count="like">${likes || ''}</span>
+            </button>
+          </div>`;
+        const pic = card.querySelector('.note__pic');
+        // 图一加载完就重排（这时才知道它多高）；已经缓存好的图 complete 直接为真
+        if (pic) pic.addEventListener('load', layoutWall);
+    return card;
+  }
+
+  /** 再放一页（PAGE 张）到墙上 */
+  function appendPage() {
+    const list = $('list');
+    for (const it of lastItems.slice(shown, shown + PAGE)) {
+      list.appendChild(makeCard(it));
+      shown++;
+    }
+    requestAnimationFrame(layoutWall);
+  }
 
   function render(items) {
     lastItems = items;
@@ -319,40 +355,9 @@
     list.innerHTML = '';
     $('empty').style.display = items.length ? 'none' : 'block';
     $('listTitle').textContent = items.length ? '大家在出' : '大家在出';
-    const page = items.slice(0, shown + PAGE);
-    shown = page.length;
-    for (const it of page) {
-      // 封面卡：图 + 标题 + 价格 + 赞数。整块是一个按钮（点开详情）
-      // 封面：外层是 <article>（不是 <button>），里面分别是
-      //   · 一个**真链接**（href="?item=…"）—— 右键能复制出单条地址，发微信直接可用
-      //   · 一个点赞按钮 —— 详情里那两个按钮按要求去掉了，赞数不能就此变成死数字
-      //     （2026-10-01 体检发现的：封面还显示着「♥ 1」，但哪儿都点不了赞）
-      // 两者不能互相嵌套（<button> 里放 <button> / <a> 里放 <button> 都是非法 HTML），
-      // 所以必须是并列的两个元素。
-      const card = document.createElement('article');
-      card.className = 'note';
-      const liked = !!it.liked;
-      const likes = Number(it.likes) || 0;
-      card.innerHTML = `
-        <a class="note__open" href="?item=${encodeURIComponent(it.id)}" data-open="${esc(it.id)}">
-          <img class="note__pic" src="/api/img/${encodeURIComponent(it.id)}" alt="${esc(it.title)}" loading="lazy" decoding="async">
-          <div class="note__title">${esc(it.title)}</div>
-        </a>
-        <div class="note__foot">
-          <span class="note__price">¥${Number(it.price).toLocaleString('zh-CN')}</span>
-          <button class="note__like${liked ? ' is-on' : ''}" type="button" data-react="like" data-id="${esc(it.id)}" aria-pressed="${liked ? 'true' : 'false'}" aria-label="点赞">
-            ${icon('heart', 14)}<span data-count="like">${likes || ''}</span>
-          </button>
-        </div>`;
-      const pic = card.querySelector('.note__pic');
-      // 图一加载完就重排（这时才知道它多高）；已经缓存好的图 complete 直接为真
-      if (pic) pic.addEventListener('load', layoutWall);
-      list.appendChild(card);
-    }
-    // 先按「图还没加载」的状态排一次（至少把左右列分好），图加载完再逐步校正
-    requestAnimationFrame(layoutWall);
-    // 分享进来的深链：/market/?item=<id> 直接打开那一条
-    maybeOpenFromUrl();
+    shown = 0;
+    appendPage(); // 第一页
+    maybeOpenFromUrl(); // 分享进来的深链
   }
 
   // ---- 编辑：把这一件填回表单，提交时走 /api/edit ----

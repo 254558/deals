@@ -56,14 +56,10 @@
   }
   .card__head:hover { color: var(--blue); }
   .card__head:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
-  .card__title { font-size: 10px; font-weight: 400; letter-spacing: 0.12em; color: var(--ink); }
-  .card__hint { font-size: 10px; letter-spacing: 0.04em; color: var(--ink-4); }
-  .card__arrow {
-    margin-left: auto; width: 8px; height: 8px;
-    border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor;
-    transform: rotate(45deg) translate(-2px, -2px); transition: transform 120ms linear;
-  }
-  .card__head[aria-expanded="true"] .card__arrow { transform: rotate(-135deg) translate(-2px, -2px); }
+  
+  
+  
+  .card__head[aria-expanded="true"] 
   .card__body { padding: 2px 22px 22px; border-top: 1px solid var(--rule-soft); }
   label { display: block; font-size: 13px; color: var(--ink-2); margin-bottom: 6px; }
   /* 输入框一律 16px：**iOS 只认这个数**——小于 16px 的输入框一被聚焦，Safari 会
@@ -143,7 +139,7 @@
   }
   .photo__icon { display: block; font-size: 24px; line-height: 1; color: var(--ink-4); margin-bottom: 8px; }
   .photo__text { display: block; font-size: 14px; color: var(--ink); }
-  .photo__hint { display: block; font-size: 12px; color: var(--ink-4); margin-top: 4px; }
+  
   .photo img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .photo__swap {
     position: absolute; right: 0; bottom: 0; border: 0; border-top: 1px solid var(--rule);
@@ -196,90 +192,6 @@
   footer ol { margin: 8px 0 0; padding-left: 20px; }
   footer li { margin-bottom: 4px; }
 
-/* ============================================================================
- * 全屏上下刷（2026-10-01 用户要的「抖音那样」）
- *
- * 结构：.feed 自己是一个 100dvh 的滚动容器，里面每条 .slot 也是一屏高，
- * scroll-snap 让松手就停在整条上（scroll-snap-stop: always 防止一次滑过好几条）。
- * 图用 contain：商品图比例不一时不裁切（裁了就看不出衣服的样子了）。
- * 评论面板仍是原来那套 .cmts DOM，这里把它改成**底部弹层** ——
- * 所以那 200 行评论逻辑（加载/分页/删除/举报）一行都没动。
- * ========================================================================= */
-.feed {
-  height: 100dvh;
-  overflow-y: auto;
-  scroll-snap-type: y mandatory;
-  background: #0b0f14;
-  /* 滚动条不显示（和报告那边一致） */
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-.feed::-webkit-scrollbar { width: 0; height: 0; display: none; }
-
-.slot {
-  position: relative;
-  height: 100dvh;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-}
-.slot__pic {
-  max-width: 100%;
-  max-height: 100%;
-  object-fit: contain;
-}
-
-/* 信息压在底部，垫一层渐变保证白字读得清 */
-.slot__info {
-  position: absolute;
-  left: 0;
-  right: 68px;
-  bottom: 0;
-  padding: 40px 16px 18px;
-  color: #fff;
-  background: linear-gradient(to top, rgba(0, 0, 0, .72), rgba(0, 0, 0, 0));
-}
-.slot__title { font-size: 16px; font-weight: 700; letter-spacing: .02em; }
-.slot__price { margin-top: 6px; font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.slot__size { font-size: 13px; font-weight: 400; opacity: .85; margin-left: 4px; }
-.slot__meta { margin-top: 8px; font-size: 13px; opacity: .9; }
-.slot__note { margin-top: 4px; font-size: 13px; line-height: 1.5; opacity: .82; }
-.slot__foot { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; opacity: .8; }
-.slot__foot .btn { color: #fff; border-color: rgba(255, 255, 255, .5); }
-
-/* 右侧动作栏 */
-.rail {
-  position: absolute;
-  right: 6px;
-  bottom: 90px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  align-items: center;
-}
-.rail__btn {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: 56px;
-  padding: 4px 0;
-  border: 0;
-  background: none;
-  color: #fff;
-  font-size: 11px;
-  cursor: pointer;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, .5);
-}
-.rail__ico { font-size: 26px; line-height: 1.1; opacity: .92; }
-.rail__btn--on .rail__ico { opacity: 1; }
-.rail__btn--on { color: #ff2d55; }
-.rail__n { min-height: 14px; font-variant-numeric: tabular-nums; opacity: .9; }
-.rail__btn:disabled { opacity: .6; }
-
 /* 评论弹层（复用原来的 .cmts DOM） */
 .cmts {
   position: fixed;
@@ -294,9 +206,6 @@
   border-top: 1px solid var(--rule);
   box-shadow: 0 -6px 24px rgba(0, 0, 0, .18);
 }
-.cmts__head { display: flex; align-items: center; justify-content: space-between; font-size: 12px; letter-spacing: .12em; color: var(--ink-4); margin-bottom: 8px; }
-.cmts__close { border: 0; background: none; font-size: 20px; line-height: 1; color: var(--ink-4); cursor: pointer; }
-
 
 /* ============================================================================
  * 「打开就是满屏刷」
@@ -309,7 +218,7 @@
  *   3. 「上下滑着看（N）」那行小标题藏起来 —— 满屏刷不需要它
  * release 之前要确认：footer（那些免责说明）还能滚到，别被弹层挡住
  * ========================================================================= */
-.feed { height: calc(100dvh - var(--nav-h, 59px)); }
+
 #listTitle { display: none; }
 
 /* 发帖表单：**导航栏以下的整页**（不是底部弹层）。
@@ -339,14 +248,7 @@
    现在这一行只有一个按钮（× 已经去掉了），改成块级 + 按钮铺满即可。 */
 .card--form .card__head { display: block; }
 .card--form .card__head .btn { display: block; width: 100%; }
-.card__close {
-  border: 0;
-  background: none;
-  font-size: 22px;
-  line-height: 1;
-  color: var(--ink-4);
-  cursor: pointer;
-}
+
 @media (min-width: 720px) {
   /* 桌面端居中成一条；top 仍是导航栏下沿，所以两边加竖线才不显得空 */
   .card--form {
@@ -380,7 +282,7 @@
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(0, 0, 0, .28);
 }
-.fab__plus { font-size: 16px; }
+
 .card--form.is-open ~ .fab { display: none; }
 
 /* ============================================================================
@@ -502,7 +404,6 @@
 .detail__note { margin-top: 8px; font-size: 14px; line-height: 1.6; }
 .detail__acts { margin-top: 14px; display: flex; align-items: center; gap: 12px; }
 
-
 /* 详情里的评论块：它的 DOM 复用自「底部弹层」那一版，所以要把弹层几何**整套**清掉。
    只写 position: static 是不够的 —— transform 对 static 元素照样生效，
    left/right/max-width 也会继续影响布局（这就是上面那条 transform 造成的错位）。 */
@@ -551,6 +452,15 @@
     border-left: 1px solid var(--rule);
   }
   .detail__close { right: 14px; top: 14px; }
+}
+
+/* 特别宽的屏（≥1500）：方图不再被拉到 1460 宽。
+   给图设上限、居中，左栏做成**深色舞台**（和图片自己的背景接上，黑边就不刺眼了），
+   右栏保持白底放内容。这样 1920 下不再是「一大片黑 + 一小张图在中间」。 */
+@media (min-width: 1500px) {
+  .detail { background: #0b0f14; }
+  .detail__body { background: var(--white); }
+  .detail__pic { max-width: 1100px; margin: 0 auto; }
 }
 
 /* lucide 图标（内联 SVG）的统一规格：
