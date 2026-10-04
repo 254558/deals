@@ -341,7 +341,11 @@
   display: none;
 }
 .card--form.is-open { display: block; }
-.card--form .card__head { justify-content: space-between; }
+/* 顶部的「返回」要和底部「发布」一样宽（用户 2026-10-01）。
+   原来这里是 flex 行、按钮作为 flex item 只占内容宽，所以比发布窄一截。
+   现在这一行只有一个按钮（× 已经去掉了），改成块级 + 按钮铺满即可。 */
+.card--form .card__head { display: block; }
+.card--form .card__head .btn { display: block; width: 100%; }
 .card__close {
   border: 0;
   background: none;
