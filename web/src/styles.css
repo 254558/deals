@@ -438,80 +438,6 @@ body {
  * --pad 在文件最前面的兜底调色板里（基准 40 → 1180px 起 24 → 760px 起 16），不按站点分。
  */
 .wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }
-
-/* ---------------- 报头 ---------------- */
-
-/* ---------------- 榜单（页顶 RankBoard） ----------------
-   本期降得最狠的几件排成榜，价格排版照 PDP 来。
-   位置在整页最上面（报头之下、筛选页签之上）——打开就先看见榜单，
-   页签和商品都在它下面。下边那条线把它跟页签分开。
-   整块只在 features.rankBoard 打开时渲染，所以下面的规则只服务优衣库那一站 */
-
-/* 榜单标题那行现在是个开关；收起时列表整块不显示（用 class，不用 hidden 属性） */
-.topranks__toggle { display: flex; align-items: baseline; gap: 8px; background: none; border: 0; padding: 0; cursor: pointer; }
-.topranks__toggle:hover .label { color: var(--ink-2); }
-.topranks__hint { font-size: 12px; color: var(--blue); }
-.rank--hidden { display: none; }
-
-.topranks {
-  padding: 22px 0 20px;
-  border-bottom: 1px solid var(--rule);
-}
-.rank { list-style: none; margin: 12px 0 0; padding: 0; }
-.rank__row {
-  display: grid;
-  grid-template-columns: 34px minmax(0, 1fr) auto;
-  gap: 0 20px;
-  align-items: baseline;
-  padding: 11px 0;
-  /* 发丝线只在行间，首行上方和末行下方都不画 */
-  border-top: 1px solid var(--rule-soft);
-}
-.rank__row:first-child { border-top: 0; padding-top: 0; }
-.rank__row:last-child { padding-bottom: 0; }
-.rank__n {
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  color: var(--ink-4);
-  font-variant-numeric: tabular-nums;
-}
-/* 只有第一名标红：既然排了序，就得看得出哪个是头名 */
-.rank__row:first-child .rank__n { color: var(--red); }
-.rank__body { min-width: 0; }
-.rank__name { font-size: 16px; line-height: 1.35; color: var(--ink); }
-.rank__meta { display: block; margin-top: 3px; }
-.rank__tail {
-  display: flex;
-  align-items: baseline;
-  gap: 14px;
-  white-space: nowrap;
-}
-.rank__was {
-  /* 同卡片：12 → 15（榜单现价 22px，仍然主次分明） */
-  font-size: 15px;
-  color: var(--ink-2);
-  text-decoration: line-through;
-  font-variant-numeric: tabular-nums;
-}
-.rank__now {
-  font-size: 26px;
-  font-weight: 600;
-  letter-spacing: var(--ls-price);
-  line-height: 1.1;
-  color: var(--red);
-  font-variant-numeric: tabular-nums;
-}
-/* 降幅＝黄底角标。卡片上的降幅是红字（.card__off），黄角标只剩榜单上这一个 */
-.rank__off {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--badge-ink);
-  background: var(--yellow);
-  padding: 0 4px;
-  line-height: 16px;
-  font-variant-numeric: tabular-nums;
-}
-
 /* ---------------- 工具条 ---------------- */
 
 .toolbar__row { gap: 18px; padding: 11px 0; }
@@ -695,8 +621,6 @@ body {
 
 }
 
-
-
 @media (max-width: 760px) {
   /* 手机端两家都只留页签这一行，而且**这一行钉住**（.toolbar 的 sticky 来自共用骨架）。
      搜索/计数全撤：屏幕金贵，而这些在手机上各有替代——搜索在手机上本来就不方便，
@@ -711,20 +635,7 @@ body {
 
   /* --pad 的三档已挪到 shell.css（唯一的出处） */
   .masthead { margin-top: 26px; }
-
-  /* ⚠️ 这里曾经有一条「往下滑就收起报头」的规则（给 <html> 加 .nav-hidden）。
-     2026-10-01 撤掉了：用户当初的要求就是「往下滑也要一直能看到 GoodPrices 和那几个入口」，
-     我为了省 30px 自作主张收起来，等于把那个要求做没了 —— 用户报「导航栏被推上去了」。
-     现在报头与工具条都常驻吸附（手机上合计约 87px、屏幕的 10%，这是他明确要的）。
-     教训：**用户明确要过的东西，不要为了自己算出来的收益去动它。** */
-  .topranks { padding: 18px 0 16px; }
-  /* 窄屏一行塞不下「序号 名称 价格」，价格让到名称下面一行 */
-  .rank__row { grid-template-columns: 26px minmax(0, 1fr); gap: 0 12px; }
-  .rank__tail { grid-column: 2; margin-top: 6px; gap: 10px; }
-  .rank__now { font-size: 22px; }
 }
-
-
 
 /* 系统设了「减少动态效果」就不跑生长动画，直接把条子画到最终长度 */
 @media (prefers-reduced-motion: reduce) {
@@ -779,20 +690,6 @@ body {
   /* gap 也跟着收紧（12 → 6）：手机上图片更大一点，靠的就是内衬 + 间隙这两处 */
   .grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
 }
-
-/* ----------------------------------------------------------------------------
- * 页签上下的两条分割线删掉（用户 2026-10-01：「删掉全部 / 限时特优 / 超值精选 / 待拔草
- * 上下的分割线」）。
- * 量出来的来源：
- *   上面那条 = .topranks 的 border-bottom（榜单区块的收尾线，正好落在工具条上沿）
- *   下面那条 = .toolbar__row 的 border-bottom（工具条行的收尾线）
- * 写在这里而不是改原规则，是为了让「谁把它去掉的、为什么」一眼可见；
- * 两条都是同优先级、后写的赢，所以覆盖得住。
- *
- * ⚠️ 工具条是**粘性**的：去掉下边线之后，它吸附时与下面的商品之间没有任何分隔，
- * 视觉上会有点糊。真觉得糊就在 .toolbar 上加一层很淡的投影（一行的事）。
- * ------------------------------------------------------------------------- */
-.topranks { border-bottom: 0; }
 .toolbar__row { border-bottom: 0; }
 /* 工具条吸附时的分隔（替代上面被去掉的那条下边线）。
  * 用户 2026-10-01：「这样挺好的」→ 同意用投影代替线。

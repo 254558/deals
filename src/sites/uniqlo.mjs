@@ -478,7 +478,6 @@ export default {
     ],
 
     features: {
-      rankBoard: true, // 页顶「本期降得最狠的五件」（优衣库独有）
       stickerTags: false,
       brandMark: false,
       priceOffBadge: false,

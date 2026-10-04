@@ -257,7 +257,7 @@ export function renderHtml({ js, css, fontCss, payload, beacon = null, origin = 
    * `<div id="root">` 是空的。Google 会执行 JS，百度基本不会——也就是说这两份报告
    * 对百度基本是隐形的。要真解决得在构建期预渲染一份首屏 HTML（见 README）。
    */
-  const desc = `${payload.meta.pageTitle}：本期降得最狠的 ${top.length} 件，含上市价、现价与降幅。数据每天更新。`;
+  const desc = `${payload.meta.pageTitle}：本期 ${top.length} 件降价商品，含上市价、现价与降幅。数据每天更新。`;
   const canonical = origin ? `${origin}/${payload.site}/` : null;
   const ogImage = origin && payload.deals?.[0]?.image ? `${origin}/${payload.site}/${payload.deals[0].image}` : null;
   const seo = [

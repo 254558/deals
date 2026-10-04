@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Masthead } from './components/Masthead.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
-import { RankBoard } from './components/RankBoard.jsx';
 import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
@@ -237,17 +236,7 @@ export default function App() {
     <>
       <Masthead recorded={DATA.recorded ?? deals.length} />
 
-      {/* 榜单在整页最上面：报头之下、筛选页签之上，打开就先看见这一期哪儿在塌。
-          它在粘性盒子外面，所以往下滚时它走掉；报头与页签都钉在顶上。
-          `features.rankBoard` 关掉的那一站（迪卡侬）一点也不渲染——
-          它的首屏第一个元素就是筛选页签 */}
-      {META.features.rankBoard && (
-        <div className="wrap">
-          <RankBoard deals={deals} />
-        </div>
-      )}
-
-      <Toolbar
+          <Toolbar
         filter={filter}
         onFilter={setFilter}
         query={query}

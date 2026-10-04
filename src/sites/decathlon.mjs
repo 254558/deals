@@ -432,7 +432,7 @@ export default {
     // 两个旧报告里的收藏/隐藏存在这两个前缀下（deca.picks 等），沿用即可原样保留
     storagePrefix: 'deca',
     // 报头不显示「共记录 N 件」了（2026-09-30 应要求去掉）。开关留着：它是 payload
-    // 里的按站点配置，跟 rankBoard: false 一个性质，想显示回来改这一行即可
+    // 里的按站点配置，跟别的按站点开关一个性质，想显示回来改这一行即可
     showRecorded: false,
     crossLink: {
       href: 'https://goodprices.online/uniqlo/',
@@ -448,7 +448,6 @@ export default {
     ],
 
     features: {
-      rankBoard: true, // 页顶「本期降得最狠的五件」（优衣库独有）
       stickerTags: false,
       brandMark: false,
       priceOffBadge: false,
