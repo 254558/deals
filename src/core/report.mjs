@@ -80,7 +80,7 @@ function toDeal(row, images, remote, site, vocab) {
  * @param {object} [opts]
  * @param {boolean} [opts.remote] 带上 CDN 候选图地址（只有下图那一趟需要）
  * @param {string|null} [opts.crossLinkHref] 覆盖报头那个「另一家的报告」的链接。
- * @param {string|null} [opts.marketHref] 尾货市集的入口；给 null 就不显示那一格。
+ * @param {string|null} [opts.marketHref] 惊鸿一瞥的入口；给 null 就不显示那一格。
  *   Cloudflare 上两份在同一个域名的兄弟目录，改成相对路径 `../<站点>/` ——
  *   相对路径换域名、换本地双击都对。
  */
@@ -137,12 +137,12 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
   if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
 
   /**
-   * 报头行尾的入口先摆「另一家的报告」，再摆「尾货市集」。
+   * 报头行尾的入口先摆「另一家的报告」，再摆「惊鸿一瞥」。
    * 市集那个链接是**全站共用的**（不属于哪一家），所以由核心补进来，适配器不用管。
    */
   meta.links = [
     ...(meta.crossLink ? [meta.crossLink] : []),
-    ...(marketHref ? [{ href: marketHref, label: '尾货市集', title: '大家出的尾货：谁要谁寄（新标签打开）' }] : []),
+    ...(marketHref ? [{ href: marketHref, label: '惊鸿一瞥', title: '大家出的尾货：谁要谁寄（新标签打开）' }] : []),
   ];
 
   return {
@@ -440,7 +440,7 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const dir = join(root, 'reports');
   mkdirSync(dir, { recursive: true });
 
-  // 尾货市集：手写的页面（market/*.html，含 market/admin/）+ Pages Functions（仓库根的 functions/）。
+  // 惊鸿一瞥：手写的页面（market/*.html，含 market/admin/）+ Pages Functions（仓库根的 functions/）。
   // 页面不是报告，但和报告同一个域名、同一套视觉语言，所以跟着一起部署。
   // 只拷 .html：market/schema.sql 是给 wrangler 建表用的，不该出现在网站上。
   stageMarketPages(dir, root);

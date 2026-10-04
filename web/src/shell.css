@@ -4,7 +4,7 @@
  * **唯一的出处。** 两处消费它，不要再手抄第三份：
  *   1. 报告：web/src/styles.css 顶部 `@import './shell.css'`
  *      （Vite 构建时内联进来，单文件的性质不变）
- *   2. 尾货市集 / 管理页：部署时由 src/core/report.mjs 的 stageMarketPages()
+ *   2. 惊鸿一瞥 / 管理页：部署时由 src/core/report.mjs 的 stageMarketPages()
  *      注入到它们 HTML 里 `<!-- @shell -->` 的位置
  *
  * 为什么合并：这三段原来在三个文件里各存一份，改一次报头要改三处（漏过）；
@@ -158,7 +158,7 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
      「var() 解析不到 → 整条声明失效」（降幅条灰底、页签边框），所以不再裸用变量。 */
 .masthead__text.masthead__home { color: var(--red, #e20c18); font-weight: 700; text-decoration: none; }
 .masthead__home:hover { text-decoration: underline; }
-/* 行尾那组入口（兄弟报告 + 尾货市集）。
+/* 行尾那组入口（兄弟报告 + 惊鸿一瞥）。
    ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
    flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
    之后露出来的）。后面的紧挨着排，间距就是 eyebrow 的 gap。 */

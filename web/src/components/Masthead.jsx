@@ -16,7 +16,7 @@ import { META } from '../lib/site.js';
  *                      四个页面（两份报告 + 市集 + 管理页）都一样，点它回首页（/ → 优衣库）。
  *                      页面自己的名字由 title、榜单小标题和 URL 说，不用报头再重复一遍。
  *                      `META.label`（优衣库/迪卡侬）仍然在 payload 里，只是报头不用它了。
- *   META.links         行尾那组入口（数组）：另一家的报告 + 尾货市集。核心拼好，两家一样；
+ *   META.links         行尾那组入口（数组）：另一家的报告 + 惊鸿一瞥。核心拼好，两家一样；
  *                      没配就是空数组，一个都不渲染。
  *   META.showRecorded  是否显示「共记录 N 件」（迪卡侬有，优衣库没有）
  *
@@ -43,7 +43,7 @@ export function Masthead({ recorded }) {
     window.addEventListener('resize', set);
     return () => { if (ro) ro.disconnect(); window.removeEventListener('resize', set); };
   }, []);
-  // 行尾那组入口：另一家的报告 + 尾货市集（核心拼好的数组，见 report.mjs 的 buildPayload）。
+  // 行尾那组入口：另一家的报告 + 惊鸿一瞥（核心拼好的数组，见 report.mjs 的 buildPayload）。
   // 老的 meta.crossLink 还兼容着——万一有旧 payload 进来，别把入口弄没了。
   const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink] : [];
   return (
@@ -53,7 +53,7 @@ export function Masthead({ recorded }) {
         <span className="masthead__dot" />
         <a className="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
         {META.showRecorded && <span className="label">共记录 {num(recorded)} 件</span>}
-        {/* 行尾右对齐的入口：兄弟报告 + 尾货市集（靠 margin-left: auto 顶到行尾） */}
+        {/* 行尾右对齐的入口：兄弟报告 + 惊鸿一瞥（靠 margin-left: auto 顶到行尾） */}
         {links.map((l) => (
           <a
             className="masthead__text masthead__cross"
