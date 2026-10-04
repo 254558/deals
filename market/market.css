@@ -453,11 +453,14 @@
 .note__open { display: block; color: inherit; text-decoration: none; }
 .note__foot { margin-top: 2px; display: flex; align-items: baseline; gap: 6px; font-size: 13px; }
 .note__like {
-  margin-left: auto;
+  /* 热区比看上去大得多：实测原来只有 24×23px，而它紧挨着一个 183×207 的
+     「打开详情」链接 —— 手机上想点赞经常点成打开。
+     视觉大小不变，用 padding 撑热区 + 等量负 margin 把它「缩」回原来的位置。 */
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  padding: 2px 0;
+  padding: 14px 12px;
+  margin: -14px -12px -14px auto;
   border: 0;
   background: none;
   color: var(--ink-4);
@@ -566,3 +569,8 @@
    背后那一屏还是会跟着动。contain 就是让滚动到此为止。 */
 .card--form,
 .detail { overscroll-behavior: contain; }
+
+/* 封面的悬停反馈：原来鼠标移上去除了指针形状没有任何变化（量过：transform=none）。
+   只加一个很轻的图片变淡，别做出位移 —— 瀑布流是绝对定位，位移容易和邻卡叠上。 */
+.note__open { transition: opacity .15s ease; }
+.note__open:hover .note__pic { opacity: .86; }

@@ -430,7 +430,7 @@
       } else {
         if (data.token && data.id) tokens.set(data.id, data.token);
         msg.className = 'msg msg--ok';
-        msg.textContent = '发出去了。要改要删，点这件下面的按钮（凭据存在这个浏览器里）。';
+        msg.textContent = '发出去了。要改要删，点开这件、进去就能改或删（凭据存在这个浏览器里）。';
         $('form').reset();
         clearPhoto();
       }
