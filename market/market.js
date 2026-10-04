@@ -146,8 +146,57 @@
     $('msg').textContent = '已取消编辑';
   });
 
+  /* ------------------------------------------------------------------
+   * 上传前压图（用户 2026-10-01：「做一下上传前压缩图片」）。
+   *
+   * 手机拍的原图动辄 3~5MB，而接口上限 400KB（图直接存进 D1 的 BLOB，越省越好）。
+   * 以前是让用户自己撞上限报错；现在先在浏览器里缩到长边 1400px、JPEG 质量 0.82，
+   * 还超就逐档降（0.7 / 0.6 / 0.5）。
+   *
+   * 压完包成一个新的 File 交给 takeFile —— 它对拿到的 File 一视同仁，
+   * 所以「预览、提交、编辑回填」三条路径全都自动用上压过的图，不用改别处。
+   *
+   * imageOrientation: 'from-image' 是必须的：createImageBitmap 默认**不看** EXIF 方向，
+   * 少了它，手机横拍的照片压完就躺下了。
+   * ------------------------------------------------------------------ */
+  const MAX_EDGE = 1400;
+  const TARGET_BYTES = 360 * 1024; // 给 base64 留余量（接口上限 400KB）
+  async function compressImage(file) {
+    if (!file || !/^image\//.test(file.type)) return file;
+    let bmp;
+    try {
+      bmp = await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch {
+      return file; // 解不开就原样交出去，让接口去报格式错误
+    }
+    const scale = Math.min(1, MAX_EDGE / Math.max(bmp.width, bmp.height));
+    const w = Math.max(1, Math.round(bmp.width * scale));
+    const h = Math.max(1, Math.round(bmp.height * scale));
+    const cv = document.createElement('canvas');
+    cv.width = w;
+    cv.height = h;
+    cv.getContext('2d').drawImage(bmp, 0, 0, w, h);
+    if (bmp.close) bmp.close();
+    const toBlob = (q) => new Promise((res) => cv.toBlob(res, 'image/jpeg', q));
+    let blob = await toBlob(0.82);
+    for (const q of [0.7, 0.6, 0.5]) {
+      if (blob && blob.size <= TARGET_BYTES) break;
+      blob = await toBlob(q);
+    }
+    if (!blob || blob.size >= file.size) return file; // 压完反而更大就别换
+    $('msg').textContent =
+      '照片已压缩：' + Math.round(file.size / 1024) + 'KB → ' + Math.round(blob.size / 1024) + 'KB' +
+      '（' + w + '×' + h + '）';
+    return new File([blob], (file.name || 'photo').replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  }
+  async function takeCompressed(file) {
+    if (!file) return;
+    $('msg').textContent = '正在压缩照片…';
+    takeFile(await compressImage(file));
+  }
+
   // ---- 选图 / 拖图 ----
-  $('photo').addEventListener('change', (e) => takeFile(e.target.files?.[0]));
+  $('photo').addEventListener('change', (e) => takeCompressed(e.target.files?.[0]));
   $('swap').addEventListener('click', () => { clearPhoto(); $('photo').click(); });
   const box = $('photoBox');
   box.addEventListener('dragover', (e) => { e.preventDefault(); box.classList.add('photo--dragover'); });
@@ -156,7 +205,7 @@
     e.preventDefault();
     box.classList.remove('photo--dragover');
     const f = e.dataTransfer?.files?.[0];
-    if (f) takeFile(f);
+    if (f) takeCompressed(f);
   });
 
   // ---- 列表 ----
@@ -253,13 +302,26 @@
   window.addEventListener('resize', layoutWall);
   window.addEventListener('load', layoutWall);
 
+  // 一次只渲染这么多张（用户 2026-10-01：「不需要一下加载那么多，边刷边加载就行了」）。
+  // 数据仍是整批取回的（接口一次给 60 条），只是**先渲染 12 张**，
+  // 滚到快到底再多放一页 —— 首屏要画的卡片、要发的图片请求都少得多。
+  const PAGE = 12;
+  let shown = 0;
+  window.addEventListener('scroll', () => {
+    if (shown >= lastItems.length) return;
+    if (window.innerHeight + window.scrollY < document.body.scrollHeight - 700) return;
+    render(lastItems); // render 自己会多放一页（shown + PAGE）
+  }, { passive: true });
+
   function render(items) {
     lastItems = items;
     const list = $('list');
     list.innerHTML = '';
     $('empty').style.display = items.length ? 'none' : 'block';
     $('listTitle').textContent = items.length ? '大家在出' : '大家在出';
-    for (const it of items) {
+    const page = items.slice(0, shown + PAGE);
+    shown = page.length;
+    for (const it of page) {
       // 封面卡：图 + 标题 + 价格 + 赞数。整块是一个按钮（点开详情）
       // 封面：外层是 <article>（不是 <button>），里面分别是
       //   · 一个**真链接**（href="?item=…"）—— 右键能复制出单条地址，发微信直接可用
@@ -473,9 +535,22 @@
   function maybeOpenFromUrl() {
     if (deepLinkOpened) return;
     const id = new URLSearchParams(location.search).get('item');
-    if (!id || !lastItems.some((x) => x.id === id)) return; // 还没加载完 / 已经下架，就先不动
+    if (!id || deepLinkOpened) return;
     deepLinkOpened = true;
-    openDetail(id);
+    if (lastItems.some((x) => x.id === id)) {
+      openDetail(id);
+      return;
+    }
+    // 不在已取回的这一批里（别人分享的链接可能指向很旧的一条）→ 单独按 id 取回来
+    fetch('/api/listings?id=' + encodeURIComponent(id), { headers: { Accept: 'application/json' } })
+      .then((r) => r.json())
+      .then((d) => {
+        const one = (d.items || [])[0];
+        if (!one) return;
+        lastItems.unshift(one);
+        openDetail(id);
+      })
+      .catch(() => {});
   }
   // 浏览器前进/后退也跟着走
   window.addEventListener('popstate', () => {

@@ -8,6 +8,12 @@ export async function onRequestGet({ request, env }) {
   // 顺手带上评论数与点赞/收藏数 —— 全是子查询，别为这几个数字再开几趟请求。
   // liked / saved 是「这个 IP 点过没」：全屏刷的界面上，图标要一眼看出填没填。
   const hash = await ipHash(request);
+  // 两个查询参数：
+  //   id=<id>     只取这一条 —— 分享出去的深链可能指向很旧的一条，翻页翻不到它
+  //   offset=<n>  从第 n 条开始 —— 前端一次只渲染 12 张，滚到底再来取下一页
+  const url = new URL(request.url);
+  const oneId = url.searchParams.get('id');
+  const offset = Math.max(0, Math.min(10000, Number(url.searchParams.get('offset')) || 0));
   const { results } = await env.DB.prepare(
     `SELECT id, created_at, title, price, size, note, contact, reports,
             (SELECT COUNT(*) FROM comments c WHERE c.listing_id = listings.id AND c.hidden = 0) AS comments,
@@ -15,9 +21,10 @@ export async function onRequestGet({ request, env }) {
             (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'save') AS saves,
             (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'like' AND r.ip_hash = ?) AS liked,
             (SELECT COUNT(*) FROM reactions r WHERE r.listing_id = listings.id AND r.kind = 'save' AND r.ip_hash = ?) AS saved
-       FROM listings WHERE hidden = 0 ORDER BY created_at DESC LIMIT ?`
+       FROM listings WHERE ${oneId ? 'id = ? AND ' : ''}hidden = 0
+       ORDER BY created_at DESC LIMIT ? OFFSET ?`
   )
-    .bind(hash, hash, LIMIT)
+    .bind(...(oneId ? [hash, hash, oneId, 1, 0] : [hash, hash, LIMIT, offset]))
     .all();
   return json({ ok: true, items: (results || []).map((r) => ({ ...r, hasImage: true })) });
 }
