@@ -178,8 +178,10 @@
   // 详情里的那一块（图 + 信息 + 动作栏）—— 点开封面时才搭，省得一开始就渲染 15 份
   // 详情动作栏：**没有点赞和评论按钮**（用户 2026-10-01：「点进详情，不需要点赞和
   // 评论的 logo」）—— 那两个数字封面上已经有，详情里再摆一排图标只是噪音。
-  // 编辑 / 下架 / 举报换成同一套 lucide 图标（原来编辑和下架是文字按钮，夹在图标之间不统一）；
-  // 只剩图标之后，含义靠 aria-label 与 title 说清楚。
+  // 编辑 / 下架 / 举报：**用文字按钮**。中途试过换成纯图标（pencil / circle-x / flag），
+  // 用户看过之后要求换回来（2026-10-01：「把编辑和下架的图标换成之前的文字版的按钮」）——
+  // 图标确实更整齐，但「编辑 / 下架」是**动作**，中文两个字比一个笔尖更好认。
+  // 「举报」也一起换回文字：它和这两个在同一行，只换两个会变成一行里混着图标与文字。
   //
   // ⚠️ 模板字符串里**只能**用 ${} 插值：写 {/* … */} 会被当成正文原样渲染出来
   // （这个坑我在这一个文件里踩了三次，所以下面加了一条测试盯着它）。
@@ -200,9 +202,8 @@
         ${it.note ? `<div class="detail__note">${esc(it.note)}</div>` : ''}
         <div class="detail__acts">
           ${mine
-            ? `<button class="act" type="button" data-edit="${esc(it.id)}" aria-label="编辑" title="编辑">${icon('pencil', 20)}</button>
-               <button class="act" type="button" data-del="${esc(it.id)}" aria-label="下架" title="下架">${icon('circle-x', 20)}</button>`
-            : `<button class="act" type="button" data-report="${esc(it.id)}" aria-label="举报" title="举报">${icon('flag', 20)}</button>`}
+            ? `<button class="btn btn--ghost btn--sm" data-edit="${esc(it.id)}">编辑</button><button class="btn btn--ghost btn--sm" data-del="${esc(it.id)}">下架</button>`
+            : `<button class="btn btn--ghost btn--sm" data-report="${esc(it.id)}">举报</button>`}
         </div>
         <div class="cmts" data-cmts="${esc(it.id)}">
           <div class="cmts__list"></div>
