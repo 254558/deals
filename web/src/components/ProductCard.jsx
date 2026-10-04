@@ -156,10 +156,6 @@ export function ProductCard({ deal, index, onPick, onHide }) {
             显示的是 shownName（官网原名去掉斜杠后半段），断码时把剩余尺码跟在名称后面。 */}
         {shownName}
       </a>
-      {/* 「尾货 / 新品」的小标记。迪卡侬一半的卖点就是尾货清仓；做得轻（一个小方块 + 两个字），
-          而且**只此一份** —— 不要再往别的分支里抄第二份。 */}
-      {tags.includes('endlife') && <span className="card__flag">尾货</span>}
-      {tags.includes('new_arrival') && <span className="card__flag card__flag--new">新品</span>}
 
       {/* 价格三件套，右端跟着收藏 / 不再出现两个动作——动作挨着价格，
           不用单独再占一行，卡片下半截也就少一层 */}

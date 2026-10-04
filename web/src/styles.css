@@ -267,19 +267,6 @@ button {
 }
 .card__img--none { background: var(--surface); }
 
-/* 商品名后面的小标记（尾货 / 新品）。色值带字面兜底：这个项目里栽过 var() 解析不到 */
-.card__flag {
-  display: inline-block;
-  margin-left: 6px;
-  padding: 0 4px;
-  font-size: 11px;
-  line-height: 16px;
-  vertical-align: 2px;
-  color: #fff;
-  background: var(--red, #e20c18);
-}
-.card__flag--new { background: var(--ink-2, #616161); }
-
 .card__name {
   overflow: hidden;
   /* 标题**只占一行**，超出用省略号（用户 2026-10-01：「标题就弄一行，超出的部份用省略号替代」）。
