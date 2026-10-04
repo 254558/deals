@@ -100,16 +100,11 @@
        就不要我发的这几个字了，样式仿照发布或者返回按钮」）。
        市场页上它是隐藏的 —— 这个入口只属于「我的」这一页。 -->
   <button class="btn" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">我要出一件</button>
-  <!-- 小红书那种：两列瀑布流封面，点开看详情 -->
-  <div id="list" class="wall"></div>
-  <div id="detail" class="detail" hidden></div>
 
-  <div id="loading" class="empty">正在加载…</div>
-  <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，点右下角发一件试试。</div>
-
-  <!-- 「我的」转移码。凭据只存在这个浏览器里，换手机或清缓存就找不回来
-       （服务端只存哈希，救不回）。这里给一个把凭据搬过去的出口 ——
-       它不是账号，但能解决「换设备就丢」这件最痛的事。 -->
+  <!-- 转移码入口：收成一颗按钮，放在「我要出一件」下面（用户 2026-10-01：
+       「可以收起来，一颗按钮即可」）。凭据只存在这个浏览器里，换手机或清缓存
+       就找不回来（服务端只存哈希，救不回）。平时只占一行，点开才展开下面那套。 -->
+  <button class="transfer-toggle" type="button" id="transferToggle" aria-expanded="false" aria-controls="transfer">转移码（换手机不丢）</button>
   <div class="transfer" id="transfer" hidden>
     <div class="transfer__row">
       <button class="btn btn--ghost btn--sm" type="button" id="exportBtn">转到别的设备</button>
@@ -122,6 +117,13 @@
       <button class="btn btn--sm" type="button" id="importGo" hidden>导入</button>
     </div>
   </div>
+
+  <!-- 小红书那种：两列瀑布流封面，点开看详情 -->
+  <div id="list" class="wall"></div>
+  <div id="detail" class="detail" hidden></div>
+
+  <div id="loading" class="empty">正在加载…</div>
+  <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，点右下角发一件试试。</div>
 
   <footer>
     <b>这里只是把东西摆出来，交易是你和买家之间的事。</b>

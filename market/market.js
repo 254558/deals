@@ -220,6 +220,7 @@
     // 发帖入口现在在「我的」页的**顶部**（原来是个右下角的悬浮按钮）。
     // 表单本身还在 DOM 里 —— 从详情点「编辑」照样能打开它。
     $('postToggle').style.display = 'none';
+    $('transferToggle').style.display = 'none';
   }
 
   // ---- 「我的」转移码 ----
@@ -259,8 +260,14 @@
   }
   if (mineMode) {
     const txBox = $('transfer');
-    if (txBox) {
-      txBox.hidden = false;
+    const txToggle = $('transferToggle');
+    if (txBox && txToggle) {
+      // 平时只占一行（那颗按钮），点开才展开整个面板
+      txToggle.addEventListener('click', () => {
+        txBox.hidden = !txBox.hidden;
+        // 展开（可见）= hidden 为 false，aria-expanded 要跟着是 true（不是再取反一次）
+        txToggle.setAttribute('aria-expanded', String(!txBox.hidden));
+      });
       const ta = $('transferCode');
       const hint = $('transferHint');
       $('exportBtn').addEventListener('click', () => {

@@ -482,6 +482,21 @@
 /* 「我的」视图：把「我发的」这个小标题显出来。
    瀑布流那边它是藏着的（图墙自己说话），但这页需要一个标题交代「这是哪一页」。 */
 
+/* 转移码入口：一颗次级按钮，放在「我要出一件」下面，点开才展开 .transfer 面板 */
+.transfer-toggle {
+  display: block;
+  width: 100%;
+  margin: 8px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: none;
+  text-align: center;
+  font-size: 14px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.transfer-toggle:hover { color: var(--ink); border-color: var(--ink-4); }
+
 /* 「我的」页的转移码面板：只在 .mine 下出现（HTML 里也有 hidden 兜底） */
 .transfer { margin: 0 0 18px; padding: 12px; border: 1px solid var(--rule); }
 .transfer__row { display: flex; gap: 8px; flex-wrap: wrap; }
