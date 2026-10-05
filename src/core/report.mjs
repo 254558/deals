@@ -460,13 +460,16 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
    *
    * 分档：
    *   图片   —— 文件名里带 id 和档位，内容极少变 → 30 天 + 后台慢慢刷
-   *   报告页 —— 每天更新一次，但同一个人可能连着开好几次 → 5 分钟新鲜 + 其余时间先给旧的
+   *   报告页 —— 每小时更新一次，但同一个人可能连着开好几次 → 5 分钟新鲜 + 其余时间先给旧的（最多 1 小时）
    *   API    —— 市集是活的，一律不缓存（Functions 自己也会带 no-store）
    */
   // ⚠️ 别用 `/*` 兜底：_headers 的规则是**叠加**的——图片会同时命中 `/uniqlo/img/*` 和 `/*`，
   // 响应里就出现两条 Cache-Control（实测 `max-age=2592000…, max-age=300…`），浏览器按哪条
   // 算不确定。所以逐条写清楚，不留重叠。
-  const html = '  Cache-Control: public, max-age=300, stale-while-revalidate=86400\n';
+  // 报告页现在**每小时更新一次**（2026-10-05 把 cron 从 3 小时提到每小时），
+  // 所以「旧的就给旧的」这段最多只该容忍 1 小时，不能还按 24 小时兜——否则用户
+  // 刷新后看到的还是几小时前（甚至一天前）的尺码，会以为筛选是坏的。
+  const html = '  Cache-Control: public, max-age=300, stale-while-revalidate=3600\n';
   const headers = [
     ...sites.map((x) => `/${x.id}/img/*\n  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400\n`),
     '/api/*\n  Cache-Control: no-store\n',
