@@ -38,8 +38,13 @@ test('payload 契约：字段齐全、没有空图、没有被屏蔽的商品、
   for (const d of payload.deals) {
     assert.ok(d.image, '每件都必须有本地图——没图的在生成阶段就被剔了');
     assert.ok(!d.name.includes('/'), '名字不该带斜线（适配器截过）');
-    assert.ok(d.sizes, '算了尺码就该带上');
-    assert.ok(Array.isArray(d.sizes.labels));
+      // 尺码要么算得出来，要么**因为码自相矛盾被丢光**（2026-10-05 起）。
+      // 原来写的是 assert.ok(d.sizes) —— 那会把「丢掉范围外的码」这个正确行为判成失败。
+      assert.ok(
+        d.sizes === null || Array.isArray(d.sizes.labels),
+        '尺码的形状只能是 null 或 {labels}（不能是别的）',
+      );
+    if (d.sizes) assert.ok(Array.isArray(d.sizes.labels), '有尺码就必须是数组');
   }
   // 「还剩哪些」与「是不是都有」：在售 [S, XL] 而该款 S~XL → 缺档
   const skirt = payload.deals.find((d) => d.name === '抽褶裙');
@@ -47,8 +52,10 @@ test('payload 契约：字段齐全、没有空图、没有被屏蔽的商品、
   assert.equal(skirt.sizes.full, false);
   // 只剩一档、而该款范围就是那一档 → 全都有
   const tee = payload.deals.find((d) => d.name === '廓形针织T恤');
-  assert.deepEqual(tee.sizes.labels, ['XS']);
-  assert.equal(tee.sizes.full, false, '该款 S~XL、只剩 XS：有范围佐证，不能算码全');
+  // 只剩一档、但那一档**不在该款范围里**（范围 S~XL，接口却给了 XS）→ 直接丢掉，
+  // 于是这件没有可说的尺码。这就是线上「筛 XS 点进去没有 XS」那条坏数据的形状，
+  // 而 fixture 里一直是它 —— 2026-10-05 之前的选择是「留着码、只把 full 降级」，现在改成丢掉。
+  assert.equal(tee.sizes, null, '范围外的码丢掉后没得说，就是 null');
 
   // meta 里不该再有页脚那三样（2026-09-30 撤掉）
   assert.equal(payload.meta.foot, undefined);

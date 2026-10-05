@@ -63,15 +63,24 @@ test('其它家族：词表写了 cm 就用它，没写的取第一段', () => {
   assert.deepEqual(labels(['SIZ999']), ['均码']);
 });
 
-test('范围能用时只降不升：该款 S~XL、只剩 XS 不算码全', () => {
-  const r = uniqlo.sizeInfo({ sizeCodes: ['SMA002'], size_range: 'S ~ XL' }, V);
-  assert.equal(r.labels.length, 1);
-  assert.equal(r.full, false, '范围写着还有 S/M/L/XL，不能因为「只有一档所以连续」就说都有');
-  // 反过来：范围就是 XS~XS 时，只剩 XS 确实就是都有
-  assert.equal(uniqlo.sizeInfo({ sizeCodes: ['SMA002'], size_range: 'XS ~ XS' }, V).full, true);
-  // 认不出来的写法（CMD 那种）跳过校正，维持连续性判断
-  assert.equal(uniqlo.sizeInfo({ sizeCodes: ['CMD070'], size_range: '160/70A ~ 190/120C' }, V).full, true);
-});
+  test('范围外的码**直接丢掉**：该款 S~XL 却给了 XS，这个 XS 不能显示', () => {
+    // 用户 2026-10-05 报「筛 XS 点进去没有 XS」：接口的 size 是瞬时值，
+    // 偶尔会自相矛盾（实测「廓形针织T恤/短袖」范围 S~XL，size 里却带 XS）。
+    // 只把 full 降级、码照样显示是不够的 —— 那样用户筛到它、点进官网还是没有。
+    assert.equal(uniqlo.sizeInfo({ sizeCodes: ['SMA002'], size_range: 'S ~ XL' }, V), null,
+      '全被丢掉＝答不出来，返回 null（卡片上不画这一行）');
+    const r = uniqlo.sizeInfo({ sizeCodes: ['SMA002', 'SMA003', 'SMA006'], size_range: 'S ~ XL' }, V);
+    assert.deepEqual(r.labels, ['S', 'XL'], 'XS 被丢掉，范围内那两个照旧');
+    assert.equal(r.full, false, 'S~XL 该有 S/M/L/XL，只剩两个不能说都有');
+    // 驼峰字段名也要认 —— 报告构建传进来的是 sizeRange，原来只认下划线那种写法，
+    // 于是这道校验在报告那条路上从来没生效过（这是同一次事故的另一半原因）
+    assert.equal(uniqlo.sizeInfo({ sizeCodes: ['SMA002'], sizeRange: 'S ~ XL' }, V), null,
+      '驼峰 sizeRange 也必须被读到');
+    // 范围就是那一档时，保留
+    assert.equal(uniqlo.sizeInfo({ sizeCodes: ['SMA002'], size_range: 'XS ~ XS' }, V).full, true);
+    // 认不出来的写法（CMD 那种）跳过校正，原样保留 —— 宁可不动，也不要凭猜乱丢码
+    assert.equal(uniqlo.sizeInfo({ sizeCodes: ['CMD070'], size_range: '160/70A ~ 190/120C' }, V).full, true);
+  });
 
 test('跨家族混在一件商品上时，不当成「都有」', () => {
   const r = info(['SMA002', 'INS021']); // 理论上不会出现，但不能崩、也不能说 full

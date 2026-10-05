@@ -17,7 +17,7 @@ import { META } from '../lib/site.js';
  *   .wrap         居中 + 左右内衬
  *   .toolbar__row flex 排布 + 下边那条发丝线（放在这层，线才跟报头、表头一样内缩）
  */
-export function Toolbar({ query, onQuery, size, onSize, sizes = [] }) {
+export function Toolbar({ query, onQuery, size, onSize, sizes = [], note = '' }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
 
@@ -80,6 +80,7 @@ export function Toolbar({ query, onQuery, size, onSize, sizes = [] }) {
                       {s}
                     </button>
                   ))}
+                  {note && <p className="sizefilter__note">{note}</p>}
                 </div>
               )}
             </div>

@@ -330,56 +330,72 @@ function codesOf(row) {
 }
 
 /**
- * 这件商品还剩哪些尺码。
- * @param {object} row    库里的一行（或已经 hydrate 过的）
- * @param {Map}    vocab  code → {label, grp, ord}
- * @returns {{full:boolean, labels:string[], count:number}|null} 翻译不出来就 null（卡片上不画这一行）
- */
-function sizeInfo(row, vocab) {
-  const codes = codesOf(row);
-  if (!codes.length || !vocab?.size) return null;
+  /**
+   * 这件商品还剩哪些尺码。
+   *
+   * ⚠️ 两道「别把话说满」的关卡，都是被真实事故逼出来的：
+   *
+   * ① **范围串要能读到**。原来只读数据库那种下划线写法 `size_range`，
+   *    而报告构建时传进来的是驼峰 `sizeRange` —— 于是这道校验在报告那条路上
+   *    **从来没生效过**。这是 2026-10-05「筛 XS 点进去没有 XS」的直接原因之一。
+   *
+   * ② **落在范围外的码要丢掉，不只是把 full 降级**。接口给的 `size` 是瞬时值，
+   *    偶尔会自相矛盾：实测「廓形针织T恤/短袖」的范围是 S ~ XL，`size` 里却带着 XS。
+   *    照抄进报告，用户就会筛到一个官网根本没有的码。
+   *
+   * 范围串认不出来（裤子的 `160/70A ~ 190/120C` 那种写法）就**原样保留** ——
+   * 宁可不动，也不要凭猜乱丢码。
+   */
+  function sizeInfo(row, vocab) {
+    const codes = codesOf(row);
+    if (!codes.length || !vocab?.size) return null;
 
-  // 把码本身也挂在条目上：shortLabel 要靠它判 CMD（码里数字是厘米）/ INS（码里数字是英寸）
-  const entries = codes.map((c) => {
-    const e = vocab.get(c);
-    return e ? { ...e, code: c } : null;
-  });
-  // 词表里查不到的码：不猜（新家族出现而词表还没刷新时会走到这儿）
-  if (entries.some((e) => !e)) return null;
+    // 把码本身也挂在条目上：shortLabel 要靠它判 CMD（码里数字是厘米）/ INS（码里数字是英寸）
+    const entries = codes.map((c) => {
+      const e = vocab.get(c);
+      return e ? { ...e, code: c } : null;
+    });
+    // 词表里查不到的码：不猜（新家族出现而词表还没刷新时会走到这儿）
+    if (entries.some((e) => !e)) return null;
 
-  const grp = entries[0].grp;
-  const labels = entries
-    .slice()
-    .sort((a, b) => a.ord - b.ord)
-    .map((e) => shortLabel(e.label, e.code));
+    const grp = entries[0].grp;
+    const sameFamily = entries.every((e) => e.grp === grp);
 
-  // 「都有」＝同家族里在售的码连成一段（中途不缺档）。
-  // 这是**保守判据**：只看在售的码彼此连不连续，不看该款到底有哪几档——
-  // 因为范围串的写法和词表并不一致（裤子写 '160/70A ~ 190/120C'，词表里却是
-  // 'W28/28英寸/28码'），拿它比会得出不可靠的结果。
-  const ords = entries.map((e) => e.ord).sort((a, b) => a - b);
-  const sameFamily = entries.every((e) => e.grp === grp);
-  let full = sameFamily && ords[ords.length - 1] - ords[0] === ords.length - 1;
-
-  // 但范围串**能用的时候**（两端都能在词表里认出来：字母码 'S ~ XL'、厘米码 '110cm ~ 160cm'），
-  // 再校一道——**只降不升**：在售的码只要有一个落在范围之外，就不能说「都有」。
-  // 补的是这个缺口：该款 S~XL、只剩 XS 时，光看连续性会说「都 有」（只有一档当然连续），
-  // 而范围明明写着它还有 S/M/L。认不出来（CMD/INS 那种写法）就跳过，维持上面的判断。
-  if (full) {
-    const labelOf = (code) => shortLabel(vocab.get(code)?.label, code);
-    const fam = [...vocab.entries()].filter(([, e]) => e.grp === grp).map(([code, e]) => ({ code, ord: e.ord }));
-    const idx = (text) => fam.find(({ code }) => labelOf(code).toLowerCase() === String(text).trim().toLowerCase());
-    const [lo, hi] = String(row.size_range || '').split('~').map((t) => t.trim());
-    const a = idx(lo);
-    const b = idx(hi);
-    if (a && b) {
-      const inRange = new Set(fam.filter(({ ord }) => ord >= Math.min(a.ord, b.ord) && ord <= Math.max(a.ord, b.ord)).map((x) => x.code));
-      if (codes.some((c) => !inRange.has(c))) full = false;
+    // ── 关卡① + ②：先用范围串把范围外的码筛掉，再谈「还剩哪些」
+    let kept = codes;
+    {
+      const labelOf = (code) => shortLabel(vocab.get(code)?.label, code);
+      const fam = [...vocab.entries()]
+        .filter(([, e]) => e.grp === grp)
+        .map(([code, e]) => ({ code, ord: e.ord }));
+      const idxOf = (text) => fam.find(({ code }) => labelOf(code).toLowerCase() === String(text).trim().toLowerCase());
+      // 两种字段名都认：库里是 size_range，报告构建传进来的是 sizeRange
+      const rangeText = row.size_range ?? row.sizeRange ?? '';
+      const [lo, hi] = String(rangeText).split('~').map((t) => t.trim());
+      const a = idxOf(lo);
+      const b = idxOf(hi);
+      if (a && b) {
+        const inRange = new Set(fam
+          .filter(({ ord }) => ord >= Math.min(a.ord, b.ord) && ord <= Math.max(a.ord, b.ord))
+          .map((x) => x.code));
+        if (codes.some((c) => !inRange.has(c))) kept = codes.filter((c) => inRange.has(c));
+      }
     }
-  }
+    const keptEntries = entries.filter((e) => kept.includes(e.code));
+    // 全被丢掉＝答不出来，卡片上不画这一行（不猜）
+    if (!keptEntries.length) return null;
 
-  return { full, labels, count: codes.length };
-}
+    const labels = keptEntries.slice().sort((a, b) => a.ord - b.ord).map((e) => shortLabel(e.label, e.code));
+
+    // 「都有」＝同家族里在售的码连成一段（中途不缺档）。
+    // 这是**保守判据**：只看在售的码彼此连不连续，不看该款到底有哪几档——
+    // 因为范围串的写法和词表并不一致（裤子写 '160/70A ~ 190/120C'，词表里却是
+    // 'W28/28英寸/28码'），拿它比会得出不可靠的结果。
+    const ords = keptEntries.map((e) => e.ord).sort((a, b) => a - b);
+    const full = sameFamily && ords[ords.length - 1] - ords[0] === ords.length - 1;
+
+    return { full, labels, count: kept.length };
+  }
 
 export { sizeInfo, fetchSizeVocab };
 

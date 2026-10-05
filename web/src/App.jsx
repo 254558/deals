@@ -199,6 +199,19 @@ export default function App() {
     return [...all].sort((a, b) => sizeRank(a) - sizeRank(b));
   }, [deals]);
 
+  /**
+   * 尺码是**抓取那一刻**的库存快照，热门款几小时就会变。
+   * 用户 2026-10-05 报「筛 XS 点进去没有」—— 查下来字段没抓错，是这份快照旧了，
+   * 而界面上没说。所以这里把「多久之前抓的」和「以官网为准」直接摆出来。
+   */
+  const sizeNote = useMemo(() => {
+    const at = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
+    if (!at || Number.isNaN(at.getTime())) return '尺码是抓取时的快照，以官网为准';
+    const mins = Math.max(0, Math.round((Date.now() - at.getTime()) / 60000));
+    const age = mins < 90 ? `${mins} 分钟` : `${Math.round(mins / 60)} 小时`;
+    return `尺码是 ${age}前的快照，以官网为准`;
+  }, []);
+
   const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
   const hideDeal = useCallback((d) => hide(d.id, d.code), [hide]);
 
@@ -282,6 +295,7 @@ export default function App() {
         size={size}
         onSize={setSize}
         sizes={sizeOptions}
+        note={sizeNote}
       />
 
       <div className="wrap">

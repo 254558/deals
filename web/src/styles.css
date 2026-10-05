@@ -214,6 +214,12 @@ button {
   }
   /* 尺码块：平铺一排，「不限」也占一整行（和下面的尺码块等宽） */
   .sizechip--all { flex: 1 1 100%; }
+  /* 面板底部那行说明：尺码是抓取时的快照 */
+  .sizefilter__note {
+    flex: 1 1 100%; margin: 2px 0 0; padding-top: 8px;
+    border-top: 1px solid var(--rule-soft);
+    font-size: 11px; line-height: 1.5; color: var(--ink-4);
+  }
   .sizechip:hover { color: var(--blue); }
   .sizechip--on { background: var(--ink); border-color: var(--ink); color: var(--white); }
 
