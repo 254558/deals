@@ -6,7 +6,7 @@ import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
 import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.js';
-import { CM_HINT, SIZE_CATS, categoryOf, isCm, sizeRank } from './lib/size-groups.js';
+import { SIZE_CATS, categoryOf, isLetterSize, sizeRank } from './lib/size-groups.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
 
@@ -191,7 +191,7 @@ export default function App() {
   );
 
   /**
-   * 尺码**按品类分组**：每堆各自列出自己真有的尺码（现算，不写死清单）。
+   * 尺码**按品类分组**，且**只收字母尺码**（cm 那些见 lib/size-groups.js：不能转化，就当不存在）。
    * 分组与排序规则见 lib/size-groups.js。空组不画 —— 优衣库没有鞋就不显示「鞋子」。
    */
   const sizeGroups = useMemo(() => {
@@ -201,11 +201,11 @@ export default function App() {
       // 在这里就是 byCat 里没有的键 —— 用 ?. 跳过。**不跳过会整页崩**：
       // byCat.get(c) 是 undefined，接着 .add 就抛 TypeError（2026-10-05 实际踩到）。
       const c = categoryOf(d.name);
-      for (const l of d.sizes?.labels ?? []) byCat.get(c)?.add(l);
+      for (const l of d.sizes?.labels ?? []) if (isLetterSize(l)) byCat.get(c)?.add(l);
     }
     return SIZE_CATS.map((c) => {
       const sizes = [...byCat.get(c)].sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b, 'zh'));
-      return { cat: c, sizes, hint: sizes.some(isCm) ? CM_HINT[c] : '' };
+      return { cat: c, sizes };
     }).filter((g) => g.sizes.length > 0);
   }, [deals]);
 
