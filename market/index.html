@@ -95,44 +95,50 @@
     </div><!-- /.card__body -->
   </div>
 
-  <!-- 收藏夹：报告页（优衣库/迪卡侬）点过爱心的，快照存在 localStorage。
-       只在「我的」页显示 —— 这是「我的」重新设计的一部分（用户 2026-10-05：
-       「点了收藏之后，要能在我的界面看到收藏的东西」，又要把收藏夹排在最前面）。 -->
-  <section class="favs" id="favs" hidden>
-    <h2 class="favs__title">收藏夹</h2>
-    <div class="favs__list" id="favsList"></div>
-  </section>
-  <p class="favs__empty" id="favsEmpty" hidden>还没收藏。去 <a href="/uniqlo/" target="_blank" rel="noreferrer">优衣库</a> 或 <a href="/decathlon/" target="_blank" rel="noreferrer">迪卡侬</a> 点商品卡片上的爱心，这里就会列出来。</p>
-  <!-- 发帖入口：放在「我的」页的顶部，样式与表单里的「返回」「发布」同一套 .btn
-       （用户 2026-10-01：「把我要出一件这个按钮放到最顶部，也就是我发的这里，
-       就不要我发的这几个字了，样式仿照发布或者返回按钮」）。
-       市场页上它是隐藏的 —— 这个入口只属于「我的」这一页。 -->
+  <!-- 我要出一件：发布入口，放在最顶部（用户 2026-10-01 要求） -->
   <button class="btn" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">我要出一件</button>
 
-  <!-- 转移码入口：收成一颗按钮，放在「我要出一件」下面（用户 2026-10-01：
-       「可以收起来，一颗按钮即可」）。凭据只存在这个浏览器里，换手机或清缓存
-       就找不回来（服务端只存哈希，救不回）。平时只占一行，点开才展开下面那套。 -->
-  <button class="transfer-toggle" type="button" id="transferToggle" aria-expanded="false" aria-controls="transfer">
-    <span>转移码（换手机不丢）</span>
-    <!-- 展开时翻过来（CSS 按 aria-expanded 控制），让人知道这是个开关 -->
-    <svg class="ico" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-  </button>
-  <div class="transfer" id="transfer" hidden>
-    <div class="transfer__row">
-      <button class="btn btn--ghost btn--sm" type="button" id="exportBtn">转到别的设备</button>
-      <button class="btn btn--ghost btn--sm" type="button" id="importBtn">从别的设备导入</button>
-    </div>
-    <p class="hint" id="transferHint">换手机、清了缓存，「我的」就会空。用上面这两颗按钮把凭据搬过去。</p>
-    <textarea id="transferCode" rows="3" spellcheck="false" placeholder="（点「从别的设备导入」之后，把码粘在这里）"></textarea>
-    <div class="transfer__row">
-      <button class="btn btn--sm" type="button" id="copyCode" hidden>复制</button>
-      <button class="btn btn--sm" type="button" id="importGo" hidden>导入</button>
+  <!-- 抖音式「我的」tab 条：作品 / 转移码 / 收藏（用户 2026-10-05：
+       「弄成抖音那种我的界面，做个横条，分别是作品、转移码、收藏」）。
+       只在「我的」页显示，默认停在「作品」。 -->
+  <div class="mine-tabs" id="mineTabs" role="tablist" hidden>
+    <button class="mine-tab mine-tab--on" type="button" role="tab" aria-selected="true" data-tab="works">作品</button>
+    <button class="mine-tab" type="button" role="tab" aria-selected="false" data-tab="transfer">转移码</button>
+    <button class="mine-tab" type="button" role="tab" aria-selected="false" data-tab="favs">收藏</button>
+  </div>
+
+  <!-- 作品：我发布的市集帖子（小红书式两列瀑布流） -->
+  <div class="mine-pane" id="paneWorks">
+    <div id="list" class="wall"></div>
+    <div id="loading" class="empty">正在加载…</div>
+    <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，点上面的「我要出一件」发一件试试。</div>
+  </div>
+
+  <!-- 转移码 -->
+  <div class="mine-pane" id="paneTransfer" hidden>
+    <div class="transfer" id="transfer">
+      <div class="transfer__row">
+        <button class="btn btn--ghost btn--sm" type="button" id="exportBtn">转到别的设备</button>
+        <button class="btn btn--ghost btn--sm" type="button" id="importBtn">从别的设备导入</button>
+      </div>
+      <p class="hint" id="transferHint">换手机、清了缓存，「我的」就会空。用上面这两颗按钮把凭据搬过去。</p>
+      <textarea id="transferCode" rows="3" spellcheck="false" placeholder="（点「从别的设备导入」之后，把码粘在这里）"></textarea>
+      <div class="transfer__row">
+        <button class="btn btn--sm" type="button" id="copyCode" hidden>复制</button>
+        <button class="btn btn--sm" type="button" id="importGo" hidden>导入</button>
+      </div>
     </div>
   </div>
 
+  <!-- 收藏：报告页点过爱心的，快照存在 localStorage -->
+  <div class="mine-pane" id="paneFavs" hidden>
+    <section class="favs" id="favs" hidden>
+      <h2 class="favs__title">收藏夹</h2>
+      <div class="favs__list" id="favsList"></div>
+    </section>
+    <p class="favs__empty" id="favsEmpty" hidden>还没收藏。去 <a href="/uniqlo/" target="_blank" rel="noreferrer">优衣库</a> 或 <a href="/decathlon/" target="_blank" rel="noreferrer">迪卡侬</a> 点商品卡片上的爱心，这里就会列出来。</p>
+  </div>
 
-  <!-- 小红书那种：两列瀑布流封面，点开看详情 -->
-  <div id="list" class="wall"></div>
   <div id="detail" class="detail" hidden></div>
 
   <div id="loading" class="empty">正在加载…</div>

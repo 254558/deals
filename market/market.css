@@ -569,3 +569,10 @@
 .fav__del:hover { color: var(--ink-2); }
 .favs__empty { font-size: 13px; color: var(--ink-3); margin: 0 0 22px; }
 .favs__empty a { color: var(--blue); }
+
+/* ---------------- 抖音式「我的」tab 条 ---------------- */
+.mine-tabs { display: flex; border-bottom: 1px solid var(--rule-soft); margin: 14px 0 16px; }
+.mine-tab { flex: 1 1 0; padding: 10px 0 12px; border: 0; background: none; cursor: pointer; font-family: inherit; font-size: 14px; color: var(--ink-3); position: relative; }
+.mine-tab--on { color: var(--ink); font-weight: 700; }
+.mine-tab--on::after { content: ""; position: absolute; left: 50%; transform: translateX(-50%); bottom: -1px; width: 24px; height: 3px; background: var(--ink); }
+.mine-pane { margin-bottom: 8px; }

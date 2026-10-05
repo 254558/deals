@@ -220,7 +220,32 @@
     // 发帖入口现在在「我的」页的**顶部**（原来是个右下角的悬浮按钮）。
     // 表单本身还在 DOM 里 —— 从详情点「编辑」照样能打开它。
     $('postToggle').style.display = 'none';
-    $('transferToggle').style.display = 'none';
+  }
+
+  // ---- 抖音式 tab 条：作品 / 转移码 / 收藏 ----
+  if (mineMode) {
+    const tabs = $('mineTabs');
+    const paneWorks = $('paneWorks');
+    const paneTransfer = $('paneTransfer');
+    const paneFavs = $('paneFavs');
+    if (tabs) {
+      tabs.hidden = false;
+      const showTab = (name) => {
+        if (paneWorks) paneWorks.hidden = name !== 'works';
+        if (paneTransfer) paneTransfer.hidden = name !== 'transfer';
+        if (paneFavs) paneFavs.hidden = name !== 'favs';
+        tabs.querySelectorAll('.mine-tab').forEach((b) => {
+          const on = b.dataset.tab === name;
+          b.classList.toggle('mine-tab--on', on);
+          b.setAttribute('aria-selected', String(on));
+        });
+      };
+      tabs.addEventListener('click', (e) => {
+        const b = e.target.closest('.mine-tab');
+        if (b) showTab(b.dataset.tab);
+      });
+      showTab('works');
+    }
   }
 
   // ---- 「我的」收藏的商品（报告页点过爱心，快照见 App.jsx 的 saveFavorite）----
@@ -314,14 +339,8 @@
   }
   if (mineMode) {
     const txBox = $('transfer');
-    const txToggle = $('transferToggle');
-    if (txBox && txToggle) {
+    if (txBox) {
       // 平时只占一行（那颗按钮），点开才展开整个面板
-      txToggle.addEventListener('click', () => {
-        txBox.hidden = !txBox.hidden;
-        // 展开（可见）= hidden 为 false，aria-expanded 要跟着是 true（不是再取反一次）
-        txToggle.setAttribute('aria-expanded', String(!txBox.hidden));
-      });
       const ta = $('transferCode');
       const hint = $('transferHint');
       $('exportBtn').addEventListener('click', () => {
