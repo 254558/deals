@@ -74,7 +74,22 @@ const SALE_TAGS = ['time_doptimal', 'concessional_rate'];
 const SPU_ENDPOINT = 'https://d.uniqlo.cn/p/product/i/product/spu/pc/query';
 const STOCK_ENDPOINT = 'https://d.uniqlo.cn/p/stock/stock/query/zh_CN';
 // 各渠道库存字段：配送中心 / 在途 / 门店自提 / 预售…… 任一 >0 都算能买到
-const STOCK_CHANNELS = ['dcSkuStocks', 'transitSkuStocks', 'bplSitSkuStocks', 'bplWithoutPreorderSkuStocks', 'bplDcSkuStocks', 'bplPreorderSkuStocks', 'preorderSkuStocks'];
+// ⚠️ 2026-10-05 修：原先这份清单**漏了 skuStocks / expressSkuStocks / bplStocks** ——
+// 真正装快递（线上）库存的就是它们。漏掉之后会把「线上有货」判成「全售罄」
+//（我一度据此下了「线上库存全是 0」的错误结论，其实只是没看对字段）。
+// preorder 系列是**预售**（还没到货），不算「现在能买」，故排除。
+const STOCK_CHANNELS = ['skuStocks', 'expressSkuStocks', 'bplStocks', 'dcSkuStocks', 'transitSkuStocks', 'bplSitSkuStocks', 'bplWithoutPreorderSkuStocks', 'bplDcSkuStocks', 'realTotalStock', 'realBplStock'];
+
+/** 限流并发：最多 limit 个 worker 同时跑 fn（上千次核实要靠它把时间压下来） */
+async function mapLimit(items, limit, fn) {
+  let i = 0;
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (i < items.length) {
+      const k = i++;
+      await fn(items[k], k);
+    }
+  }));
+}
 
 async function querySpu(productCode) {
   const res = await fetch(`${SPU_ENDPOINT}/${productCode}/zh_CN`, {
@@ -108,13 +123,15 @@ async function exactStockCodes(productCode, sizeCodes, vocab) {
       for (const [skuId, qty] of Object.entries(maps[key] || {})) if (Number(qty) > 0) inStock.add(skuId);
     }
     if (!inStock.size) return [];
-    // omsSkuCode 的尺码段是「02」起 0 基下标（02=第 0 个码），按词表序对应 sizeCodes
-    const sorted = [...sizeCodes].sort((a, b) => (vocab.get(a)?.ord ?? 99) - (vocab.get(b)?.ord ?? 99));
+    // omsSkuCode 的尺码段（倒数第 5~3 位两位数字）**直接就是词表码**：
+    // 04→SMA004(M)、05→SMA005(L)、06→SMA006(XL)……实测与官网商品页一致。
+    // 绝不能再拿传进来的 sizeCodes 当阶梯排序取下标 —— 那份数组正是**会虚报**的来源，
+    // 阶梯一旦残缺（例如只剩 SMA003），下标整体错位，映射出来的码全是错的。
     const out = new Set();
     for (const r of rows) {
       if (!inStock.has(r.productId)) continue;
-      const i = parseInt(String(r.omsSkuCode).slice(-5, -3), 10) - 2;
-      if (i >= 0 && i < sorted.length) out.add(sorted[i]);
+      const sizeCode = 'SMA0' + String(r.omsSkuCode).slice(-5, -3);
+      if (vocab.has(sizeCode)) out.add(sizeCode);
     }
     return out.size ? [...out] : null;
   } catch {
@@ -494,14 +511,16 @@ export default {
     // 说明搜索接口的 size 数组在撒谎（它是 SKU 清单不是库存）。这类商品才值得
     // 花 2 个请求去问详情页的真实库存。
     const vocabMap = new Map(sizeVocab.map((e) => [e.code, e]));
-    const suspicious = products.filter((p) => {
-      const [lo, hi] = String(p.sizeRange || '').split('~').map((t) => t.trim());
-      return lo && lo === hi && (p.sizeCodes || []).length > 1;
-    });
-    for (const p of suspicious) {
+    // ⚠️ 2026-10-05：改成**全量核实**。原先只核实「min==max 且多个码」这一种可疑形状，
+    // 结果漏掉了别的虚报形状 —— 用户报的 Bra短背心（482201 / u0000000074334）就是：
+    // 搜索接口说它有 S，官网库存其实**一个码都没有**，而它的 size_range 是**空的**
+    //（不是 min==max），压根没进核实名单。抽查 6 件错了 2 件，错误率约 1/3 ——
+    // 便宜的启发式救不了，只能每件都问。失败（超时/被挡/映射不出）就保留搜索数据。
+    const targets = products.filter((p) => (p.sizeCodes || []).length);
+    await mapLimit(targets, 6, async (p) => {
       const codes = await exactStockCodes(p.productCode, p.sizeCodes || [], vocabMap);
       if (codes !== null) { p.sizeCodes = codes; p.sizeRange = ''; }
-    }
+    });
     return {
       fetched: all.length,
       products,
