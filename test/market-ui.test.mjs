@@ -47,3 +47,37 @@ test('市集页与 Functions 的 js / html 里不许出现 JSX 风格的注释�
 
   assert.deepEqual(bad, [], '这些地方写了 JSX 风格的注释记号，它会被当成正文渲染出来：\n' + bad.join('\n'));
 });
+
+/**
+ * 同一个页面里 id 不能重复。
+ *
+ * 2026-10-05 真实事故：「我的」页重排成 tab 三个 pane 时，我在 paneWorks 里新加了
+ * #loading / #empty，却忘了删页面底部原来那对 —— 于是页面上出现了两个 id="loading"。
+ * \`$('loading')\` 取到的是第一个（pane 里那个），底部那个**永远停在「正在加载…」**，
+ * 而且切到「转移码」「收藏」tab 也照样显示（它在 pane 外面，不受 tab 的 hidden 管）。
+ * 用户报的就是「转移码下面为什么有个正在加载」「收藏又显示还没有收藏又显示正在加载」。
+ *
+ * id 重复在 HTML 里是**无声**的：不报错、也不难看，只是有个元素永远不受控。所以钉一条。
+ */
+test('market 下的 html 里 id 不能重复', () => {
+  const files = [];
+  const walk = (dir) => {
+    for (const e of readdirSync(ROOT + dir, { withFileTypes: true })) {
+      const rel = dir + '/' + e.name;
+      if (e.isDirectory()) walk(rel);
+      else if (e.name.endsWith('.html')) files.push(rel);
+    }
+  };
+  walk('market');
+  assert.ok(files.length > 0, 'market 下应该能找到 html');
+  for (const f of files) {
+    // 先剔掉 <script> 里的内容：那里的 `id="' + esc(x) + '"` 是**运行时**拼出来的，
+    // 静态扫会把它们当成重复 id（实测 market/admin/index.html 被误报 3 次）。
+    const html = readFileSync(ROOT + f, 'utf8').replace(/<script[\s\S]*?<\/script>/gi, '');
+    const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+    const seen = new Map();
+    for (const id of ids) seen.set(id, (seen.get(id) || 0) + 1);
+    const dup = [...seen.entries()].filter(([, n]) => n > 1);
+    assert.deepEqual(dup, [], `${f} 里有重复的 id：${JSON.stringify(dup)}`);
+  }
+});
