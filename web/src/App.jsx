@@ -5,6 +5,7 @@ import { Toolbar } from './components/Toolbar.jsx';
 import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
+import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
 
@@ -50,9 +51,10 @@ const STEP = 10;
 /**
  * @param {number} total 当前筛选/搜索/排序之后的总数
  * @param {string} resetKey 这个值一变就回到第一批（筛选、搜索、排序、视图）
+ * @param {number} [initialVisible] 首次挂载时先渲染多少张（恢复上次的浏览进度用，见 browse-memory.js）
  */
-function useIncremental(total, resetKey) {
-  const [visible, setVisible] = useState(INITIAL);
+function useIncremental(total, resetKey, initialVisible = INITIAL) {
+  const [visible, setVisible] = useState(() => Math.max(INITIAL, initialVisible));
   const sentinelRef = useRef(null);
 
   const grow = useCallback(() => {
@@ -65,7 +67,13 @@ function useIncremental(total, resetKey) {
   // 「上一批结果」的滚动位置上，而列表已经换人了
   const mounted = useRef(false);
   useEffect(() => {
+    // 首次挂载：保留恢复出来的进度（browse-memory），只把「换筛选/搜索」这条路留在这里
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     setVisible(INITIAL);
+    window.scrollTo(0, 0);
     // 挂载时不要强制回顶：浏览器自己会恢复上次的滚动位置
     if (mounted.current) window.scrollTo(0, 0);
     mounted.current = true;
@@ -148,7 +156,13 @@ function More({ visible, total, sentinelRef }) {
  * 内嵌 CSS 的注释里（`buildFontCss` 的 notice，见 core/fonts.mjs），页面上不显示。
  */
 export default function App() {
-  const [query, setQuery] = useState('');
+  /**
+   * 上次读到哪儿的**快照**（见 lib/browse-memory.js）。
+   * 只读一次：之后本地状态往前走，快照等页面被收起时才重新写。
+   * `DATA.site` 在这里只当 localStorage 的命名空间用，不做任何版面判断（契约第三节）。
+   */
+  const saved = useMemo(() => loadProgress(DATA.site, DATA.generatedAt), []);
+  const [query, setQuery] = useState(saved?.query ?? '');
   const { watch, togglePick, hide } = useWatch();
 
   /**
@@ -203,10 +217,43 @@ export default function App() {
 
   // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
   // resetKey 用搜索词：它一变，结果就换一批，滚动位置要跟着重来。
-  const { visible, sentinelRef } = useIncremental(rows.length, `q|${query}`);
+  const { visible, sentinelRef } = useIncremental(rows.length, `q|${query}`, saved?.visible);
+  // 回来时把滚动位置接上：**必须在卡片渲染之后**（文档够高才滚得过去），
+  // 所以放 useEffect 而不是 useLayoutEffect 之外的地方都不行 —— effect 跑在 DOM 提交后。
+  useEffect(() => {
+    if (!saved || !saved.scrollY) return;
+    // 浏览器自己的还原会和我们打架（它不知道我们恢复了多少张卡片），交给这里接管
+    if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+    const put = () => window.scrollTo(0, saved.scrollY);
+    put();
+    // 图片是懒加载的，布局可能还会动一下，再对一次
+    const t = setTimeout(put, 300);
+    return () => clearTimeout(t);
+  }, []);
+
+  // 页面被收起 / 离开时把进度写下来。用 ref 取当前值，免得为了拿到最新的
+  // visible/query 而反复重挂监听。
+  const live = useRef({ visible: 0, query: "" });
+  useEffect(() => { live.current = { visible, query }; }, [visible, query]);
+  useEffect(() => {
+    const save = () => saveProgress(DATA.site, DATA.generatedAt, {
+      visible: live.current.visible,
+      scrollY: Math.round(window.scrollY),
+      query: live.current.query,
+    });
+    const onHide = () => { if (document.visibilityState === "hidden") save(); };
+    window.addEventListener('pagehide', save);
+    document.addEventListener('visibilitychange', onHide);
+    return () => {
+      window.removeEventListener('pagehide', save);
+      document.removeEventListener('visibilitychange', onHide);
+    };
+  }, []);
+
 
   function reset() {
     setQuery('');
+    clearProgress(DATA.site);
   }
 
 
