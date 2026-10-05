@@ -157,7 +157,9 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
 /* 品牌名：粗体 + 红。色值带字面兜底 —— 这个项目里已经栽过两次
      「var() 解析不到 → 整条声明失效」（降幅条灰底、页签边框），所以不再裸用变量。 */
 .masthead__text.masthead__home { color: var(--red, #e20c18); font-weight: 700; text-decoration: none; }
-.masthead__home:hover { text-decoration: underline; }
+/* ⚠️ 报头这几个入口**刻意不做 hover 下划线**（2026-10-06 用户：「点导航栏的内容的时候，
+   不要有下划线，比如 goodprices 的下划线」）。注意手机上 :hover 会**粘住** —— 点一下，
+   下划线就一直留在那儿，看着像没点干净。品牌名与右侧入口一律不加。 */
 /* 行尾那组入口（兄弟报告 + 有品）。
    ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
    flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
@@ -172,7 +174,6 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    就成了 GoodPrices 自己，于是整组被推到右边、左边空着（2026-10-01 用户报的）。
    现在让品牌名吃掉右侧空白，语义也更直白：它左边、其余右边。 */
 .masthead__home { margin-right: auto; }
-.masthead__cross:hover { text-decoration: underline; }
 
   /* 手机上：入口**紧跟站点名**排，不推到行尾。
      推到行尾（margin-left: auto）在窄屏上很脆：中文标签 + 两个入口一旦超出可用宽度，
