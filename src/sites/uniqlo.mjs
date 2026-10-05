@@ -470,13 +470,6 @@ export default {
       title: '迪卡侬比价报告（新标签打开）',
     },
 
-    filters: [
-      { key: 'all', label: '全部' },
-      { key: 'time_doptimal', label: '限时特优' },
-      { key: 'concessional_rate', label: '超值精选' },
-      { key: 'tracked', label: '待拔草' },
-    ],
-
     features: {
       stickerTags: false,
       brandMark: false,

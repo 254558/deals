@@ -440,13 +440,6 @@ export default {
       title: '优衣库比价报告（新标签打开）',
     },
 
-    filters: [
-      { key: 'all', label: '全部' },
-      { key: 'endlife', label: '尾货' },
-      { key: 'new_arrival', label: '新品' },
-      { key: 'tracked', label: '待拔草' },
-    ],
-
     features: {
       stickerTags: false,
       brandMark: false,

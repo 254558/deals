@@ -60,14 +60,6 @@
     { "href": "https://goodprices.online/decathlon/", "label": "迪卡侬", "title": "迪卡侬比价报告（新标签打开）" },
     { "href": "https://goodprices.online/market/",    "label": "有品", "title": "大家出的尾货：谁要谁寄（新标签打开）" }
   ],
-
-  "filters": [                          // 工具条页签。匹配语义固定为「标签成员」(tracked 除外)
-    { "key": "all", "label": "全部" },
-    { "key": "time_doptimal", "label": "限时特优" },
-    { "key": "concessional_rate", "label": "超值精选" },
-    { "key": "tracked", "label": "待拔草" }
-  ],
-
   "features": {                         // 界面开关，全部是布尔；缺省即 false
     "rankBoard": true,          // 页顶「本期降得最狠的 N 件」榜单（uniqlo）
     "stickerTags": false,       // 商品图上的角标（deca 的 尾货/新品）
@@ -96,7 +88,6 @@
 | `currency` | `{sym:'¥', zero:'¥ 0'}` | `{sym:'￥', zero:'￥0'}` |
 | `imageAspect` | `3/4` | `1/1` |
 | `storagePrefix` | `uniql` | `deca` |
-| `filters` | 全部 / 限时特优 / 超值精选 / 待拔草 | 全部 / 尾货 / 新品 / 待拔草 |
 | `features` | `rankBoard`、`dealBarNumber` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip` |
 
 ## 四、deals — 每件商品

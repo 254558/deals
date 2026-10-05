@@ -56,9 +56,8 @@ test('report.features 的键集合两站一致', () => {
   );
 });
 
-test('feeds / tags / links 这类数组键两站都非空（形态没被抄丢）', () => {
+  test('pageTitle / searchPlaceholder 这类标量键两站都非空（形态没被抄丢）', () => {
   for (const [name, site] of Object.entries(SITES)) {
-    assert.ok(Array.isArray(site.report?.filters) && site.report.filters.length > 0, `${name}: filters 不该空`);
     assert.ok(site.report?.pageTitle, `${name}: pageTitle 不该空`);
   }
 });

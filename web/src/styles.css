@@ -176,24 +176,6 @@ button {
   /* 线画在内层，才和报头、表头那两条一样是内缩的 */
   border-bottom: 1px solid var(--rule);
 }
-/* 官网的按钮是直角的，没有圆角药丸那一套 */
-.tabs { display: flex; flex-wrap: wrap; }
-.tab {
-  font-family: inherit;
-  color: var(--ink-2);
-  background: var(--white);
-  border: 1px solid var(--rule);
-  cursor: pointer;
-  transition: color .12s, background .12s, border-color .12s;
-}
-.tab:hover { color: var(--blue); }
-.tab:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
-/* 选中＝品牌蓝，不填黑块 */
-.tab[aria-pressed="true"] {
-  background: var(--white);
-  border-color: var(--blue);
-  color: var(--blue);
-}
 
 .search {
   font-family: inherit;
@@ -441,20 +423,6 @@ body {
 /* ---------------- 工具条 ---------------- */
 
 .toolbar__row { gap: 18px; padding: 11px 0; }
-.tabs { gap: 0; }
-.tab {
-  font-size: 12px;
-  font-weight: 400;
-  padding: 7px 14px;
-  /* 和左边那颗共用一条竖线：用 -1px 压过去，**不要**把自己的左边框设成 0。
-     设成 0 的写法在选中时会露馅——那时边框变蓝，左边那条却是空的，
-     整个框看起来是断的（2026-09-30 用户报的就是这个）。压边距则四条边永远都在，
-     也不会因为谁被选中就挤动后面的页签 */
-  margin-left: -1px;
-}
-.tab:first-child { margin-left: 0; }
-/* 选中的那颗盖在邻居之上，被压住的那条左边线才是它自己的蓝线 */
-.tab[aria-pressed="true"] { position: relative; z-index: 1; }
 .search { font-size: 12px; padding: 7px 12px; width: 240px; }
 .search:focus { border-color: var(--ink); }
 
@@ -621,16 +589,12 @@ body {
 }
 
 @media (max-width: 760px) {
-  /* 手机端两家都只留页签这一行，而且**这一行钉住**（.toolbar 的 sticky 来自共用骨架）。
-     搜索/计数全撤：屏幕金贵，而这些在手机上各有替代——搜索在手机上本来就不方便，
-     计数不看也不影响找东西；排序固定是「降幅」（就是最该看的那个），没有入口要撤。
-     撤完工具条就是一行 57px（手机的 7%），钉着才划算：877 / 1278 件商品，
-     滚到中段想换个页签「只看尾货」，不该一路滚回顶部。
-
-     合并时这里曾经按「拿高度说话」分成两家两种做法（优衣库 57px 钉住、
-     迪卡侬 104px 滚走），依据是两家的旧版各自量过的高度。后来统一成一行之后，
-     迪卡侬那两行的前提不成立了，于是跟优衣库对齐——这也是用户明确要的。 */
-  .search { display: none; }
+    /* 手机上工具条只剩搜索框（页签 2026-10-05 整组删掉了），而且**这一行钉住**
+       （.toolbar 的 sticky 来自共用骨架）。
+       以前这条是给页签留的：搜索/计数全撤、只剩一行页签，滚到中段想换页签不用滚回顶部。
+       页签没了之后搜索成了唯一工具，再藏着这条就整个空了，所以放出来并铺满整行 ——
+       一行 57px（手机的 7%）钉着，比滚回顶部去搜划算。 */
+    .search { display: block; width: 100%; }
 
   /* --pad 的三档已挪到 shell.css（唯一的出处） */
   .masthead { margin-top: 26px; }
@@ -639,7 +603,6 @@ body {
 /* 系统设了「减少动态效果」就不跑生长动画，直接把条子画到最终长度 */
 @media (prefers-reduced-motion: reduce) {
   .card__bar > i { animation: none; width: var(--w); }
-.tab { transition: none; }
   .piclink img, .dealact { transition: none; }
 }
 

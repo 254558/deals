@@ -7,39 +7,25 @@ import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
-/** 页签 key → 中文，给空状态那句「这个筛选（…）下暂时没有商品」用 */
-const filterLabel = (key) => META.filters.find((f) => f.key === key)?.label ?? '';
 
 /** 空结果提示，两个视图共用。搜索的措辞里那一串「名称或编号…」来自
  *  `meta.searchLabel`：迪卡侬的编号旁边还有品牌可搜，优衣库只有名称和吊牌编号 */
-function Empty({ query, filter, onReset }) {
+function Empty({ query, onReset }) {
   return (
     <div className="empty">
       <div className="empty__title">没有符合条件的商品</div>
       <div className="empty__hint">
         {query
           ? `没有「${META.searchLabel}」包含「${query}」的降价商品。`
-          : `这个筛选（${filterLabel(filter)}）下暂时没有商品。`}
+          : '榜上暂时没有商品（可能都被你点过「不再出现」了）。'}
       </div>
       <button className="empty__reset" onClick={onReset}>
-        清除筛选条件
+        清除搜索
       </button>
     </div>
   );
 }
 
-/**
- * 页签的匹配语义**固定是「标签成员」**，`tracked` 除外（契约第三节）。
- * 所以这里不写死四个键，而是照 `META.filters` 现造：
- *   优衣库  全部 / 限时特优(time_doptimal) / 超值精选(concessional_rate) / 待拔草
- *   迪卡侬  全部 / 尾货(endlife) / 新品(new_arrival) / 待拔草
- * `all` 是「全部都算」，它不是一个标签名，所以单独放行。
- */
-function matcher(key) {
-  if (key === 'all') return () => true;
-  if (key === 'tracked') return (d) => d.tracked;
-  return (d) => d.tags.includes(key);
-}
 
 /**
  * 首屏只渲染前 INITIAL 件，往下滑到哨兵再一批一批补上（无限滚动）。
@@ -162,7 +148,6 @@ function More({ visible, total, sentinelRef }) {
  * 内嵌 CSS 的注释里（`buildFontCss` 的 notice，见 core/fonts.mjs），页面上不显示。
  */
 export default function App() {
-  const [filter, setFilter] = useState('all');
   const [query, setQuery] = useState('');
   const { watch, togglePick, hide } = useWatch();
 
@@ -191,11 +176,6 @@ export default function App() {
   const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
   const hideDeal = useCallback((d) => hide(d.id, d.code), [hide]);
 
-  /** 每个页签各挂一个计数（只算没被闭眼的那批） */
-  const counts = useMemo(
-    () => Object.fromEntries(META.filters.map((f) => [f.key, deals.filter(matcher(f.key)).length])),
-    [deals]
-  );
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -209,7 +189,6 @@ export default function App() {
       [d.name, d.code, brandSearchable ? d.brand : ''].filter(Boolean).join(' ').toLowerCase();
     return (
       deals
-        .filter(matcher(filter))
         .filter((d) => !q || hay(d).includes(q))
         /**
          * 只按降幅从大到小排（2026-09-30 撤掉了排序入口）。
@@ -220,14 +199,13 @@ export default function App() {
          */
         .sort((a, b) => b.rate - a.rate)
     );
-  }, [deals, filter, query]);
+  }, [deals, query]);
 
   // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
-  // resetKey 里放的是「会让结果换一批」的两个状态：筛选与搜索。
-  const { visible, sentinelRef } = useIncremental(rows.length, `${filter}|${query}`);
+  // resetKey 用搜索词：它一变，结果就换一批，滚动位置要跟着重来。
+  const { visible, sentinelRef } = useIncremental(rows.length, `q|${query}`);
 
   function reset() {
-    setFilter('all');
     setQuery('');
   }
 
@@ -236,17 +214,14 @@ export default function App() {
     <>
       <Masthead recorded={DATA.recorded ?? deals.length} />
 
-          <Toolbar
-        filter={filter}
-        onFilter={setFilter}
+      <Toolbar
         query={query}
         onQuery={setQuery}
-        counts={counts}
       />
 
       <div className="wrap">
         {rows.length === 0 ? (
-          <Empty query={query} filter={filter} onReset={reset} />
+          <Empty query={query} onReset={reset} />
         ) : (
           <>
             <div className="grid" role="list" aria-label={META.pageTitle}>
