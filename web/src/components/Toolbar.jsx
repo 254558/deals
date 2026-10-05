@@ -7,7 +7,8 @@ import { META } from '../lib/site.js';
  * 页签（全部/限时特优/超值精选/待拔草 那两组）2026-10-05 按用户要求整组删掉了，
  * 之后只剩搜索框；同一天用户要「在搜索框旁边加个尺码筛选按钮」。
  *
- * 尺码**按品类分组**（上衣/外套/裤子/裙子/内衣/鞋子/其他）：S/M/L 在上衣、裤子和内衣里
+ * 尺码**按品类分组**（衣服/裤子/裙子/内衣）。只有这四个进尺码表 ——
+ * 鞋、袜、围巾、包这些小众东西不统计尺码（用户 2026-10-05）。
  * 是重复的，66 个尺码平铺成一列谁也找不着；分组之后「裤子 · M」才表达得出来。
  * 点某组的小标题＝只看该品类（不限尺码）。分组逻辑在 lib/size-groups.js。
  *
@@ -86,6 +87,7 @@ export function Toolbar({ query, onQuery, cat, size, onPick, groups = [] }) {
                       >
                         {g.cat}
                       </button>
+                      {g.hint && <div className="sizegroup__hint">{g.hint}</div>}
                       <div className="sizegroup__chips">
                         {g.sizes.map((s) => (
                           <button

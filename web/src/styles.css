@@ -222,6 +222,7 @@ button {
   }
   .sizegroup__head:hover { color: var(--blue); }
   .sizegroup__head--on { color: var(--blue); }
+  .sizegroup__hint { font-size: 11px; color: var(--ink-4); padding: 0 0 6px; }
   .sizegroup__chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .sizechip--all { flex: 1 1 100%; }
   .sizechip:hover { color: var(--blue); }

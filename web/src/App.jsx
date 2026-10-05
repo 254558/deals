@@ -6,7 +6,7 @@ import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
 import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.js';
-import { CATS, categoryOf, sizeRank } from './lib/size-groups.js';
+import { CM_HINT, SIZE_CATS, categoryOf, isCm, sizeRank } from './lib/size-groups.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
 
@@ -195,15 +195,18 @@ export default function App() {
    * 分组与排序规则见 lib/size-groups.js。空组不画 —— 优衣库没有鞋就不显示「鞋子」。
    */
   const sizeGroups = useMemo(() => {
-    const byCat = new Map(CATS.map((c) => [c, new Set()]));
+    const byCat = new Map(SIZE_CATS.map((c) => [c, new Set()]));
     for (const d of deals) {
+      // 只有 SIZE_CATS 那几类进尺码表：归到「其他」的（鞋、袜、围巾、包…）
+      // 在这里就是 byCat 里没有的键 —— 用 ?. 跳过。**不跳过会整页崩**：
+      // byCat.get(c) 是 undefined，接着 .add 就抛 TypeError（2026-10-05 实际踩到）。
       const c = categoryOf(d.name);
-      for (const l of d.sizes?.labels ?? []) byCat.get(c).add(l);
+      for (const l of d.sizes?.labels ?? []) byCat.get(c)?.add(l);
     }
-    return CATS.map((c) => ({
-      cat: c,
-      sizes: [...byCat.get(c)].sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b, 'zh')),
-    })).filter((g) => g.sizes.length > 0);
+    return SIZE_CATS.map((c) => {
+      const sizes = [...byCat.get(c)].sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b, 'zh'));
+      return { cat: c, sizes, hint: sizes.some(isCm) ? CM_HINT[c] : '' };
+    }).filter((g) => g.sizes.length > 0);
   }, [deals]);
 
   const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
