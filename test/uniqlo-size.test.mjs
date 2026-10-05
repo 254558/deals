@@ -8,8 +8,10 @@ const V = new Map(Object.entries({
   SMA002: { label: 'XS', grp: 2, ord: 0 },
   SMA003: { label: 'S', grp: 2, ord: 1 },
   SMA004: { label: 'M', grp: 2, ord: 2 },
+    SMA005: { label: 'L', grp: 2, ord: 3 },
   SMA006: { label: 'XL', grp: 2, ord: 4 },
   SMA007: { label: 'XXL', grp: 2, ord: 5 },
+    SMA008: { label: '3XL', grp: 2, ord: 6 },
   SMA009: { label: '4XL', grp: 2, ord: 7 },
   // CMD：词表里 7 档写了 cm、12 档没写；且写法和英寸对不上（3cm 一档的梯子）
   CMD070: { label: 'W28/28英寸/28码', grp: 6, ord: 5 },
@@ -80,6 +82,15 @@ test('其它家族：词表写了 cm 就用它，没写的取第一段', () => {
     assert.equal(uniqlo.sizeInfo({ sizeCodes: ['SMA002'], size_range: 'XS ~ XS' }, V).full, true);
     // 认不出来的写法（CMD 那种）跳过校正，原样保留 —— 宁可不动，也不要凭猜乱丢码
     assert.equal(uniqlo.sizeInfo({ sizeCodes: ['CMD070'], size_range: '160/70A ~ 190/120C' }, V).full, true);
+  });
+
+  test('范围是坏的（min==max 却带多个码）时不压码：M~M 带八个码就该留八个', () => {
+    // 2026-10-05 真实事故：全库 65 件范围串是接口给的垃圾值（如「M ~ M」却带着 XS..4XL）。
+    // 早先的「按范围丢码」把它们压成了一个错码（如只剩 XL）。
+    // 判据：实测码的跨度（max ord - min ord）比范围跨度还宽，说明范围不可信 → 原样保留。
+    const r = uniqlo.sizeInfo({ sizeCodes: ['SMA002','SMA003','SMA004','SMA005','SMA006','SMA007','SMA008','SMA009'], size_range: 'M ~ M' }, V);
+    assert.deepEqual(r.labels, ['XS','S','M','L','XL','XXL','3XL','4XL'], '坏范围不能把八个码压成一个');
+    assert.equal(r.full, true, '八个码连成一段，就是都有');
   });
 
 test('跨家族混在一件商品上时，不当成「都有」', () => {
