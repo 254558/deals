@@ -6,7 +6,7 @@ import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
 import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.js';
-import { SIZE_CATS, categoryOf, isLetterSize, sizeRank } from './lib/size-groups.js';
+import { ourSizes, sizeRank } from './lib/sizes.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
 
@@ -165,7 +165,6 @@ export default function App() {
   const saved = useMemo(() => loadProgress(DATA.site, DATA.generatedAt), []);
   const [query, setQuery] = useState(saved?.query ?? '');
   const [size, setSize] = useState(saved?.size ?? '');
-  const [cat, setCat] = useState(saved?.cat ?? '');
   const { watch, togglePick, hide } = useWatch();
 
   /**
@@ -191,22 +190,13 @@ export default function App() {
   );
 
   /**
-   * 尺码**按品类分组**，且**只收字母尺码**（cm 那些见 lib/size-groups.js：不能转化，就当不存在）。
-   * 分组与排序规则见 lib/size-groups.js。空组不画 —— 优衣库没有鞋就不显示「鞋子」。
+   * 尺码表：**就是 XS/S/M/L/XL 五个**，从当前可见的商品里现算「真有哪些」。
+   * 一件东西的尺码里没有这五个之一（只有 cm，或只有 XXL/3XL/4XL），就不进这张表。
    */
-  const sizeGroups = useMemo(() => {
-    const byCat = new Map(SIZE_CATS.map((c) => [c, new Set()]));
-    for (const d of deals) {
-      // 只有 SIZE_CATS 那几类进尺码表：归到「其他」的（鞋、袜、围巾、包…）
-      // 在这里就是 byCat 里没有的键 —— 用 ?. 跳过。**不跳过会整页崩**：
-      // byCat.get(c) 是 undefined，接着 .add 就抛 TypeError（2026-10-05 实际踩到）。
-      const c = categoryOf(d.name);
-      for (const l of d.sizes?.labels ?? []) if (isLetterSize(l)) byCat.get(c)?.add(l);
-    }
-    return SIZE_CATS.map((c) => {
-      const sizes = [...byCat.get(c)].sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b, 'zh'));
-      return { cat: c, sizes };
-    }).filter((g) => g.sizes.length > 0);
+  const sizeOptions = useMemo(() => {
+    const all = new Set();
+    for (const d of deals) for (const l of ourSizes(d.sizes?.labels ?? [])) all.add(l);
+    return [...all].sort((a, b) => sizeRank(a) - sizeRank(b));
   }, [deals]);
 
   const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
@@ -226,8 +216,7 @@ export default function App() {
     return (
       deals
         .filter((d) => !q || hay(d).includes(q))
-        .filter((d) => !cat || categoryOf(d.name) === cat)
-        .filter((d) => !size || (d.sizes?.labels ?? []).includes(size))
+        .filter((d) => !size || ourSizes(d.sizes?.labels ?? []).includes(size))
         /**
          * 只按降幅从大到小排（2026-09-30 撤掉了排序入口）。
          *
@@ -237,11 +226,11 @@ export default function App() {
          */
         .sort((a, b) => b.rate - a.rate)
     );
-  }, [deals, query, size, cat]);
+  }, [deals, query, size]);
 
   // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
   // resetKey 用搜索词：它一变，结果就换一批，滚动位置要跟着重来。
-  const { visible, sentinelRef } = useIncremental(rows.length, `${cat}|${size}|q|${query}`, saved?.visible);
+  const { visible, sentinelRef } = useIncremental(rows.length, `${size}|q|${query}`, saved?.visible);
   // 回来时把滚动位置接上：**必须在卡片渲染之后**（文档够高才滚得过去），
   // 所以放 useEffect 而不是 useLayoutEffect 之外的地方都不行 —— effect 跑在 DOM 提交后。
   useEffect(() => {
@@ -257,11 +246,10 @@ export default function App() {
 
   // 页面被收起 / 离开时把进度写下来。用 ref 取当前值，免得为了拿到最新的
   // visible/query 而反复重挂监听。
-  const live = useRef({ visible: 0, query: "", size: "", cat: "" });
-  useEffect(() => { live.current = { visible, query, size, cat }; }, [visible, query, size, cat]);
+  const live = useRef({ visible: 0, query: "", size: "" });
+  useEffect(() => { live.current = { visible, query, size }; }, [visible, query, size]);
   useEffect(() => {
     const save = () => saveProgress(DATA.site, DATA.generatedAt, {
-      cat: live.current.cat,
       size: live.current.size,
       visible: live.current.visible,
       scrollY: Math.round(window.scrollY),
@@ -280,7 +268,6 @@ export default function App() {
   function reset() {
     setQuery('');
     setSize('');
-    setCat('');
     clearProgress(DATA.site);
   }
 
@@ -292,10 +279,9 @@ export default function App() {
       <Toolbar
         query={query}
         onQuery={setQuery}
-        cat={cat}
         size={size}
-        onPick={(c, s) => { setCat(c); setSize(s); }}
-        groups={sizeGroups}
+        onSize={setSize}
+        sizes={sizeOptions}
       />
 
       <div className="wrap">

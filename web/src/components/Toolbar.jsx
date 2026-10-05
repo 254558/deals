@@ -4,20 +4,12 @@ import { META } from '../lib/site.js';
 /**
  * 工具条：搜索框 + 尺码筛选。
  *
- * 页签（全部/限时特优/超值精选/待拔草 那两组）2026-10-05 按用户要求整组删掉了，
- * 之后只剩搜索框；同一天用户要「在搜索框旁边加个尺码筛选按钮」。
+ * 页签（全部/限时特优/超值精选/待拔草 那两组）2026-10-05 按用户要求整组删掉了；
+ * 同一天又要「在搜索框旁边加个尺码筛选按钮」。
  *
- * 尺码**按品类分组**（衣服/裤子/裙子/内衣），而且**只认字母尺码**（XS…4XL）——
- * cm 那些不能诚实地转化，就不收（见 lib/size-groups.js）。
- * 是重复的，66 个尺码平铺成一列谁也找不着；分组之后「裤子 · M」才表达得出来。
- * 点某组的小标题＝只看该品类（不限尺码）。分组逻辑在 lib/size-groups.js。
- *
- * 尺码**只在有数据时才画**：优衣库 886 件里 867 件带尺码标签，迪卡侬的 payload
- * 里 `sizes` 是空的（抓取那边还没取体育用品的尺码），所以那份报告上不出现这颗按钮
- * —— 摆一个点了没用的按钮比不摆更糟。
- *
- * 尺码表是从**当前可见的商品**现算的（不是写死的清单），所以每份报告只列自己真有的
- * 那些；排序按服装惯例 XS→4XL 在前，其余（童装 cm、鞋码…）按字典序排在后面。
+ * 尺码**只有 XS/S/M/L/XL 五个**（用户：「只要这五个，不要大码的，
+ * 不需要区分衣服裤子等等」）。一件东西的尺码里没有这五个之一就不进这张表 ——
+ * 理由见 lib/sizes.js：那些 cm 是腰围/裤长/身高/脚长，换算成 S/M/L 就是编数据。
  *
  * 三层，各管一件事：
  *   .toolbar      整页宽、粘住（粘性元素只能在自己父元素的盒子里活动，
@@ -25,7 +17,7 @@ import { META } from '../lib/site.js';
  *   .wrap         居中 + 左右内衬
  *   .toolbar__row flex 排布 + 下边那条发丝线（放在这层，线才跟报头、表头一样内缩）
  */
-export function Toolbar({ query, onQuery, cat, size, onPick, groups = [] }) {
+export function Toolbar({ query, onQuery, size, onSize, sizes = [] }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
 
@@ -39,8 +31,8 @@ export function Toolbar({ query, onQuery, cat, size, onPick, groups = [] }) {
     return () => document.removeEventListener('click', onDoc);
   }, [open]);
 
-  const pick = (nextCat, nextSize) => {
-    onPick(nextCat, nextSize);
+  const pick = (s) => {
+    onSize(s);
     setOpen(false);
   };
 
@@ -57,7 +49,7 @@ export function Toolbar({ query, onQuery, cat, size, onPick, groups = [] }) {
             aria-label={META.searchPlaceholder}
           />
 
-          {groups.length > 0 && (
+          {sizes.length > 0 && (
             <div className="sizefilter" ref={boxRef}>
               <button
                 className="sizefilter__btn"
@@ -66,41 +58,27 @@ export function Toolbar({ query, onQuery, cat, size, onPick, groups = [] }) {
                 aria-pressed={!!size}
                 onClick={() => setOpen((v) => !v)}
               >
-                尺码{cat ? ' · ' + cat : ''}{size ? ' ' + size : ''}
+                尺码{size ? ' · ' + size : ''}
               </button>
               {open && (
-                <div className="sizefilter__pop" role="group" aria-label="按品类与尺码筛选">
+                <div className="sizefilter__pop" role="group" aria-label="按尺码筛选">
                   <button
-                    className={'sizechip sizechip--all' + (cat || size ? '' : ' sizechip--on')}
+                    className={'sizechip sizechip--all' + (size ? '' : ' sizechip--on')}
                     type="button"
-                    onClick={() => pick('', '')}
+                    onClick={() => pick('')}
                   >
                     不限
                   </button>
-                  {groups.map((g) => (
-                    <div className="sizegroup" key={g.cat}>
-                      {/* 小标题本身也是按钮：只想看「裤子」而不限定尺码时点它 */}
-                      <button
-                        className={'sizegroup__head' + (cat === g.cat && !size ? ' sizegroup__head--on' : '')}
-                        type="button"
-                        onClick={() => pick(g.cat, '')}
-                      >
-                        {g.cat}
-                      </button>
-                      <div className="sizegroup__chips">
-                        {g.sizes.map((s) => (
-                          <button
-                            key={s}
-                            className={'sizechip' + (cat === g.cat && size === s ? ' sizechip--on' : '')}
-                            type="button"
-                            aria-pressed={cat === g.cat && size === s}
-                            onClick={() => pick(cat === g.cat && size === s ? '' : g.cat, cat === g.cat && size === s ? '' : s)}
-                          >
-                            {s}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
+                  {sizes.map((s) => (
+                    <button
+                      key={s}
+                      className={'sizechip sizechip--all' + (size === s ? ' sizechip--on' : '')}
+                      type="button"
+                      aria-pressed={size === s}
+                      onClick={() => pick(size === s ? '' : s)}
+                    >
+                      {s}
+                    </button>
                   ))}
                 </div>
               )}

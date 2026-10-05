@@ -212,17 +212,7 @@ button {
     background: var(--white); border: 1px solid var(--rule);
     padding: 6px 10px; cursor: pointer;
   }
-  /* 分组的尺码表：一组一行小标题 + 一排尺码块。
-     面板宽度给宽一点 —— 分组的全部意义就是「一次看得见」。 */
-  .sizegroup { flex: 1 1 100%; }
-  .sizegroup__head {
-    display: block; width: 100%; text-align: left;
-    font-family: inherit; font-size: 11px; letter-spacing: .06em; color: var(--ink-3);
-    background: none; border: 0; padding: 6px 0 4px; cursor: pointer;
-  }
-  .sizegroup__head:hover { color: var(--blue); }
-  .sizegroup__head--on { color: var(--blue); }
-  .sizegroup__chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* 尺码块：平铺一排，「不限」也占一整行（和下面的尺码块等宽） */
   .sizechip--all { flex: 1 1 100%; }
   .sizechip:hover { color: var(--blue); }
   .sizechip--on { background: var(--ink); border-color: var(--ink); color: var(--white); }
