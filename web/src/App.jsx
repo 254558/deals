@@ -6,6 +6,7 @@ import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
 import { useWatch } from './lib/watch.js';
 import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.js';
+import { CATS, categoryOf, sizeRank } from './lib/size-groups.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
 
@@ -164,6 +165,7 @@ export default function App() {
   const saved = useMemo(() => loadProgress(DATA.site, DATA.generatedAt), []);
   const [query, setQuery] = useState(saved?.query ?? '');
   const [size, setSize] = useState(saved?.size ?? '');
+  const [cat, setCat] = useState(saved?.cat ?? '');
   const { watch, togglePick, hide } = useWatch();
 
   /**
@@ -189,15 +191,19 @@ export default function App() {
   );
 
   /**
-   * 尺码表：**从当前可见的商品现算**，所以每份报告只列自己真有的那些。
-   * 服装惯例的 XS→4XL 排前面，其余（童装 cm、鞋码…）按字典序跟在后面。
+   * 尺码**按品类分组**：每堆各自列出自己真有的尺码（现算，不写死清单）。
+   * 分组与排序规则见 lib/size-groups.js。空组不画 —— 优衣库没有鞋就不显示「鞋子」。
    */
-  const SIZES_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
-  const sizeOptions = useMemo(() => {
-    const seen = new Set();
-    for (const d of deals) for (const l of d.sizes?.labels ?? []) seen.add(l);
-    const rank = (s) => { const k = SIZES_ORDER.indexOf(s); return k < 0 ? 99 : k; };
-    return [...seen].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, 'zh'));
+  const sizeGroups = useMemo(() => {
+    const byCat = new Map(CATS.map((c) => [c, new Set()]));
+    for (const d of deals) {
+      const c = categoryOf(d.name);
+      for (const l of d.sizes?.labels ?? []) byCat.get(c).add(l);
+    }
+    return CATS.map((c) => ({
+      cat: c,
+      sizes: [...byCat.get(c)].sort((a, b) => sizeRank(a) - sizeRank(b) || a.localeCompare(b, 'zh')),
+    })).filter((g) => g.sizes.length > 0);
   }, [deals]);
 
   const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
@@ -217,6 +223,7 @@ export default function App() {
     return (
       deals
         .filter((d) => !q || hay(d).includes(q))
+        .filter((d) => !cat || categoryOf(d.name) === cat)
         .filter((d) => !size || (d.sizes?.labels ?? []).includes(size))
         /**
          * 只按降幅从大到小排（2026-09-30 撤掉了排序入口）。
@@ -227,11 +234,11 @@ export default function App() {
          */
         .sort((a, b) => b.rate - a.rate)
     );
-  }, [deals, query, size]);
+  }, [deals, query, size, cat]);
 
   // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
   // resetKey 用搜索词：它一变，结果就换一批，滚动位置要跟着重来。
-  const { visible, sentinelRef } = useIncremental(rows.length, `${size}|q|${query}`, saved?.visible);
+  const { visible, sentinelRef } = useIncremental(rows.length, `${cat}|${size}|q|${query}`, saved?.visible);
   // 回来时把滚动位置接上：**必须在卡片渲染之后**（文档够高才滚得过去），
   // 所以放 useEffect 而不是 useLayoutEffect 之外的地方都不行 —— effect 跑在 DOM 提交后。
   useEffect(() => {
@@ -247,10 +254,11 @@ export default function App() {
 
   // 页面被收起 / 离开时把进度写下来。用 ref 取当前值，免得为了拿到最新的
   // visible/query 而反复重挂监听。
-  const live = useRef({ visible: 0, query: "", size: "" });
-  useEffect(() => { live.current = { visible, query, size }; }, [visible, query, size]);
+  const live = useRef({ visible: 0, query: "", size: "", cat: "" });
+  useEffect(() => { live.current = { visible, query, size, cat }; }, [visible, query, size, cat]);
   useEffect(() => {
     const save = () => saveProgress(DATA.site, DATA.generatedAt, {
+      cat: live.current.cat,
       size: live.current.size,
       visible: live.current.visible,
       scrollY: Math.round(window.scrollY),
@@ -269,6 +277,7 @@ export default function App() {
   function reset() {
     setQuery('');
     setSize('');
+    setCat('');
     clearProgress(DATA.site);
   }
 
@@ -280,9 +289,10 @@ export default function App() {
       <Toolbar
         query={query}
         onQuery={setQuery}
+        cat={cat}
         size={size}
-        onSize={setSize}
-        sizes={sizeOptions}
+        onPick={(c, s) => { setCat(c); setSize(s); }}
+        groups={sizeGroups}
       />
 
       <div className="wrap">

@@ -7,6 +7,10 @@ import { META } from '../lib/site.js';
  * 页签（全部/限时特优/超值精选/待拔草 那两组）2026-10-05 按用户要求整组删掉了，
  * 之后只剩搜索框；同一天用户要「在搜索框旁边加个尺码筛选按钮」。
  *
+ * 尺码**按品类分组**（上衣/外套/裤子/裙子/内衣/鞋子/其他）：S/M/L 在上衣、裤子和内衣里
+ * 是重复的，66 个尺码平铺成一列谁也找不着；分组之后「裤子 · M」才表达得出来。
+ * 点某组的小标题＝只看该品类（不限尺码）。分组逻辑在 lib/size-groups.js。
+ *
  * 尺码**只在有数据时才画**：优衣库 886 件里 867 件带尺码标签，迪卡侬的 payload
  * 里 `sizes` 是空的（抓取那边还没取体育用品的尺码），所以那份报告上不出现这颗按钮
  * —— 摆一个点了没用的按钮比不摆更糟。
@@ -20,7 +24,7 @@ import { META } from '../lib/site.js';
  *   .wrap         居中 + 左右内衬
  *   .toolbar__row flex 排布 + 下边那条发丝线（放在这层，线才跟报头、表头一样内缩）
  */
-export function Toolbar({ query, onQuery, size, onSize, sizes = [] }) {
+export function Toolbar({ query, onQuery, cat, size, onPick, groups = [] }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
 
@@ -34,8 +38,8 @@ export function Toolbar({ query, onQuery, size, onSize, sizes = [] }) {
     return () => document.removeEventListener('click', onDoc);
   }, [open]);
 
-  const pick = (s) => {
-    onSize(s);
+  const pick = (nextCat, nextSize) => {
+    onPick(nextCat, nextSize);
     setOpen(false);
   };
 
@@ -52,7 +56,7 @@ export function Toolbar({ query, onQuery, size, onSize, sizes = [] }) {
             aria-label={META.searchPlaceholder}
           />
 
-          {sizes.length > 0 && (
+          {groups.length > 0 && (
             <div className="sizefilter" ref={boxRef}>
               <button
                 className="sizefilter__btn"
@@ -61,27 +65,41 @@ export function Toolbar({ query, onQuery, size, onSize, sizes = [] }) {
                 aria-pressed={!!size}
                 onClick={() => setOpen((v) => !v)}
               >
-                尺码{size ? ' · ' + size : ''}
+                尺码{cat ? ' · ' + cat : ''}{size ? ' ' + size : ''}
               </button>
               {open && (
-                <div className="sizefilter__pop" role="group" aria-label="按尺码筛选">
+                <div className="sizefilter__pop" role="group" aria-label="按品类与尺码筛选">
                   <button
-                    className={'sizechip' + (size ? '' : ' sizechip--on')}
+                    className={'sizechip sizechip--all' + (cat || size ? '' : ' sizechip--on')}
                     type="button"
-                    onClick={() => pick('')}
+                    onClick={() => pick('', '')}
                   >
                     不限
                   </button>
-                  {sizes.map((s) => (
-                    <button
-                      key={s}
-                      className={'sizechip' + (size === s ? ' sizechip--on' : '')}
-                      type="button"
-                      aria-pressed={size === s}
-                      onClick={() => pick(size === s ? '' : s)}
-                    >
-                      {s}
-                    </button>
+                  {groups.map((g) => (
+                    <div className="sizegroup" key={g.cat}>
+                      {/* 小标题本身也是按钮：只想看「裤子」而不限定尺码时点它 */}
+                      <button
+                        className={'sizegroup__head' + (cat === g.cat && !size ? ' sizegroup__head--on' : '')}
+                        type="button"
+                        onClick={() => pick(g.cat, '')}
+                      >
+                        {g.cat}
+                      </button>
+                      <div className="sizegroup__chips">
+                        {g.sizes.map((s) => (
+                          <button
+                            key={s}
+                            className={'sizechip' + (cat === g.cat && size === s ? ' sizechip--on' : '')}
+                            type="button"
+                            aria-pressed={cat === g.cat && size === s}
+                            onClick={() => pick(cat === g.cat && size === s ? '' : g.cat, cat === g.cat && size === s ? '' : s)}
+                          >
+                            {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
