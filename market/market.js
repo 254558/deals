@@ -219,10 +219,6 @@
     // 「我要出一件」已挪到「有品」页（用户 2026-10-05 要求），「我的」页不再显示它。
     // 表单本身还在 DOM 里 —— 从详情点「编辑」照样能打开它。
     $('postToggle').style.display = 'none';
-    // 「我的」页是管理页（收藏 / 作品 / 转移码），交易规则那几段留给「有品」页 ——
-    // 那里才是发帖和交易发生的地方，免责声明放那儿更合适。
-    const mineFoot = document.querySelector('footer');
-    if (mineFoot) mineFoot.style.display = 'none';
   }
 
   // ---- 抖音式 tab 条：作品 / 转移码 / 收藏 ----
