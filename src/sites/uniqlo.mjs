@@ -375,24 +375,17 @@ function codesOf(row) {
       const a = idxOf(lo);
       const b = idxOf(hi);
       if (a && b) {
-        // **跨度校验**：范围是「该款一共几档」，在售码理应是它的子集。
-        // 可若实测码的跨度比范围还宽（比如范围「M ~ M」却带着 XS..4XL 八个码），
-        // 说明范围串是接口给的垃圾值（min==max 那种瞬时坏数据）—— 不用它，原样保留。
-        // 这是 2026-10-05 发现的新问题：全库有 65 件这种坏范围，
-        // 之前没这道校验时，它们被「按范围丢码」压成了一个错码（如只剩 XL）。
-        const ordOf = (c) => vocab.get(c)?.ord;
-        const obs = codes.map(ordOf).filter((o) => o != null);
-        // **退化判据**：范围串可信才用它。明确不可信的一种情况是 min==max（范围
-        // 退化成一个码，如「M ~ M」），却带着多个**不同**的码 —— 这是接口给的垃圾值。
-        // （全库 65 件坏范围全是这种 min==max 的形态。）
-        const distinctOrds = new Set(obs).size;
-        const degenerateBad = a.ord === b.ord && distinctOrds > 1;
-        if (!degenerateBad) {
-          const inRange = new Set(fam
-            .filter(({ ord }) => ord >= Math.min(a.ord, b.ord) && ord <= Math.max(a.ord, b.ord))
-            .map((x) => x.code));
-          if (codes.some((c) => !inRange.has(c))) kept = codes.filter((c) => inRange.has(c));
-        }
+        // **范围串可信就按它丢范围外的码 —— 包括 min==max 的退化情形**。
+        // 2026-10-05 实测「抽褶背心」有 3 个颜色：接口的 `size` 数组是**各颜色合并的并集**
+        // （7 个码），而 minSize=maxSize=M 是**主色只剩 M**。用户点进详情页落在主色上，
+        // 根本看不到另外 6 个码。所以范围外的码（含退化时的「其余所有码」）直接丢掉，
+        // 别让用户筛到一个官网没有的码。**宁可少报，也别多报。**
+        // （上一版这里加了「退化判据」想保护这种 min==max 的情况，结果判反了：
+        // 那种 min==max 不是垃圾值，是主色的真实库存。）
+        const inRange = new Set(fam
+          .filter(({ ord }) => ord >= Math.min(a.ord, b.ord) && ord <= Math.max(a.ord, b.ord))
+          .map((x) => x.code));
+        if (codes.some((c) => !inRange.has(c))) kept = codes.filter((c) => inRange.has(c));
       }
     }
     const keptEntries = entries.filter((e) => kept.includes(e.code));

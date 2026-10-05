@@ -84,13 +84,13 @@ test('其它家族：词表写了 cm 就用它，没写的取第一段', () => {
     assert.equal(uniqlo.sizeInfo({ sizeCodes: ['CMD070'], size_range: '160/70A ~ 190/120C' }, V).full, true);
   });
 
-  test('范围是坏的（min==max 却带多个码）时不压码：M~M 带八个码就该留八个', () => {
-    // 2026-10-05 真实事故：全库 65 件范围串是接口给的垃圾值（如「M ~ M」却带着 XS..4XL）。
-    // 早先的「按范围丢码」把它们压成了一个错码（如只剩 XL）。
-    // 判据：实测码的跨度（max ord - min ord）比范围跨度还宽，说明范围不可信 → 原样保留。
+  test('范围 min==max 是主色真实库存：M~M 就该只留 M（其余是各颜色合并的并集）', () => {
+    // 2026-10-05 实测「抽褶背心」有 3 个颜色：接口的 size 数组是并集（7 码），
+    // minSize=maxSize=M 是主色只剩 M。用户点进详情页落在主色上，看不到另外 6 个码。
+    // 所以范围外的码（含退化情形的其余所有码）要丢掉，宁可少报也别多报。
     const r = uniqlo.sizeInfo({ sizeCodes: ['SMA002','SMA003','SMA004','SMA005','SMA006','SMA007','SMA008','SMA009'], size_range: 'M ~ M' }, V);
-    assert.deepEqual(r.labels, ['XS','S','M','L','XL','XXL','3XL','4XL'], '坏范围不能把八个码压成一个');
-    assert.equal(r.full, true, '八个码连成一段，就是都有');
+    assert.deepEqual(r.labels, ['M'], 'M~M 就只留 M，其余 7 个码丢掉');
+    assert.equal(r.full, true, '只剩一档就是都有');
   });
 
 test('跨家族混在一件商品上时，不当成「都有」', () => {
