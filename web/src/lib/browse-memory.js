@@ -8,7 +8,7 @@
  * 回来时 DOM 里只有最初那 10 张，文档根本没有原来那么高 —— 浏览器想还原也无处可落，
  * 只能停在顶部。所以要把**渲染了多少张**一起存下来：先按它渲染，再把滚动位置放回去。
  *
- * 存的是一份**快照**：渲染张数 + 滚动位置 + 当时的搜索词。三个必须一起存 ——
+ * 存的是一份**快照**：渲染张数 + 滚动位置 + 当时的搜索词 + 尺码筛选。
  * 只还原位置而不还原搜索词，回来看到的是**另一批商品**，那个位置就毫无意义。
  *
  * 什么情况下宁可不还原（把人送到错的地方比从头开始更糟）：
@@ -30,6 +30,7 @@ export function loadProgress(site, rev, now = Date.now()) {
       visible: Math.max(0, Math.floor(Number(s.visible) || 0)),
       scrollY: Math.max(0, Math.floor(Number(s.scrollY) || 0)),
       query: typeof s.query === 'string' ? s.query : '',
+      size: typeof s.size === 'string' ? s.size : '',
     };
   } catch {
     return null; // 存坏了就当没有 —— 绝不能让一份坏快照把报告弄打不开

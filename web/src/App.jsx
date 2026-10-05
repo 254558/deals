@@ -163,6 +163,7 @@ export default function App() {
    */
   const saved = useMemo(() => loadProgress(DATA.site, DATA.generatedAt), []);
   const [query, setQuery] = useState(saved?.query ?? '');
+  const [size, setSize] = useState(saved?.size ?? '');
   const { watch, togglePick, hide } = useWatch();
 
   /**
@@ -187,6 +188,18 @@ export default function App() {
     [watch]
   );
 
+  /**
+   * 尺码表：**从当前可见的商品现算**，所以每份报告只列自己真有的那些。
+   * 服装惯例的 XS→4XL 排前面，其余（童装 cm、鞋码…）按字典序跟在后面。
+   */
+  const SIZES_ORDER = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'];
+  const sizeOptions = useMemo(() => {
+    const seen = new Set();
+    for (const d of deals) for (const l of d.sizes?.labels ?? []) seen.add(l);
+    const rank = (s) => { const k = SIZES_ORDER.indexOf(s); return k < 0 ? 99 : k; };
+    return [...seen].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b, 'zh'));
+  }, [deals]);
+
   const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
   const hideDeal = useCallback((d) => hide(d.id, d.code), [hide]);
 
@@ -204,6 +217,7 @@ export default function App() {
     return (
       deals
         .filter((d) => !q || hay(d).includes(q))
+        .filter((d) => !size || (d.sizes?.labels ?? []).includes(size))
         /**
          * 只按降幅从大到小排（2026-09-30 撤掉了排序入口）。
          *
@@ -213,11 +227,11 @@ export default function App() {
          */
         .sort((a, b) => b.rate - a.rate)
     );
-  }, [deals, query]);
+  }, [deals, query, size]);
 
   // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 useIncremental 的注释）。
   // resetKey 用搜索词：它一变，结果就换一批，滚动位置要跟着重来。
-  const { visible, sentinelRef } = useIncremental(rows.length, `q|${query}`, saved?.visible);
+  const { visible, sentinelRef } = useIncremental(rows.length, `${size}|q|${query}`, saved?.visible);
   // 回来时把滚动位置接上：**必须在卡片渲染之后**（文档够高才滚得过去），
   // 所以放 useEffect 而不是 useLayoutEffect 之外的地方都不行 —— effect 跑在 DOM 提交后。
   useEffect(() => {
@@ -233,10 +247,11 @@ export default function App() {
 
   // 页面被收起 / 离开时把进度写下来。用 ref 取当前值，免得为了拿到最新的
   // visible/query 而反复重挂监听。
-  const live = useRef({ visible: 0, query: "" });
-  useEffect(() => { live.current = { visible, query }; }, [visible, query]);
+  const live = useRef({ visible: 0, query: "", size: "" });
+  useEffect(() => { live.current = { visible, query, size }; }, [visible, query, size]);
   useEffect(() => {
     const save = () => saveProgress(DATA.site, DATA.generatedAt, {
+      size: live.current.size,
       visible: live.current.visible,
       scrollY: Math.round(window.scrollY),
       query: live.current.query,
@@ -253,6 +268,7 @@ export default function App() {
 
   function reset() {
     setQuery('');
+    setSize('');
     clearProgress(DATA.site);
   }
 
@@ -264,6 +280,9 @@ export default function App() {
       <Toolbar
         query={query}
         onQuery={setQuery}
+        size={size}
+        onSize={setSize}
+        sizes={sizeOptions}
       />
 
       <div className="wrap">
