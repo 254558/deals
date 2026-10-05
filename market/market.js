@@ -491,7 +491,11 @@
     const it = lastItems.find((x) => x.id === id);
     if (!it) return;
     editing = { id };
-    openForm();
+      // ⚠️ 先把详情关掉再开表单。详情是整屏覆盖（z-index 50）、表单在它下面（45），
+      // 不关的话表单确实打开了，但被详情整个盖住 —— 用户看到的就是「点编辑没反应」
+      // （2026-10-05 用户报的；实测点了之后屏幕中央命中的仍然是详情）。
+      closeDetail();
+      openForm();
     $('title').value = it.title || '';
     $('price').value = it.price ?? '';
     // 尺码与联系方式不再是表单字段（都写进详情里），所以编辑时也不再回填 ——
