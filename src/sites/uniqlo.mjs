@@ -66,6 +66,62 @@ const TAGS = {
 const SALE_TAGS = ['time_doptimal', 'concessional_rate'];
 
 /** 把接口返回的商品对象整理成我们自己的结构 */
+// ═══ 详情页核实真实库存 ═══
+// 搜索接口的 `size` 数组是「SKU 清单」（各颜色并集），不是库存——2026-10-05 用户连报两次
+// 「筛某码有、点进去没有」。详情页另有两个接口给出真相，这里只对「可疑」商品调用：
+//   · SPU 查询：SKU 清单（productId → omsSkuCode）
+//   · 库存查询：每个 SKU 的实际库存量（>0 才算有货）
+const SPU_ENDPOINT = 'https://d.uniqlo.cn/p/product/i/product/spu/pc/query';
+const STOCK_ENDPOINT = 'https://d.uniqlo.cn/p/stock/stock/query/zh_CN';
+// 各渠道库存字段：配送中心 / 在途 / 门店自提 / 预售…… 任一 >0 都算能买到
+const STOCK_CHANNELS = ['dcSkuStocks', 'transitSkuStocks', 'bplSitSkuStocks', 'bplWithoutPreorderSkuStocks', 'bplDcSkuStocks', 'bplPreorderSkuStocks', 'preorderSkuStocks'];
+
+async function querySpu(productCode) {
+  const res = await fetch(`${SPU_ENDPOINT}/${productCode}/zh_CN`, {
+    headers: { 'User-Agent': UA, Origin: 'https://www.uniqlo.cn', Referer: 'https://www.uniqlo.cn/product-detail.html', Accept: 'application/json, text/plain, */*' },
+    signal: AbortSignal.timeout(30000),
+  });
+  return (await res.json()).resp?.[0]?.rows || [];
+}
+
+async function queryStock(productCode) {
+  const res = await fetch(STOCK_ENDPOINT, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'User-Agent': UA, Origin: 'https://www.uniqlo.cn', Referer: 'https://www.uniqlo.cn/product-detail.html', Accept: 'application/json, text/plain, */*' },
+    body: JSON.stringify({ distribution: 'EXPRESS', productCode, type: 'DETAIL' }),
+    signal: AbortSignal.timeout(30000),
+  });
+  return res.json();
+}
+
+/**
+ * 核实一件可疑商品的真实在售尺码。
+ * @returns 精确的 sizeCodes 数组；全部售罄返回 []；问不到/映射失败返回 null（保留原样）
+ */
+async function exactStockCodes(productCode, sizeCodes, vocab) {
+  try {
+    const rows = await querySpu(productCode);
+    const stock = await queryStock(productCode);
+    const maps = stock.resp?.[0] || {};
+    const inStock = new Set();
+    for (const key of STOCK_CHANNELS) {
+      for (const [skuId, qty] of Object.entries(maps[key] || {})) if (Number(qty) > 0) inStock.add(skuId);
+    }
+    if (!inStock.size) return [];
+    // omsSkuCode 的尺码段是「02」起 0 基下标（02=第 0 个码），按词表序对应 sizeCodes
+    const sorted = [...sizeCodes].sort((a, b) => (vocab.get(a)?.ord ?? 99) - (vocab.get(b)?.ord ?? 99));
+    const out = new Set();
+    for (const r of rows) {
+      if (!inStock.has(r.productId)) continue;
+      const i = parseInt(String(r.omsSkuCode).slice(-5, -3), 10) - 2;
+      if (i >= 0 && i < sorted.length) out.add(sorted[i]);
+    }
+    return out.size ? [...out] : null;
+  } catch {
+    return null;
+  }
+}
+
 function normalize(p) {
   return {
     productCode: p.productCode,
@@ -433,9 +489,22 @@ export default {
     }
     // 顺带刷一次尺码词表（一次请求，与搜索条件无关）
     const sizeVocab = await fetchSizeVocab().catch(() => []);
+    const products = dedupe(all).filter((p) => p.minPrice > 0).map(toCanonical);
+    // 核实「可疑」商品：min==max（范围退化成一个码）却带着多个码，
+    // 说明搜索接口的 size 数组在撒谎（它是 SKU 清单不是库存）。这类商品才值得
+    // 花 2 个请求去问详情页的真实库存。
+    const vocabMap = new Map(sizeVocab.map((e) => [e.code, e]));
+    const suspicious = products.filter((p) => {
+      const [lo, hi] = String(p.sizeRange || '').split('~').map((t) => t.trim());
+      return lo && lo === hi && (p.sizeCodes || []).length > 1;
+    });
+    for (const p of suspicious) {
+      const codes = await exactStockCodes(p.productCode, p.sizeCodes || [], vocabMap);
+      if (codes !== null) { p.sizeCodes = codes; p.sizeRange = ''; }
+    }
     return {
       fetched: all.length,
-      products: dedupe(all).filter((p) => p.minPrice > 0).map(toCanonical),
+      products,
       sizeVocab,
     };
   },
