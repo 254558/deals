@@ -216,8 +216,7 @@
     document.body.classList.add('mine');
     const navMine = document.getElementById('navMine');
     if (navMine) navMine.setAttribute('aria-current', 'page');
-  } else {
-    // 发帖入口现在在「我的」页的**顶部**（原来是个右下角的悬浮按钮）。
+    // 「我要出一件」已挪到「有品」页（用户 2026-10-05 要求），「我的」页不再显示它。
     // 表单本身还在 DOM 里 —— 从详情点「编辑」照样能打开它。
     $('postToggle').style.display = 'none';
   }
