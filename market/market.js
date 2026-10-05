@@ -585,9 +585,12 @@
     const id = box.getAttribute("data-cmts");
     commentsById[id] = items;
     if (!items.length) { list.innerHTML = '<div class="cmts__empty">还没有人评论</div>'; return; }
-    // 默认展开（用户要的），但别让一张卡被评论撑太长：只摆前 3 条
     const expanded = box.dataset.expanded === "1";
-    const shown = expanded ? items : items.slice(0, 3);
+    // 默认展开（用户要的），但别让一张卡被评论撑太长：只摆前 3 条。
+    // ⚠️ **自己发的评论永远要显示**（用户 2026-10-05：「发出去的评论本人要能删除」）：
+    //    自己的评论排在 3 条之后时，本人根本看不见，也就找不到那颗「删除」按钮 ——
+    //    功能其实是好的，是「看不见」让它等于没有。
+    const shown = expanded ? items : items.filter((c, i) => i < 3 || cmtTokens.get(c.id));
     const rest = items.length - shown.length;
     list.innerHTML = shown.map((c) => {
       const mine = !!cmtTokens.get(c.id);
