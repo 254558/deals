@@ -23,16 +23,16 @@ null
  */
 
 import uniqlo from './uniqlo.mjs';
-import decathlon from './decathlon.mjs';
+import zara from './zara.mjs';
 
-export const SITES = [uniqlo, decathlon];
+export const SITES = [uniqlo, zara];
 
 /**
  * Cloudflare Pages 的配置。
  *
 null
  * Cloudflare 这边是**一个项目装两份报告**，各占一个子目录 —— 把整个 `reports/`
- * 目录发上去，得到 `<host>/uniqlo/` 与 `<host>/decathlon/`。
+ * 目录发上去，得到 `<host>/uniqlo/` 与 `<host>/zara/`。
  * 所以项目名/域名属于「一次部署」，不属于某个站点，放在这里而不是站点描述符里。
  */
 export const CLOUDFLARE = {

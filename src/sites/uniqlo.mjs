@@ -576,9 +576,9 @@ export default {
     storagePrefix: 'uniql',
     showRecorded: false,
     crossLink: {
-      href: 'https://goodprices.online/decathlon/',
-      label: '迪卡侬',
-      title: '迪卡侬比价报告（新标签打开）',
+      href: 'https://goodprices.online/zara/',
+      label: 'ZARA',
+      title: 'ZARA 比价报告（新标签打开）',
     },
 
     features: {

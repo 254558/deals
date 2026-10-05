@@ -34,12 +34,12 @@ import { dirname } from 'node:path';
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS products (
   site              TEXT NOT NULL,      -- 'uniqlo' | 'decathlon'
-  product_code      TEXT NOT NULL,      -- 站点内唯一的商品号（优衣库 productCode / 迪卡侬 dsm_code）
-  code              TEXT,               -- 给人看的编号（优衣库吊牌 6 位数 / 迪卡侬 dsm_code）
+  product_code      TEXT NOT NULL,      -- 站点内唯一的商品号（优衣库 productCode / ZARA 商品号）
+  code              TEXT,               -- 给人看的编号（优衣库吊牌 6 位数 / ZARA 商品页 -p 后面那串）
   name              TEXT,
-  brand             TEXT,               -- 迪卡侬有；优衣库空
-  sports            TEXT,               -- 迪卡侬的「运动」；优衣库空
-  season            TEXT,               -- 优衣库有；迪卡侬空
+  brand             TEXT,               -- ZARA 有；优衣库空
+  sports            TEXT,               -- ZARA 的商品分类；优衣库空
+  season            TEXT,               -- 优衣库有；ZARA 空
   size_range        TEXT,
   size_codes        TEXT,   -- 在售尺码的内部码（JSON 数组）——「还剩什么尺码」靠它
   image             TEXT,               -- 主图（远程 CDN 地址）
@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS products (
   last_price        REAL,               -- 上次抓到的现价（用来判断"又降了"）
   prev_price        REAL,               -- 上上次的现价
   max_discount      REAL,               -- 见过的最深降幅（0.6 = 降过 60%）
-  monthly_sales     INTEGER,            -- 优衣库的月销；迪卡侬没有，存 0
+  monthly_sales     INTEGER,            -- 优衣库的月销；ZARA 没有，存 0
   in_stock          INTEGER,
   first_seen_at     TEXT,
   last_seen_at      TEXT,

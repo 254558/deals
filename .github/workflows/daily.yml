@@ -59,7 +59,7 @@ jobs:
         with:
           path: |
             reports/uniqlo/img
-            reports/decathlon/img
+            reports/zara/img
             data/fonts
           key: assets-${{ github.run_id }}
           restore-keys: assets-

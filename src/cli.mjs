@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * deals —— 比价 / 捡漏命令行工具（优衣库 · 迪卡侬）
+ * deals —— 比价 / 捡漏命令行工具（优衣库 · ZARA）
  *
  *   deals <站点> sync              抓取并记录历史（每天跑一次最好）
  *   deals <站点> list              捡漏榜
@@ -18,7 +18,7 @@
  *   deals all sync                 两家都抓一遍
  *
  * ── 合并说明 ──────────────────────────────────────────────────────────
- * 这个仓库是两个几乎同源的项目合起来的（优衣库 uniql / 迪卡侬 deca）。
+ * 这个仓库是两个几乎同源的项目合起来的（优衣库 uniql / ZARA zara）。
  * 「两家都一样的」留在这一个文件 + src/core/ 里：「只有某家才这样」的
  * 全部收进 src/sites/<站点>.mjs。所以这里看不到一处 `if (站点 === …)`：
  * 表格列、提示语、报告文案、图片档位规则，都是从站点描述符里读的。
@@ -641,7 +641,7 @@ const cfCrossLink = (site) => {
  *
  * 一个 Pages 项目装两份报告。所以这个命令与「对哪个站点做」
  * 无关 —— 从哪一站触发都会把两份报告一起刷新，再把整个 `reports/` 目录发上去，
- * 得到 `<host>/uniqlo/` 与 `<host>/decathlon/`。
+ * 得到 `<host>/uniqlo/` 与 `<host>/zara/`。
  *
  *
  * wrangler 没有 exclude 之类的开关，不为它专门绕路。
@@ -650,7 +650,7 @@ async function cmdDeployCloudflare() {
   const { project, host } = CLOUDFLARE;
 
   console.log(C.bold(`\nCloudflare Pages · 项目 ${project}`));
-  console.log(C.dim(`  一个项目装两份：${host}/uniqlo/ 与 ${host}/decathlon/`));
+  console.log(C.dim(`  一个项目装两份：${host}/uniqlo/ 与 ${host}/zara/`));
   console.log(C.dim('  所以两份报告都会重新生成一遍，报头那个交叉入口改成同域的相对路径。\n'));
 
   for (const site of SITES)
@@ -693,7 +693,7 @@ async function cmdDeployCloudflare() {
     console.error(C.dim('  没登录过或凭据过期的话先跑一次：npx wrangler login\n'));
     process.exit(1);
   }
-  console.log(`\n已发布：${C.bold(`${host}/uniqlo/`)} 与 ${C.bold(`${host}/decathlon/`)}\n`);
+  console.log(`\n已发布：${C.bold(`${host}/uniqlo/`)} 与 ${C.bold(`${host}/zara/`)}\n`);
 }
 
 function cmdSites() {

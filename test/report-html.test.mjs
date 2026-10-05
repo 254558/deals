@@ -72,12 +72,12 @@ test('没有本地图（remote 那一路）时不 preload，也不炸', () => {
   assert.ok(h.includes('id="boot"'));
 });
 
-test('没有字体（迪卡侬那份）时不留空 <style>', () => {
+test('没有字体（ZARA 那份）时不留空 <style>', () => {
   const h = renderHtml({
     js: 'x',
     css: '.a{}',
     fontCss: '',
-    payload: { site: 'decathlon', generatedAt: '2026-09-30T00:00:00.000Z', meta: { pageTitle: '迪卡侬' }, deals: [] },
+    payload: { site: 'zara', generatedAt: '2026-09-30T00:00:00.000Z', meta: { pageTitle: 'ZARA' }, deals: [] },
   });
   assert.ok(!h.includes('<style>\n\n</style>'), '空的字体 style 块不该留下');
   assert.equal((h.match(/@font-face/g) || []).length, 0);
