@@ -575,11 +575,6 @@ export default {
     // 两个旧报告里的收藏/隐藏存在这两个前缀下（uniql.picks 等），沿用即可原样保留
     storagePrefix: 'uniql',
     showRecorded: false,
-    crossLink: {
-      href: 'https://goodprices.online/zara/',
-      label: 'ZARA',
-      title: 'ZARA 比价报告（新标签打开）',
-    },
 
     features: {
       stickerTags: false,

@@ -2,10 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import uniqlo from '../src/sites/uniqlo.mjs';
-import zara from '../src/sites/zara.mjs';
 import { buildPayload } from '../src/core/report.mjs';
 import { blockCode } from '../src/core/db.mjs';
 import { tmpDb, product, sync } from './helpers.mjs';
+
+/**
+ * 一个**没有 sizeInfo 钩子**的最小站点描述符。
+ * 原先这条用的是迪卡侬、后来换成 ZARA；两个站点先后都被删了，但「没有尺码钩子时
+ * sizes 必须是 null」这条规矩还得钉着，所以改成内联桩，不再依赖真实适配器。
+ */
+const plainSite = { id: 'plain', label: 'PLAIN', report: { label: 'PLAIN', pageTitle: 'PLAIN' } };
 
 /** 词表：码 → {label, grp, ord}，形状跟 loadSizeVocab 出来的一样 */
 const vocab = (rows) => {
@@ -90,20 +96,20 @@ test('谢绝名单里的商品不进 payload（所有设备、所有域名都一
   assert.deepEqual(names, ['要留着的']);
 });
 
-test('ZARA 没有尺码钩子：sizes 恒为 null（卡片于是显示商品名）', async (t) => {
+test('没有尺码钩子的站点：sizes 恒为 null（卡片于是显示商品名）', async (t) => {
   const { db, done } = tmpDb();
   t.after(done);
 
-  sync(db, 'zara', [product({ name: '皮革效果短款夹克外套' })]);
-  const payload = buildPayload(db, zara, null);
+  sync(db, 'plain', [product({ name: '一件没有尺码钩子的商品' })]);
+  const payload = buildPayload(db, plainSite, null);
   assert.equal(payload.deals.length, 1);
   assert.equal(payload.deals[0].sizes, null);
-  assert.equal(payload.meta.label, 'ZARA');
-  assert.equal(typeof zara.sizeInfo, 'undefined');
+  assert.equal(payload.meta.label, 'PLAIN');
+  assert.equal(typeof plainSite.sizeInfo, 'undefined');
 });
 
-test('站点描述符：两家的必备字段都在，且没有残留的顶层 sortHint', () => {
-  for (const site of [uniqlo, zara]) {
+test('站点描述符：必备字段都在，且没有残留的顶层 sortHint', () => {
+  for (const site of [uniqlo]) {
     // features 挂在 report 上（组件的 META.features 就是从那儿来的），不在描述符顶层
     for (const k of ['id', 'label', 'tableColumns', 'report', 'report.features', 'copy', 'parseCode', 'sync']) {
       const v = k.split('.').reduce((o, kk) => o?.[kk], site);
