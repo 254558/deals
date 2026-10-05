@@ -122,6 +122,15 @@
     </div>
   </div>
 
+  <!-- 收藏的商品：报告页（优衣库/迪卡侬）点过爱心的，快照存在 localStorage。
+       只在「我的」页显示 —— 这是「我的」重新设计的一部分（用户 2026-10-05：
+       「点了收藏之后，要能在我的界面看到收藏的东西」）。 -->
+  <section class="favs" id="favs" hidden>
+    <h2 class="favs__title">收藏的商品</h2>
+    <div class="favs__list" id="favsList"></div>
+  </section>
+  <p class="favs__empty" id="favsEmpty" hidden>还没收藏。去 <a href="/uniqlo/" target="_blank" rel="noreferrer">优衣库</a> 或 <a href="/decathlon/" target="_blank" rel="noreferrer">迪卡侬</a> 点商品卡片上的爱心，这里就会列出来。</p>
+
   <!-- 小红书那种：两列瀑布流封面，点开看详情 -->
   <div id="list" class="wall"></div>
   <div id="detail" class="detail" hidden></div>

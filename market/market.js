@@ -223,6 +223,60 @@
     $('transferToggle').style.display = 'none';
   }
 
+  // ---- 「我的」收藏的商品（报告页点过爱心，快照见 App.jsx 的 saveFavorite）----
+  if (mineMode) {
+    const FAV_KEY = 'deals.favorites';
+    let favs = [];
+    try { favs = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch {}
+    if (!Array.isArray(favs)) favs = [];
+    const favSection = $('favs');
+    const favList = $('favsList');
+    const favEmpty = $('favsEmpty');
+    const renderFavs = () => {
+      if (!favList) return;
+      if (!favs.length) {
+        if (favSection) favSection.hidden = true;
+        if (favEmpty) favEmpty.hidden = false;
+        return;
+      }
+      if (favSection) favSection.hidden = false;
+      if (favEmpty) favEmpty.hidden = true;
+      favList.innerHTML = favs.map((f) => {
+        const u = esc(f.url), img = esc(f.image), nm = esc(f.name), fid = esc(f.id);
+        const cur = esc(f.currency || '¥'), pr = esc(String(f.price));
+        return '<div class="fav"><a class="fav__link" href="' + u + '" target="_blank" rel="noreferrer">'
+          + '<img class="fav__img" src="' + img + '" alt="" loading="lazy">'
+          + '<div class="fav__body"><div class="fav__name">' + nm + '</div>'
+          + '<div class="fav__price">' + cur + pr + '</div></div></a>'
+          + '<button class="fav__del" type="button" data-favdel="' + fid + '" aria-label="取消收藏">×</button></div>';
+      }).join('');
+    };
+    renderFavs();
+    // 取消收藏：删快照，并同步报告页的 picks/dropped（让那边的爱心也跟着灭）
+    favList?.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-favdel]');
+      if (!btn) return;
+      e.preventDefault();
+      const id = btn.getAttribute('data-favdel');
+      const f = favs.find((x) => x.id === id);
+      if (f && f.prefix) {
+        try {
+          const pk = f.prefix + '.picks';
+          const dk = f.prefix + '.dropped';
+          const picks = new Set(JSON.parse(localStorage.getItem(pk) || '[]'));
+          const dropped = new Set(JSON.parse(localStorage.getItem(dk) || '[]'));
+          picks.delete(id);
+          dropped.add(id);
+          localStorage.setItem(pk, JSON.stringify([...picks]));
+          localStorage.setItem(dk, JSON.stringify([...dropped]));
+        } catch {}
+      }
+      favs = favs.filter((x) => x.id !== id);
+      try { localStorage.setItem(FAV_KEY, JSON.stringify(favs)); } catch {}
+      renderFavs();
+    });
+  }
+
   // ---- 「我的」转移码 ----
   // 凭据（能改能删的钥匙）只存在这一个浏览器里，换手机或清缓存就找不回来 ——
   // 服务端只存哈希，救不回。所以给一个把它搬走的出口：

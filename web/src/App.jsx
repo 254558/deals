@@ -9,6 +9,32 @@ import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.j
 import { ourSizes, sizeRank } from './lib/sizes.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
+/**
+ * 收藏快照：报告页点爱心时，把整件商品存进 localStorage（同源共享），
+ * 供「我的」页（/market/?mine=1）展示。原来只存 id 到 picks，
+ * 「我的」那边没有报告数据，光有 id 也渲染不出东西，所以这里存完整字段。
+ * 键 `deals.favorites` 跨优衣库/迪卡侬共用（「我的」要一起看）。
+ */
+const FAV_KEY = 'deals.favorites';
+function saveFavorite(d, on) {
+  try {
+    let list = [];
+    try { list = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch {}
+    if (!Array.isArray(list)) list = [];
+    list = list.filter((x) => x.id !== d.id);
+    if (on) {
+      list.unshift({
+        id: d.id, code: d.code, name: d.name, price: d.price,
+        currency: META.currency?.sym || '¥',
+        image: '/' + DATA.site + '/' + d.image,
+        url: d.url, site: DATA.site, prefix: META.storagePrefix, savedAt: Date.now(),
+      });
+    }
+    localStorage.setItem(FAV_KEY, JSON.stringify(list));
+  } catch { /* 存不下就算了 */ }
+}
+
+
 
 /** 空结果提示，两个视图共用。搜索的措辞里那一串「名称或编号…」来自
  *  `meta.searchLabel`：迪卡侬的编号旁边还有品牌可搜，优衣库只有名称和吊牌编号 */
@@ -212,7 +238,11 @@ export default function App() {
     return `尺码是 ${age}前的快照，以官网为准`;
   }, []);
 
-  const pick = useCallback((d) => togglePick(d.id, d.dbTracked), [togglePick]);
+  const pick = useCallback((d) => {
+    const currentlyOn = d.dbTracked ? !watch.dropped.has(d.id) : watch.picks.has(d.id);
+    togglePick(d.id, d.dbTracked);
+    saveFavorite(d, !currentlyOn);
+  }, [togglePick, watch]);
   const hideDeal = useCallback((d) => hide(d.id, d.code), [hide]);
 
 

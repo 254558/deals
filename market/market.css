@@ -552,3 +552,20 @@
 #postToggle { display: block; width: 100%; margin: 10px 0 14px; }
 /* 表单铺满导航栏以下时把它收起来 —— 留着也点不到 */
 .card--form.is-open ~ #postToggle { display: none; }
+
+
+/* ---------------- 收藏的商品（「我的」页） ---------------- */
+.favs { margin: 0 0 22px; }
+.favs__title { font-size: 11px; letter-spacing: .1em; color: var(--ink-3); margin: 0 0 10px; font-weight: 400; }
+.favs__list { display: grid; gap: 8px; }
+.fav { position: relative; display: flex; align-items: center; gap: 8px; border: 1px solid var(--rule); padding: 8px; background: var(--white); }
+.fav__link { display: flex; align-items: center; gap: 12px; flex: 1 1 auto; min-width: 0; }
+.fav__link:hover .fav__name { color: var(--blue); }
+.fav__img { width: 52px; height: 52px; object-fit: cover; flex: none; background: var(--surface-2); }
+.fav__body { min-width: 0; }
+.fav__name { font-size: 13px; line-height: 1.4; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fav__price { font-size: 14px; font-weight: 700; color: var(--red); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.fav__del { flex: none; width: 30px; height: 30px; border: 0; background: none; color: var(--ink-4); font-size: 20px; line-height: 1; cursor: pointer; }
+.fav__del:hover { color: var(--ink-2); }
+.favs__empty { font-size: 13px; color: var(--ink-3); margin: 0 0 22px; }
+.favs__empty a { color: var(--blue); }
