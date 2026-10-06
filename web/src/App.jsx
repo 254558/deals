@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import { Masthead } from './components/Masthead.jsx';
+import { MinePanel } from './components/MinePanel.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
 import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
@@ -194,6 +195,8 @@ export default function App() {
   // 而不是上次停下的位置。没有 ?q= 时照旧接上次。
   const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('q') || saved?.query || '');
   const [size, setSize] = useState(saved?.size ?? '');
+  // 「我的」：整屏视图，只有 收藏 / 转移码 两块（用户 2026-10-06）
+  const [mineOpen, setMineOpen] = useState(false);
   const { watch, togglePick, hide } = useWatch();
 
   /**
@@ -320,7 +323,7 @@ export default function App() {
 
   return (
     <>
-      <Masthead recorded={DATA.recorded ?? deals.length} />
+      <Masthead recorded={DATA.recorded ?? deals.length} onMine={() => setMineOpen(true)} />
 
       <Toolbar
         query={query}
@@ -352,6 +355,7 @@ export default function App() {
         )}
       </div>
 
+      <MinePanel open={mineOpen} onClose={() => setMineOpen(false)} />
     </>
   );
 }

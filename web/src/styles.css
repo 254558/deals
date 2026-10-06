@@ -646,3 +646,112 @@ body {
  * 因为工具条本来就在榜单与商品之间。 */
 .toolbar { box-shadow: 0 2px 6px rgba(0, 0, 0, .06); }
 
+
+/* ══════════════ 「我的」：整屏视图 ══════════════
+   用户 2026-10-06：「我的里面就放：收藏，转移码就好，别的都删掉」。
+   这里原来属于独立的一页（market/market.css，跟着市集一起删了），
+   现在收进报告本身 —— 所以样式也搬回来，用同一套令牌（直角、发丝线、墨、蓝）。 */
+.mine {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  overflow-y: auto;
+  background: var(--white);
+  padding-bottom: 60px;
+}
+.mine__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 0 14px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.mine__title { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
+.mine__close {
+  margin-left: auto;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--rule);
+  background: var(--white);
+  font-size: 20px;
+  line-height: 1;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.mine__close:hover { color: var(--ink); }
+
+/* 抖音式横条 tab（用户 2026-10-05 要的样子） */
+.mine__tabs {
+  display: flex;
+  gap: 26px;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.mine-tab {
+  padding: 12px 2px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+.mine-tab--on { color: var(--ink); border-bottom-color: var(--ink); font-weight: 700; }
+
+.mine__pane { padding-top: 16px; }
+.mine__empty, .mine__hint { margin: 0 0 14px; font-size: 13px; line-height: 1.7; color: var(--ink-3); }
+.mine__row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.mine__code {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: var(--surface-2);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.6;
+  word-break: break-all;
+  resize: vertical;
+}
+
+.mine__favs { display: flex; flex-direction: column; }
+.fav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.fav__link { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
+.fav__link:hover .fav__name { color: var(--blue); }
+.fav__img { flex: none; width: 52px; height: 52px; object-fit: cover; background: var(--surface-2); }
+.fav__body { min-width: 0; }
+.fav__name {
+  display: block;
+  font-size: 13px;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.fav__price { display: block; margin-top: 2px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.fav__del {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--rule);
+  background: var(--white);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink-4);
+  cursor: pointer;
+}
+.fav__del:hover { color: var(--red); border-color: var(--red); }
+
+/* 「我的」现在是 <button>（原来是一条 <a> 链接），把按钮自带的样式按掉 */
+.masthead__text.masthead__cross {
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  cursor: pointer;
+}

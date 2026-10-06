@@ -30,7 +30,7 @@ import { META } from '../lib/site.js';
  * 所以它和榜上实际有多少件会对不上，这是对的：前者说库里攒了多少，
  * 后者说这一期筛出来多少。（工具栏右端那句「显示全部 N 件」2026-09-30 撤了。）契约里 `payload.recorded` 就是为这一格准备的。
  */
-export function Masthead({ recorded }) {
+export function Masthead({ recorded = 0, onMine }) {
   // 报头自己量高度，写成 --nav-h：下面那条工具条也是粘性的，它的 top 得正好接在报头下沿。
   // 写死一个数会在窄屏/字体不同时错位，所以交给 ResizeObserver 一直盯着。
   const navRef = useRef(null);
@@ -56,6 +56,13 @@ export function Masthead({ recorded }) {
         <a className="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
         {META.showRecorded && <span className="label">共记录 {num(recorded)} 件</span>}
         {/* 行尾右对齐的入口：另一家的报告（靠 margin-left: auto 顶到行尾） */}
+        {/* 「我的」固定放在最右边。它和上面那组不一样：那组是「去看别人整理的」
+            （另一家的报告），会新开标签；这一条是「回我自己的地盘」。
+            2026-10-06：它原来指向独立的一页 /market/?mine=1，那页跟着市集删了，
+            现在改成报告内的整屏视图（收藏 / 转移码）。 */}
+        {onMine && (
+          <button className="masthead__text masthead__cross" type="button" onClick={onMine}>我的</button>
+        )}
         {links.map((l) => (
           <a
             className="masthead__text masthead__cross"
