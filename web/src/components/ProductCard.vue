@@ -89,11 +89,12 @@ const text = computed(() => chips(props.deal.tags));
  */
 // 12 → 24（2026-10-06）：参照图里是 ~32 根**细**条，12 根在卡片宽度下太胖，
 // 像积木不像刻度。24 根配 4px 上限，密度和细度都贴近参照图。
-// 25 → 23 → **21**。这一行现在是 [图标] [条] 降 N 元，图标占掉 13px + 6px 间距，
-// 条是 flex:1 撑满的，这 19px 得从它身上出。
-// 23 格时实测条到文字只剩 **1px**（空隙被吃光）；21 格 = 21×3 + 20×2 = 103px，
-// 留出约 10px —— 正是用户先前就定过的那个距离。
-const BAR_SEGMENTS = 21;
+// 25 → 23 → 21 → **25**。这条曲线是跟着"一行里还有什么"走的：
+//   加图标进这一行 → 条被挤窄 → 得减格子（25→23→21）；
+//   图标又挪走了（去当价格的 ¥ 了）→ 条宽回来约 19px → 格子加回去（21→25）。
+// 25 格 = 25×3 + 24×2 = 123px，在 133px 的盒子里留出约 10px ——
+// 正是用户先前就定过的那个距离。**改这一行之前先量"条到文字"是多少。**
+const BAR_SEGMENTS = 25;
 const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(props.deal.rate * BAR_SEGMENTS))));
 
 // 名字**原样显示**，不再按斜杠截断。
@@ -135,7 +136,14 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
     <!-- 价格三件套，右端跟着收藏 / 不再出现两个动作 -->
     <div class="card__prices">
       <span class="card__now n" :class="{ 'card__now--flat': !(props.deal.rate > 0 && !gone) }">
-        <span class="now__sym">{{ now.sym }}</span>
+        <!-- ¥ 符号换成那个钞票图标（2026-10-06 用户：「换到价格前面，也就是替换
+             价格的 ¥ 这个符号」）。图标是 stroke=currentColor，所以它跟着价格的颜色走 ——
+             现价是红的，它就是红的；没降价时价格是灰的，它也是灰的。
+             **¥ 本身用 sr-only 留着**：读屏器念价格时仍会说「¥59」，而不是光一个 59。 -->
+        <span class="now__sym">
+          <span class="sr-only">{{ now.sym }}</span>
+          <BanknoteArrowDown :size="17" :stroke-width="2" aria-hidden="true" />
+        </span>
         <span class="now__int">{{ now.int }}</span>
         <span class="now__dec">{{ now.dec }}</span>
       </span>
@@ -153,11 +161,9 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
     <!-- 优衣库：比例条和降幅红字同行，红字贴在条尾，条占满剩余宽度。
          直接说「降 190 元」——省下的钱是实打实的数，百分比还得自己换算 -->
     <div v-else-if="props.deal.rate > 0 && feats.dealBarNumber" class="card__deal">
-      <!-- 2026-10-06 顺序改过两次，最终是用户要的这样：
-           **[图标] [降幅条] 降 190 元** —— 图标在条的**前面**，「降」字写回来。
-           （中间一度是「[条] [图标] 190 元」，用户看了之后说「还是写成降多少钱，
-             把那个图标放到降价左边的长条前面」。） -->
-      <BanknoteArrowDown class="card__icon" :size="13" :stroke-width="2" aria-hidden="true" />
+      <!-- [降幅条] 降 190 元。2026-10-06 那个钞票图标先在这行待过一阵，
+           后来用户说「把这个图标删了，换到价格前面」—— 它现在去当价格的 ¥ 符号了
+           （见上面的 .card__now）。 -->
       <span class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
       <span class="card__off n">降 {{ num(Math.round(props.deal.saving)) }} 元</span>
     </div>
