@@ -22,8 +22,9 @@
  *   · 点别处收起：useEffect 的监听器换成 onMounted/onBeforeUnmount，
  *     而且**只在打开时才挂**（打开状态一变的 watch）。
  */
-import { onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { META } from '../lib/site.js';
+import JellyChips from './JellyChips.vue';
 
 const props = defineProps({
   query: { type: String, default: '' },
@@ -37,6 +38,15 @@ const props = defineProps({
 const open = ref(false);
 const boxRef = ref(null);
 
+/**
+ * 尺码那一排：「不限」+ 五个尺码。
+ * 「不限」的 value 是空串 —— 和 props.size 的"没选"是同一个值，所以点它等于取消筛选。
+ */
+const jellyItems = computed(() => [
+  { value: '', label: '不限' },
+  ...props.sizes.map((s) => ({ value: s, label: s })),
+]);
+
 const onDocClick = (e) => {
   if (boxRef.value && !boxRef.value.contains(e.target)) open.value = false;
 };
@@ -49,9 +59,13 @@ watch(open, (isOpen) => {
 
 onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
 
-function pick(s) {
-  props.onSize?.(s);
-  open.value = false;
+/**
+ * 挑尺码。**延迟 320ms 再收起面板** —— 果冻动画大约 300ms，立刻关掉就白做了。
+ * （再点一次同一个不会触发：JellyChips 里挡掉了，和单选框语义一致。取消筛选点「不限」。）
+ */
+function pickSize(v) {
+  props.onSize?.(v);
+  setTimeout(() => { open.value = false; }, 320);
 }
 </script>
 
@@ -78,26 +92,10 @@ function pick(s) {
           >
             尺码{{ props.size ? ' · ' + props.size : '' }}
           </button>
-          <div v-if="open" class="sizefilter__pop" role="group" aria-label="按尺码筛选">
-            <button
-              class="sizechip sizechip--all"
-              :class="{ 'sizechip--on': !props.size }"
-              type="button"
-              @click="pick('')"
-            >
-              不限
-            </button>
-            <button
-              v-for="s in props.sizes"
-              :key="s"
-              class="sizechip sizechip--all"
-              :class="{ 'sizechip--on': props.size === s }"
-              type="button"
-              :aria-pressed="props.size === s"
-              @click="pick(props.size === s ? '' : s)"
-            >
-              {{ s }}
-            </button>
+          <div v-if="open" class="sizefilter__pop">
+            <!-- 2026-10-06 用户：「选尺码的换成这种风格」（vue-bits 的 jelly-radio）。
+                 原来每个尺码占满一整行（竖排），果冻效果必须让它们**并排**才推得开。 -->
+            <JellyChips :items="jellyItems" :value="props.size" @pick="pickSize" />
             <p v-if="props.note" class="sizefilter__note">{{ props.note }}</p>
           </div>
         </div>

@@ -213,21 +213,43 @@ button {
     padding: 10px; background: var(--white); border: 1px solid var(--rule);
     box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
   }
-  .sizechip {
-    font-family: inherit; font-size: 12px; color: var(--ink-2);
-    background: var(--white); border: 1px solid var(--rule);
-    padding: 6px 10px; cursor: pointer;
-  }
-  /* 尺码块：平铺一排，「不限」也占一整行（和下面的尺码块等宽） */
-  .sizechip--all { flex: 1 1 100%; }
+    /* 尺码那一排：**果冻选项**（2026-10-06 用户：「选尺码的换成这种风格」，
+       效果来自 vue-bits 的 jelly-radio，见 components/JellyChips.vue 的手写移植）。
+         · 从**竖排**（每个占满一整行）改成**一行** —— 果冻效果靠"把左右邻居推开"，
+           竖着排没有左右可推；
+         · 按下后延迟 320ms 才收起面板，不然那 300ms 的动画没人看得见。
+       形状仍是小方角（3px）：全站是方的，圆角一多就跑到别的风格里去了。 */
+    .jellybar {
+      flex: 1 1 100%;
+      display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      padding: 3px 4px;
+    }
+    .jellychip {
+      flex: none; padding: 0; border: 0; background: none;
+      font: inherit; cursor: pointer; transform-origin: center;
+      will-change: transform;
+    }
+    .jellychip__in {
+      display: flex; align-items: center; justify-content: center;
+      height: 30px; padding: 0 12px;
+      font-size: 12px; line-height: 1; white-space: nowrap;
+      color: var(--ink-2); background: var(--white);
+      border: 1px solid var(--rule); border-radius: 3px;
+      transition: background-color .2s ease, color .2s ease, border-color .2s ease;
+    }
+    .jellychip:hover .jellychip__in { color: var(--blue); border-color: var(--blue); }
+    .jellychip[aria-checked='true'] .jellychip__in {
+      background: var(--ink); border-color: var(--ink); color: var(--white);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .jellychip { transform: none !important; }
+    }
   /* 面板底部那行说明：尺码是抓取时的快照 */
   .sizefilter__note {
     flex: 1 1 100%; margin: 2px 0 0; padding-top: 8px;
     border-top: 1px solid var(--rule-soft);
     font-size: 11px; line-height: 1.5; color: var(--ink-4);
   }
-  .sizechip:hover { color: var(--blue); }
-  .sizechip--on { background: var(--ink); border-color: var(--ink); color: var(--white); }
 
 /* 名称下面那行小灰字（季节/尺码，或品牌+编号），两家的字号不同，见各自作用域 */
 /* ::before 的内容不进 textContent，只能靠几何验证（已验：每个后随 span 宽出 9.84px） */
