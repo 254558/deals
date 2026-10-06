@@ -16,6 +16,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Masthead from './components/Masthead.vue';
+import Neko from './components/Neko.vue';
 import Toolbar from './components/Toolbar.vue';
 import ProductCard from './components/ProductCard.vue';
 import MinePanel from './components/MinePanel.vue';
@@ -304,6 +305,9 @@ function reset() {
     :sizes="sizeOptions"
     :hidden="navHidden"
   />
+
+  <!-- 猫（2026-10-06）。fixed 定位，在视口里跑，和页面结构无关 -->
+  <Neko v-if="!mineOpen" />
 
   <div class="wrap" :hidden="mineOpen">
     <!-- 空结果提示，两个视图共用。搜索的措辞里那一串「名称或编号…」来自
