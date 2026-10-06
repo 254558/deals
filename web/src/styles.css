@@ -398,7 +398,10 @@ button {
 }
 .card__bar > i {
   flex: 1;
-  max-width: 4px;
+  /* 4 → 3px（2026-10-06 用户：「降了多少钱的那个条再细一点」）。
+     24 格 × 3px + 23 个 2px 缝 ≈ 118px。高度保持 9px 不动 —— 竖条的"细"是**宽度**，
+     再压高度就成一根线了。 */
+  max-width: 3px;
   height: 100%;
   background: var(--rule-soft);
 }

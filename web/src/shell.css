@@ -172,7 +172,11 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
 .masthead__text.masthead__home {
   color: var(--red, #e20c18);
   font-family: 'Fjalla One', 'Helvetica Neue', Arial, sans-serif;
-  font-weight: 400;
+  /* 2026-10-06 用户要求加粗（「good prices 和我的还有优衣库这些字加粗」）。
+     ⚠️ Fjalla One **只有一个字重**，写 700 是浏览器**合成粗体**（给字形描一圈边），
+     不是真有一个更粗的字体文件。10px 下看着就是重一点；觉得糊了就换回 400，
+     或者换一个自带多字重的压缩体（scripts/font-preview.mjs 能出对比图）。 */
+  font-weight: 700;
   letter-spacing: 0.04em;
   text-decoration: none;
 }
@@ -183,8 +187,13 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
    flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
    之后露出来的）。后面的紧挨着排，间距就是 eyebrow 的 gap。 */
+/* 「我的」和另一家的入口（2026-10-06 用户要求加粗）。
+   ⚠️ 这里**没验证过**是真字重还是浏览器合成的。实测 computed font-family 是
+   「Uniqlo Pro」，不是内嵌的思源黑体 —— 它有没有 700 这个槽位我没查。
+   我上一版注释里写「走思源黑体、是真的换字重」，那是想当然，已改正。 */
 .masthead__cross {
   color: var(--blue);
+  font-weight: 700;
   text-decoration: none;
 }
 /* GoodPrices 留在左边，其余（各页入口）由它推到右边。
