@@ -23,6 +23,7 @@
  *     不用再写 `ref={navRef}`。
  */
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { BanknoteArrowDown } from 'lucide-vue-next';
 import { num } from '../lib/format.js';
 import { META } from '../lib/site.js';
 
@@ -66,7 +67,14 @@ const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink
   <header ref="navRef" class="masthead">
     <div class="wrap">
       <div class="masthead__eyebrow">
-        <span class="masthead__dot" />
+        <!-- 品牌标记：lucide 的 **banknote-arrow-down**（钞票 + 向下箭头）。
+             2026-10-06 用户指定用它。它比之前那个像素机器人更贴这个站干的事 ——
+             一张钞票，箭头朝下，就是"降价"。
+             用**组件**而不是内联 svg：颜色由 CSS 的 color 驱动（.masthead__dot），
+             线宽走 stroke-width，和站上其它 lucide 图标一套写法。 -->
+        <span class="masthead__dot" aria-hidden="true">
+          <BanknoteArrowDown :size="16" :stroke-width="2" />
+        </span>
         <a class="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
         <span v-if="META.showRecorded" class="label">共记录 {{ num(props.recorded) }} 件</span>
 

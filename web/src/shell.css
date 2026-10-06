@@ -142,26 +142,21 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    平铺用内联 SVG（data URI）而不是堆两层渐变：方块的边界精确，缩放时也不会糊。
    颜色写死十六进制而不是 var()：这个项目栽过两次「var() 解析不到 → 整条声明失效」，
    品牌色这一处不值得再赌一次（--red 也是同一个值）。 */
-/* 品牌标记：一个**像素机器人**（宽头顶、两只 3×3 的眼睛、嘴、两侧的"耳朵"）。
-   2026-10-06 用户直接给了这个 svg，替换掉上一个（Pixelarticons 的 ai-view）。
-
-   ⚠️ **这份的出处和授权我不写** —— 我没查出来它是哪个图标库的：
-   拿它和 Pixelarticons 里的 robot / robot-face / android 逐字比过，内容都不一样；
-   bot / robot-2 / face-robot 根本不存在。所以它要么来自别的像素图标集，要么是
-   用户自己找的。既然出处不明，就不能像 ai-view 那样替它署名 —— 只记"用户提供"。
-
-   改动（和上一个图标同样的两处，都是这里必须做的）：
-     ① fill 由 currentColor 写死成品牌红 —— CSS 里的 data URI 继承不到 currentColor，
-        不写死就是黑的；
-     ② 加 shape-rendering='crispEdges' —— 默认抗锯齿会把 2px 的像素边糊掉。
-   尺寸 16px（图标按 24 设计，1:1 放进 30px 的报头太大）。 */
+/* 品牌标记：lucide 的 banknote-arrow-down（2026-10-06 用户指定）。
+   它自己是 stroke="currentColor" 的线性图标，所以这里只做两件事：
+     · 定**颜色** —— 品牌红，图标就跟着红（不用像像素图那样把颜色写进 data URI）；
+     · 定**盒子** —— 16×16 的 flex 项，和旁边站名的基线由 .masthead__eyebrow 的
+       align-items 管。
+   （这里原先放过一个像素机器人，是 data URI 贴图；换成组件之后那些
+     background-image / background-size / crispEdges 的讲究都不需要了。） */
 .masthead__dot {
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 16px;
   height: 16px;
-  background-image: url("data:image/svg+xml,%3Csvg%20shape-rendering='crispEdges'%20xmlns='http://www.w3.org/2000/svg'%20fill='%23e20c18'%20viewBox='0%200%2024%2024'%3E%3Cpath%20d='M9%2021H5v-2h4v2Zm10%200h-4v-2h4v2ZM5%2019H3v-2h2v2Zm12-2h-2v2h-2v-2h-2v2H9v-2H7v-2h10v2Zm4%202h-2v-2h2v2ZM3%2017H1V7h2v10Zm20%200h-2V7h2v10Zm-12-4H8v-3h3v3Zm5%200h-3v-3h3v3ZM5%207H3V5h2v2Zm10%200H9V5h6v2Zm6%200h-2V5h2v2ZM9%205H5V3h4v2Zm10%200h-4V3h4v2Z'/%3E%3C/svg%3E");
-  background-size: 16px 16px;
-  background-repeat: no-repeat;
+  color: var(--red, #e20c18);
 }
 /* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
    迪卡侬 13px ink-2），而报头必须两家一模一样。 */
