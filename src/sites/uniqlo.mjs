@@ -330,26 +330,24 @@ const FONTS = {
     { weight: 700, file: 'SourceHanSansCN-Medium.otf', url: 'https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf' },
   ],
   wordmark: {
-    // 2026-10-06 用户：「goodpries 变像素字体」—— 配合那个像素机器人图标。
-    // 挑 Pixelify Sans 的三个理由：① 有**真正的小写**（"GoodPrices" 是大小写混排，
-    // 而 Silkscreen 那类是按 8px 网格设计的、10px 下会糊）；② 可变字重；
-    // ③ **SIL OFL** —— 免费、可商用、可嵌入、可改，和 ai-view 那个图标一个路子。
-    family: 'Pixelify Sans',
-    file: 'PixelifySans-Variable.ttf',
-    url: 'https://github.com/google/fonts/raw/main/ofl/pixelifysans/PixelifySans%5Bwght%5D.ttf',
-    // 除了站名的字母，**还要数字和 ¥** —— 商品价格也用这个字体（见 styles.css 的
-    // .card__now）。子集是按「这个文件要覆盖哪些字符」来的，所以这里写的是**并集**：
-    // 一个字体文件同时服务站名和价格，不额外引任何字体。
-    // （点号和逗号也留着：价格现在是整数，但将来要显示 ¥1,299 或小数不至于缺字。）
-    text: 'GoodPrices0123456789¥.,',
-    // 像素字体也是几十 KB 量级，体积保险按拉丁来（中文那份的下限是 1MB）
+    // 站名那个字体。**2026-10-06 从像素字体改回 Fjalla One** ——
+    // 用户试过像素字体之后说：「这种像素数字难以辨认，收藏图标，价格，删除图标，
+    // goodprices 的字体都改回去，不要像素的了」。像素这一层整层退掉。
+    // Fjalla One：SIL OFL，压缩展示体，笔画重，x 高度高。
+    // （先前那些关于它的说明见 git 历史：2026-10-06 挑它那次的提交。）
+    family: 'Fjalla One',
+    file: 'FjallaOne-Regular.ttf',
+    url: 'https://github.com/google/fonts/raw/main/ofl/fjallaone/FjallaOne-Regular.ttf',
+    text: 'GoodPrices',
+    // 拉丁字体很小，体积保险要单独给（中文那份的下限是 1MB）
     minBytes: 10_000,
     notice:
-      'Pixelify Sans — Copyright © 2023 The Pixelify Sans Project Authors ' +
-      '(https://github.com/google/fonts/tree/main/ofl/pixelifysans), ' +
+      'Fjalla One — Copyright © 2013 The Fjalla One Project Authors ' +
+      '(https://github.com/google/fonts/tree/main/ofl/fjallaone), ' +
       'Licensed under the SIL Open Font License, Version 1.1 ' +
       '(https://openfontlicense.org). 站名用的是按实际字母裁剪后的子集（subset）。',
   },
+
 
   notice:
     'Source Han Sans CN (思源黑体) — Copyright © 2014 Adobe Systems Incorporated, ' +

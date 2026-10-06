@@ -185,14 +185,12 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    拿不到字体时退回 Helvetica 那一栈，版面不变。 */
 .masthead__text.masthead__home {
   color: var(--red, #e20c18);
-  /* 像素字体（2026-10-06 用户：「goodpries 变像素字体」，配合像素机器人图标）。
-     三处和普通字体不同，都是像素字体的规矩：
-       · letter-spacing 必须归零 —— 像素字体的字距是画在格子里的，
-         再加 0.04em 会让笔画错开半格，看着就"脏"了；
-       · font-weight 用 400 —— 它的常规本身就够重；写 700 会让浏览器**合成粗体**
-         （给字形描边），像素字被描一圈边是最难看的；
-       · 竖排对齐靠 line-height，不靠 padding。 */
-  font-family: 'Pixelify Sans', 'Helvetica Neue', Arial, sans-serif;
+  /* **2026-10-06 从像素字体改回 Fjalla One**（用户：「这种像素数字难以辨认……
+     goodprices 的字体都改回去，不要像素的了」）。下面这段是 Fjalla One 的老规矩：
+       · letter-spacing 保持 0 —— 压缩展示体天生字距紧，加字距会显得散；
+       · font-weight 用 700（用户要求加粗）—— Fjalla One 只有一个字重，
+         所以那是**合成粗体**；模糊了就改回 400。 */
+  font-family: 'Fjalla One', 'Helvetica Neue', Arial, sans-serif;
   /* **站名单独大一档**（2026-10-06 用户：「goodprices 的字体大一点」）。
      它是从 .masthead__text 继承 10px 的 —— 和右边「我的」「优衣库」一样大，
      看不太出谁是品牌。这里单独提到 12px：右边那两条不动，所以对比是"品牌 > 入口"。

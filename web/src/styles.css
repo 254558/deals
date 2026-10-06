@@ -353,18 +353,12 @@ button {
  *   最后退到 Helvetica / 系统默认
  * 数字一律 tabular（见 .n），所以纵向仍然对齐。
  * 想要「所有设备完全一致」就只能内嵌一个免费窄体数字子集（约 10KB），那是另一件事。 */
-/* **价格用像素数字**（2026-10-06 用户：「商品的价格的数字有没有像素数字替代」）。
-   用的是站名那个 Pixelify Sans —— 它的数字本身就是像素数字，而且**同一个字体文件**，
-   只要把数字和 ¥ 加进它的子集（见 uniqlo.mjs 的 wordmark.text），一个新字体都不用引。
-   只动价格这两处，不动「降 N 元」：那行的「元」是汉字，像素数字配汉字会显得两截。 */
-.card__now, .card__was {
-  font-family: 'Pixelify Sans', "DIN Alternate", "DIN Condensed", "Roboto Condensed",
-    "Helvetica Neue", Helvetica, Arial, sans-serif;
-  /* 像素字的字距画在格子里，再加字距会让数字错开半格 */
-  letter-spacing: 0;
-}
-/* 「降 N 元」那行仍是原来的窄体（它和「元」这个汉字排在一起，见上面那段说明） */
-.offbadge, .card__deal {
+/* 价格用窄体数字。
+   **2026-10-06 从像素数字改回这里**（用户：「这种像素数字难以辨认……都改回去，
+   不要像素的了」）。原先那套是 DIN Alternate / DIN Condensed —— 窄、读数快，
+   而且和「降 N 元」那行是同一个字体，一行里不会出现两种数字。
+   （像素那次还额外把子集里塞了数字和 ¥，现在站名字体的子集回到只有字母。） */
+.card__now, .card__was, .offbadge, .card__deal {
   font-family: "DIN Alternate", "DIN Condensed", "Roboto Condensed", "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
@@ -390,7 +384,7 @@ button {
 .card__now .now__int,
 /* 22px 的 DIN Alternate 是窄体，不加字距会挤在一起（用户 2026-10-01：
    「价格的字间距大一点，现在有点拥挤」）。0.02em 在 22px 下约 0.44px，松开但不散。 */
-.card__now .now__dec { font-size: 22px; letter-spacing: 0; }
+.card__now .now__dec { font-size: 22px; letter-spacing: 0.02em; }
 /* 没降价的不配红：退回次级灰 */
 .card__now--flat { color: var(--ink-2); }
 /* 上市价划删除线，只在真降了的时候才画（见 ProductCard 的 cut 判断）。

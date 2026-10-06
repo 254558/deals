@@ -34,9 +34,7 @@
  *   图标组件   → lucide-vue-next（同样的尺寸与 strokeWidth 写法）
  * 逻辑一行没动。
  */
-// 图标全部来自 **Pixelarticons**（MIT，见 PixelIcon.vue）—— 和报头那个机器人同一个库，
-// 所以风格是一路的。原来用的是 lucide（线性图标），换掉之后不再需要那个依赖。
-import PixelIcon from './PixelIcon.vue';
+import { Heart, EyeClosed } from 'lucide-vue-next';
 
 const props = defineProps({
   /** 收了没（决定颜色与无障碍文字） */
@@ -56,13 +54,13 @@ const props = defineProps({
       :title="props.watched ? '移出「待拔草」' : '加进「待拔草」'"
       @click="props.onPick?.()"
     >
-      <!-- **形状也表达状态**（2026-10-06 用户：「我希望点收藏的时候，他能变实心的」）：
-           没收藏＝库里那颗空心 heart，收藏了＝ heart-filled。
-           heart-filled **不是库里的**（Pixelarticons 整个是描边式，heart-filled 是 404），
-           是从空心那颗**算**出来的 —— 把它的像素路径反解成矩形、画进 24×24、
-           从外面灌水充填。算法和理由写在 PixelIcon.vue 里。
-           颜色仍然一并表达状态（.dealact--on 转品牌蓝），所以"收了"有两重信号。 -->
-      <PixelIcon :name="props.watched ? 'heart-filled' : 'heart'" :size="16" />
+      <!-- **实心**（fill="currentColor"）。
+           2026-10-06 一度改成描边（那轮在做"纤细轻盈"），同一天用户要求改回来：
+           「收藏和删除商品的图标，改回以前那种实心的」。
+           实心的作用见文件顶上那段：它和现价、角标、划线上市价排在同一行，
+           实心的分量才压得住旁边那排数字。收没收仍然由**颜色**说
+           （.dealact--on 转品牌蓝），形状不表示状态。 -->
+      <Heart :size="16" :stroke-width="1.75" fill="currentColor" aria-hidden="true" />
       <span class="sr-only">{{ props.watched ? '取消收藏' : '收藏' }}</span>
     </button>
 
@@ -78,7 +76,7 @@ const props = defineProps({
            不是闭合轮廓 —— fill 填出来是弧线两端的弦围出的那一片，
            放大看是一只"碗 + 睫毛"，不是实心眼。给了三个选择，用户挑了 C：
            **闭眼恢复描边，爱心保持实心**。 -->
-      <PixelIcon name="eye-off" :size="16" />
+      <EyeClosed :size="16" :stroke-width="2" aria-hidden="true" />
       <span class="sr-only">永久隐藏</span>
     </button>
   </div>
