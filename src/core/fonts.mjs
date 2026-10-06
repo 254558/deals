@@ -21,6 +21,7 @@
  * 字符裁剪成 WOFF2 之后是几百 KB 量级，单文件报告还撑得住。
  */
 
+import { createHash } from 'node:crypto';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -116,7 +117,15 @@ export async function buildFontCss({ files, text, family, notice, outDir = null,
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
-      const name = `font-${slug}-${f.weight}.woff2`;
+      // ⚠️ 文件名里还要带**内容哈希**。
+      // 只带族名和字重的话，同一个字体改了**内容**（比如往子集里加数字）URL 不变 ——
+      // 而 _headers 给 *.woff2 设了 7 天缓存，用户手里那份就还是旧的。
+      // 2026-10-06 用户报「iPhone 上价格不是像素数字」就是这么来的：
+      // 桌面（我的探针每次全新配置、无缓存）是对的，iPhone 缓存里是没有数字的旧子集，
+      // 价格里的数字于是落回 DIN。
+      // 带上哈希之后，**任何内容变化都会换 URL**，这一类问题从根上没了。
+      const hash = createHash('sha256').update(woff2).digest('hex').slice(0, 8);
+      const name = `font-${slug}-${f.weight}-${hash}.woff2`;
       writeFileSync(join(outDir, name), woff2);
       written.push(name);
       src = `url(${urlBase}${name}) format('woff2')`;
