@@ -134,3 +134,63 @@ export async function checkCommentRate(env, hash, now = new Date()) {
 
   return null;
 }
+
+/** 一条测评最长多少字、每个 IP 24 小时最多几条、全站一天最多几条 */
+export const MAX_REVIEW_LEN = 500;
+export const REVIEWS_PER_IP_PER_DAY = 20;
+export const REVIEWS_PER_DAY_GLOBAL = 300;
+
+/**
+ * 校验一条测评；返回 { ok:true, value } 或 { ok:false, error }。
+ *
+ * 字段只有三个：**哪件商品 + 心得 + 可选的一张图**（用户 2026-10-06 明确：
+ * 「就可以发图片，发心得」；评分、尺码、身高体重都问过，都不要）。
+ * 所以这里的规矩就三条：得知道是哪件、心得别是空的、图别超。
+ */
+export function validateReview(input) {
+  const productCode = clean(input.productCode, 40);
+  const code = clean(input.code, 24);
+  const name = clean(input.name, 80);
+  const body = clean(input.body, MAX_REVIEW_LEN);
+  const image = String(input.image || '');
+  const m = image.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
+
+  // 绑不上商品就没意义了 —— 这正是它和「市集」的区别
+  if (!productCode) return { ok: false, error: '不知道这件是哪件（缺商品号）' };
+  if (len(body) < 4) return { ok: false, error: '多写两句吧（至少 4 个字）' };
+  if (len(String(input.body ?? '').trim()) > MAX_REVIEW_LEN) return { ok: false, error: '最多 ' + MAX_REVIEW_LEN + ' 字' };
+  // 图是**可选**的：不给就存 NULL
+  if (!m) return { ok: true, value: { productCode, code, name, body, mime: null, b64: null } };
+
+  const approxBytes = Math.floor((m[2].length * 3) / 4);
+  if (approxBytes > MAX_IMAGE_BYTES) return { ok: false, error: '图片太大了（' + Math.round(approxBytes / 1024) + 'KB，上限 400KB）' };
+
+  return { ok: true, value: { productCode, code, name, body, mime: m[1], b64: m[2] } };
+}
+
+/**
+ * 测评限速。**和「发布」共用 posts 那张日志表**（它本来就是个纯日志，
+ * 记的是「谁在什么时候干了一次写操作」），但计数按 note 区分开，
+ * 免得两件事互相吃预算。
+ * 返回 null 表示放行，否则返回该回给用户的话。
+ */
+export async function checkReviewRate(env, hash, now = new Date()) {
+  const since = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
+  const day = now.toISOString().slice(0, 10);
+
+  const mine = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM posts WHERE ip_hash = ? AND note = 'review' AND at > ?"
+  ).bind(hash, since).first();
+  if ((mine?.n ?? 0) >= REVIEWS_PER_IP_PER_DAY) {
+    return '今天你写得有点多，歇一会儿（每 24 小时最多 ' + REVIEWS_PER_IP_PER_DAY + ' 条）。';
+  }
+
+  const all = await env.DB.prepare(
+    "SELECT COUNT(*) AS n FROM posts WHERE note = 'review' AND at LIKE ?"
+  ).bind(day + '%').first();
+  if ((all?.n ?? 0) >= REVIEWS_PER_DAY_GLOBAL) return '今天全站的测评到上限了，明天再来。';
+
+  await env.DB.prepare("INSERT INTO posts (ip_hash, at, note) VALUES (?, ?, 'review')").bind(hash, now.toISOString()).run();
+  await env.DB.prepare('DELETE FROM posts WHERE at < ?').bind(since).run();
+  return null;
+}

@@ -21,10 +21,17 @@ CREATE TABLE IF NOT EXISTS listings (
 );
 CREATE INDEX IF NOT EXISTS idx_listings_live ON listings (hidden, created_at DESC);
 
--- 发布记录：限速用（每个 ip_hash 24 小时内最多几件）
+-- 写入记录：限速用。**一张表服务多种动作**，靠 note 区分（''＝发布，'review'＝测评），
+-- 计数时也按 note 分开算 —— 共用一份预算的话，写两条测评就发不了东西了。
+--
+-- ⚠️ 2026-10-06 加 note 这一列时踩过一次：CREATE TABLE IF NOT EXISTS 对**已存在**的表
+-- 不会补列，所以线上那张老表还是 (ip_hash, at)，而新代码往它写 note → 直接 500。
+-- 改完必须单独跑一次 ALTER（见同目录的 MIGRATIONS.md）：
+--   ALTER TABLE posts ADD COLUMN note TEXT NOT NULL DEFAULT '';
 CREATE TABLE IF NOT EXISTS posts (
   ip_hash TEXT NOT NULL,
-  at      TEXT NOT NULL
+  at      TEXT NOT NULL,
+  note    TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS idx_posts_ip ON posts (ip_hash, at);
 
@@ -57,3 +64,35 @@ CREATE TABLE IF NOT EXISTS reactions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_reactions_listing ON reactions(listing_id, kind);
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- 测评：一件**优衣库商品**的买家心得 = 一行
+--
+-- 2026-10-06 用户把「有品」市集换成了这个：「大家可以分享自己在优衣库买的
+-- 具体的衣服的测评，心得，值不值」。
+--
+-- 和 listings 的根本区别：**测评绑在商品上**（product_code），而榜单里的每件商品
+-- 也有同一个 product_code —— 于是报告卡片能显示「N 条测评」并点进来，
+-- 两个功能共享同一个对象，而不是各说各话。
+--
+-- 用户明确要的字段只有两个：**心得 + 可选的图**。
+-- 评分 / 值不值三档 / 尺码 / 身高体重 都问过，用户都不要（「连尺码也不要」），
+-- 所以这里就是最短的那一版 —— 字段越少，越没人填错。
+-- ═══════════════════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS reviews (
+  id           TEXT PRIMARY KEY,           -- 随机 id，同时是图片地址（/api/img/<id>）
+  created_at   TEXT NOT NULL,              -- ISO 时间
+  product_code TEXT NOT NULL,              -- 优衣库 productCode，和榜单 payload 里的 id 对齐
+  code         TEXT NOT NULL DEFAULT ,   -- 吊牌编号（488131），给人认的
+  name         TEXT NOT NULL DEFAULT ,   -- 写测评时的商品名（快照：榜单会换）
+  body         TEXT NOT NULL,              -- 心得
+  image_mime   TEXT,                       -- 可选图；没图时这两列是 NULL
+  image_bytes  BLOB,
+  ip_hash      TEXT NOT NULL DEFAULT ,   -- 限速用；不存原始 IP
+  token_hash   TEXT NOT NULL,              -- 发测评的人可以删自己那条（只存哈希）
+  reports      INTEGER NOT NULL DEFAULT 0, -- 被举报次数
+  hidden       INTEGER NOT NULL DEFAULT 0  -- 站长删 = 1（不真删）
+);
+CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews (product_code, hidden, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_live    ON reviews (hidden, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_reviews_ip      ON reviews (ip_hash, created_at);
