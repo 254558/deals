@@ -844,7 +844,8 @@ body {
 }
 .fav__link { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
 .fav__link:hover .fav__name { color: var(--ink, #000f17); }
-.fav__img { flex: none; width: 52px; height: 52px; object-fit: cover; background: var(--surface-2); }
+.fav__img {
+  -webkit-user-drag: none;   /* 见上：Safari 里图片默认可拖 */ flex: none; width: 52px; height: 52px; object-fit: cover; background: var(--surface-2); }
 .fav__body { min-width: 0; }
 .fav__name {
   display: block;
@@ -883,4 +884,48 @@ body {
   background: none;
   font-family: inherit;
   cursor: pointer;
+}
+
+/* ══════════════ 收藏行的左滑删除 ══════════════
+   2026-10-06 用户：「删除收藏改成左滑删除，类似 iPhone 短信的左滑删除」。
+   （在这之前是右边一个垃圾桶按钮；那个按钮连同它的方框都删掉了。）
+
+   结构是两层叠着：.fav__delete 是底下的红块（贴右边、固定 88px 宽），
+   .fav__link 是上面那条商品（白底、被拖着走）。滑开 = 把它挪走、露出下面。
+   位移由 JS 写在行内 style 上（见 MineFavorites.vue 的 fx()），这里只管长相。 */
+.fav {
+  position: relative;
+  overflow: hidden;   /* 滑出去的部分要裁掉，不然会盖到下一行 */
+}
+.fav__delete {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 88px;
+  border: 0;
+  background: var(--red, #e20c18);
+  color: var(--white);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.fav__link {
+  position: relative;        /* 盖在红块上面 */
+  /* 拖动时别顺手把商品名选中了（鼠标拖会选文字，看着很脏）；
+     -webkit-user-drag: none 是 Safari 那边禁原生拖放的写法。 */
+  user-select: none;
+  -webkit-user-drag: none;
+  background: var(--white);  /* 必须不透明 —— 滑开时红块才"露"得出来 */
+  touch-action: pan-y;       /* ⚠️ 关键：竖向滑动交给浏览器，否则页面在这块上滚不动 */
+  transition: transform .22s ease;
+  will-change: transform;
+}
+/* 手指按着的时候不能有 transition，否则位移会追着手指慢慢飘 */
+.fav--drag .fav__link { transition: none; }
+/* 删除那一下：滑出去，别用回弹的缓动 */
+.fav--going .fav__link { transition: transform .22s cubic-bezier(.4, 0, 1, 1); }
+@media (prefers-reduced-motion: reduce) {
+  /* 手势本身是功能，不能不做；但那两段补间可以省掉 */
+  .fav__link { transition: none; }
 }
