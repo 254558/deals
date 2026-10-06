@@ -193,6 +193,12 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
          （给字形描边），像素字被描一圈边是最难看的；
        · 竖排对齐靠 line-height，不靠 padding。 */
   font-family: 'Pixelify Sans', 'Helvetica Neue', Arial, sans-serif;
+  /* **站名单独大一档**（2026-10-06 用户：「goodprices 的字体大一点」）。
+     它是从 .masthead__text 继承 10px 的 —— 和右边「我的」「优衣库」一样大，
+     看不太出谁是品牌。这里单独提到 12px：右边那两条不动，所以对比是"品牌 > 入口"。
+     （想更明显就改 14；报头会跟着长高一点，而 top 用的是实测的 --nav-h，
+       所以下面的粘性工具条会自己接上，不用改别处。） */
+  font-size: 12px;
   /* 2026-10-06 用户要求加粗（「good prices 和我的还有优衣库这些字加粗」）。
      ⚠️ Fjalla One **只有一个字重**，写 700 是浏览器**合成粗体**（给字形描一圈边），
      不是真有一个更粗的字体文件。10px 下看着就是重一点；觉得糊了就换回 400，
