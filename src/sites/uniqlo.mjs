@@ -330,18 +330,23 @@ const FONTS = {
     { weight: 700, file: 'SourceHanSansCN-Medium.otf', url: 'https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf' },
   ],
   wordmark: {
-    family: 'Fjalla One',
-    file: 'FjallaOne-Regular.ttf',
-    url: 'https://github.com/google/fonts/raw/main/ofl/fjallaone/FjallaOne-Regular.ttf',
+    // 2026-10-06 用户：「goodpries 变像素字体」—— 配合那个像素机器人图标。
+    // 挑 Pixelify Sans 的三个理由：① 有**真正的小写**（"GoodPrices" 是大小写混排，
+    // 而 Silkscreen 那类是按 8px 网格设计的、10px 下会糊）；② 可变字重；
+    // ③ **SIL OFL** —— 免费、可商用、可嵌入、可改，和 ai-view 那个图标一个路子。
+    family: 'Pixelify Sans',
+    file: 'PixelifySans-Variable.ttf',
+    url: 'https://github.com/google/fonts/raw/main/ofl/pixelifysans/PixelifySans%5Bwght%5D.ttf',
     text: 'GoodPrices',
-    // 拉丁字体很小，体积保险要单独给（中文那份的下限是 1MB）
+    // 像素字体也是几十 KB 量级，体积保险按拉丁来（中文那份的下限是 1MB）
     minBytes: 10_000,
     notice:
-      'Fjalla One — Copyright © 2013 The Fjalla One Project Authors ' +
-      '(https://github.com/google/fonts/tree/main/ofl/fjallaone), ' +
+      'Pixelify Sans — Copyright © 2023 The Pixelify Sans Project Authors ' +
+      '(https://github.com/google/fonts/tree/main/ofl/pixelifysans), ' +
       'Licensed under the SIL Open Font License, Version 1.1 ' +
       '(https://openfontlicense.org). 站名用的是按实际字母裁剪后的子集（subset）。',
   },
+
   notice:
     'Source Han Sans CN (思源黑体) — Copyright © 2014 Adobe Systems Incorporated, ' +
     'Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0.html). ' +

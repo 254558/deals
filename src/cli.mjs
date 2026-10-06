@@ -376,7 +376,9 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     // 和中文字体拼在同一段 CSS 里 —— renderHtml 只收一个 fontCss 字符串。
     const wm = site.fonts.wordmark;
     if (withFont && wm) {
-      const wmFiles = await ensureFontFiles(fontDir, { faces: [{ weight: 400, file: wm.file, url: wm.url, minBytes: wm.minBytes }] }, { onStatus: dim });
+      // wm.faces 有多档字重时都下（比如自带 Bold 的像素字体）；只给 file/url 时按单档处理
+      const wmFaces = wm.faces ?? [{ weight: wm.weight ?? 400, file: wm.file, url: wm.url, minBytes: wm.minBytes }];
+      const wmFiles = await ensureFontFiles(fontDir, { faces: wmFaces }, { onStatus: dim });
       if (wmFiles) {
         const wmBuilt = await buildFontCss({ files: wmFiles, text: wm.text, family: wm.family, notice: wm.notice, outDir: external });
         if (wmBuilt) {

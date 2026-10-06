@@ -185,13 +185,20 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    拿不到字体时退回 Helvetica 那一栈，版面不变。 */
 .masthead__text.masthead__home {
   color: var(--red, #e20c18);
-  font-family: 'Fjalla One', 'Helvetica Neue', Arial, sans-serif;
+  /* 像素字体（2026-10-06 用户：「goodpries 变像素字体」，配合像素机器人图标）。
+     三处和普通字体不同，都是像素字体的规矩：
+       · letter-spacing 必须归零 —— 像素字体的字距是画在格子里的，
+         再加 0.04em 会让笔画错开半格，看着就"脏"了；
+       · font-weight 用 400 —— 它的常规本身就够重；写 700 会让浏览器**合成粗体**
+         （给字形描边），像素字被描一圈边是最难看的；
+       · 竖排对齐靠 line-height，不靠 padding。 */
+  font-family: 'Pixelify Sans', 'Helvetica Neue', Arial, sans-serif;
   /* 2026-10-06 用户要求加粗（「good prices 和我的还有优衣库这些字加粗」）。
      ⚠️ Fjalla One **只有一个字重**，写 700 是浏览器**合成粗体**（给字形描一圈边），
      不是真有一个更粗的字体文件。10px 下看着就是重一点；觉得糊了就换回 400，
      或者换一个自带多字重的压缩体（scripts/font-preview.mjs 能出对比图）。 */
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 400;
+  letter-spacing: 0;
   text-decoration: none;
 }
 /* ⚠️ 报头这几个入口**刻意不做 hover 下划线**（2026-10-06 用户：「点导航栏的内容的时候，
