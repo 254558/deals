@@ -189,7 +189,10 @@ export default function App() {
    * `DATA.site` 在这里只当 localStorage 的命名空间用，不做任何版面判断（契约第三节）。
    */
   const saved = useMemo(() => loadProgress(DATA.site, DATA.generatedAt), []);
-  const [query, setQuery] = useState(saved?.query ?? '');
+  // 支持 ?q= 深链：测评页里点商品名会带过来（/uniqlo/?q=488089）。
+  // **URL 优先于「上次读到哪儿」** —— 你点的是一条明确的深链，就该看那一条，
+  // 而不是上次停下的位置。没有 ?q= 时照旧接上次。
+  const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('q') || saved?.query || '');
   const [size, setSize] = useState(saved?.size ?? '');
   const { watch, togglePick, hide } = useWatch();
 
