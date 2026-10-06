@@ -337,7 +337,11 @@ const FONTS = {
     family: 'Pixelify Sans',
     file: 'PixelifySans-Variable.ttf',
     url: 'https://github.com/google/fonts/raw/main/ofl/pixelifysans/PixelifySans%5Bwght%5D.ttf',
-    text: 'GoodPrices',
+    // 除了站名的字母，**还要数字和 ¥** —— 商品价格也用这个字体（见 styles.css 的
+    // .card__now）。子集是按「这个文件要覆盖哪些字符」来的，所以这里写的是**并集**：
+    // 一个字体文件同时服务站名和价格，不额外引任何字体。
+    // （点号和逗号也留着：价格现在是整数，但将来要显示 ¥1,299 或小数不至于缺字。）
+    text: 'GoodPrices0123456789¥.,',
     // 像素字体也是几十 KB 量级，体积保险按拉丁来（中文那份的下限是 1MB）
     minBytes: 10_000,
     notice:
