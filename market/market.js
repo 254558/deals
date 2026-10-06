@@ -216,7 +216,8 @@
     document.body.classList.add('mine');
     const navMine = document.getElementById('navMine');
     if (navMine) navMine.setAttribute('aria-current', 'page');
-    // 「我要出一件」已挪到「有品」页（用户 2026-10-05 要求），「我的」页不再显示它。
+    // 发布入口（按钮文案 2026-10-06 由「我要出一件」改成「我要代购」）已挪到「有品」页，
+    // 「我的」页不再显示它。
     // 表单本身还在 DOM 里 —— 从详情点「编辑」照样能打开它。
     $('postToggle').style.display = 'none';
   }
@@ -545,7 +546,7 @@
     list.innerHTML = '';
     $('empty').style.display = items.length ? 'none' : 'block';
     $('empty').textContent = mineMode
-      ? '你还没发过东西。点上面的「我要出一件」发一件试试。'
+      ? '你还没发过东西。点上面的「我要代购」发一件试试。'
       : '还没有人发。你要是在店里捡到漏，点上面的「我的」去发一件。';
     shown = 0;
     appendPage(); // 第一页
