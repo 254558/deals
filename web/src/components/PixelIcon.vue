@@ -24,7 +24,13 @@ const props = defineProps({
 });
 
 const PATHS = {
-  // 收藏（实心）
+  // **实心**爱心：不是库里给的，是从库里的空心 heart **算**出来的 ——
+  // 那个库整个是描边式的（heart-filled 是 404）。算法见本文件顶部那段注释：
+  // 把它的像素路径反解成矩形 → 画进 24×24 → 从外面灌水 → 灌不到的就是内部 →
+  // 边界 + 内部 = 实心。收藏时用这颗，没收藏用库里的空心 heart。
+  'heart-filled':
+    "M5 2h4v1h-4ZM15 2h4v1h-4ZM5 3h4v1h-4ZM15 3h4v1h-4ZM3 4h8v1h-8ZM13 4h8v1h-8ZM3 5h8v1h-8ZM13 5h8v1h-8ZM1 6h22v1h-22ZM1 7h22v1h-22ZM1 8h22v1h-22ZM1 9h22v1h-22ZM1 10h22v1h-22ZM1 11h22v1h-22ZM3 12h18v1h-18ZM3 13h18v1h-18ZM5 14h14v1h-14ZM5 15h14v1h-14ZM7 16h10v1h-10ZM7 17h10v1h-10ZM9 18h6v1h-6ZM9 19h6v1h-6ZM11 20h2v1h-2ZM11 21h2v1h-2Z",
+  // 收藏（空心，库里的原版）
   heart:
     "M13 22h-2v-2h2v2Zm-2-2H9v-2h2v2Zm4 0h-2v-2h2v2Zm-6-2H7v-2h2v2Zm8 0h-2v-2h2v2ZM7 16H5v-2h2v2Zm12 0h-2v-2h2v2ZM5 14H3v-2h2v2Zm16 0h-2v-2h2v2ZM3 12H1V6h2v6Zm20 0h-2V6h2v6ZM13 8h-2V6h2v2ZM5 6H3V4h2v2Zm6 0H9V4h2v2Zm4 0h-2V4h2v2Zm6 0h-2V4h2v2ZM9 4H5V2h4v2Zm10 0h-4V2h4v2Z",
   // 不再出现（带斜杠的眼睛）。**不用垃圾桶**：垃圾桶会让人以为"真的删掉了"，

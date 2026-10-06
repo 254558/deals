@@ -56,13 +56,13 @@ const props = defineProps({
       :title="props.watched ? '移出「待拔草」' : '加进「待拔草」'"
       @click="props.onPick?.()"
     >
-      <!-- **实心**（fill="currentColor"）。
-           2026-10-06 一度改成描边（那轮在做"纤细轻盈"），同一天用户要求改回来：
-           「收藏和删除商品的图标，改回以前那种实心的」。
-           实心的作用见文件顶上那段：它和现价、角标、划线上市价排在同一行，
-           实心的分量才压得住旁边那排数字。收没收仍然由**颜色**说
-           （.dealact--on 转品牌蓝），形状不表示状态。 -->
-      <PixelIcon name="heart" :size="16" />
+      <!-- **形状也表达状态**（2026-10-06 用户：「我希望点收藏的时候，他能变实心的」）：
+           没收藏＝库里那颗空心 heart，收藏了＝ heart-filled。
+           heart-filled **不是库里的**（Pixelarticons 整个是描边式，heart-filled 是 404），
+           是从空心那颗**算**出来的 —— 把它的像素路径反解成矩形、画进 24×24、
+           从外面灌水充填。算法和理由写在 PixelIcon.vue 里。
+           颜色仍然一并表达状态（.dealact--on 转品牌蓝），所以"收了"有两重信号。 -->
+      <PixelIcon :name="props.watched ? 'heart-filled' : 'heart'" :size="16" />
       <span class="sr-only">{{ props.watched ? '取消收藏' : '收藏' }}</span>
     </button>
 
