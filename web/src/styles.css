@@ -224,7 +224,9 @@ button {
      （上面那条 .toolbar__row 的 border-bottom 正好成了它和搜索框之间的分隔线。） */
   .sizefilter__pop {
     display: block;
-    padding: 12px 0 14px;
+    /* 上边距 12 → 6（2026-10-06 用户：「上边距小一点」）。
+       下面留 14 是为了和内容拉开——展开区下面是商品卡片，太挤会粘在一起。 */
+    padding: 6px 0 14px;
   }
     /* 尺码那一排：**果冻选项**（2026-10-06 用户：「选尺码的换成这种风格」，
        效果来自 vue-bits 的 jelly-radio，见 components/JellyChips.vue 的手写移植）。
@@ -235,6 +237,10 @@ button {
     .jellybar {
       flex: 1 1 100%;
       display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+      /* **居中**（2026-10-06 用户：「我希望他们居中」）。原来默认靠左。
+         两侧那 4px 内衬不能去：果冻选中时那颗会横向撑开、也会长高，
+         不留这点余量会被裁掉。 */
+      justify-content: center;
       padding: 3px 4px;
     }
     .jellychip {
