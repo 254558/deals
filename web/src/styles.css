@@ -898,6 +898,11 @@ body {
   overflow: hidden;   /* 滑出去的部分要裁掉，不然会盖到下一行 */
 }
 .fav__delete {
+  /* 里面现在是个图标（2026-10-06 用户：「删除两个字改成图标」），要自己居中。
+     font-size 不再需要 —— 原来那个 14px 是给"删除"两个字用的。 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   position: absolute;
   /* ⚠️ 上下要和 .fav 的 padding 对齐（那边是 10px 0）——
      原来是 top/bottom 都是 0，于是红块铺满了**整条 .fav**（含上下各 10px 的内边距），
@@ -911,8 +916,6 @@ body {
   border: 0;
   background: var(--red, #e20c18);
   color: var(--white);
-  font-family: inherit;
-  font-size: 14px;
   cursor: pointer;
 }
 .fav__link {

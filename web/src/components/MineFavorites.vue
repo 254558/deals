@@ -24,6 +24,7 @@
  *   3. **拖动过程中关掉 transition**，否则位移会追着手指慢慢飘。
  */
 import { onBeforeUnmount, ref } from 'vue';
+import { Trash } from 'lucide-vue-next';
 import { META } from '../lib/site.js';
 import { FAVORITES_KEY } from '../lib/use-watch.js';
 
@@ -177,13 +178,19 @@ onBeforeUnmount(stop);
         class="fav"
         :class="{ 'fav--drag': dragId === f.id, 'fav--going': goingId === f.id }"
       >
+        <!-- 2026-10-06 用户：「删除两个字改成图标」—— 用当初那个垃圾桶。
+             ⚠️ 文字没了，aria-label 就**必须**补上：
+             否则读屏器念到这个按钮只会说"按钮"，不知道是干什么的。 -->
         <button
           class="fav__delete"
           type="button"
+          aria-label="取消收藏"
           :tabindex="openId === f.id ? 0 : -1"
           :aria-hidden="openId === f.id ? 'false' : 'true'"
           @click="startDelete(f.id)"
-        >删除</button>
+        >
+          <Trash :size="20" :stroke-width="2" aria-hidden="true" />
+        </button>
 
         <!-- draggable="false" + @dragstart.prevent 是**必须的**：
              这一层整个是个 <a>，里面还嵌了 <img>，浏览器默认把"按住拖动"当成
