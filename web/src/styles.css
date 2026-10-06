@@ -178,9 +178,11 @@ button {
   transition: transform .22s ease;
 }
 /* 收起来：向上移**自身的高度**。
-   因为 top 正好是报头高度（--nav-h），移这么多之后它恰好整个躲到报头背后 ——
-   不用去猜"移多少才够"，也不用给它设负的 top。 */
-.toolbar--up { transform: translateY(-100%); }
+   ⚠️ 2026-10-06 改过：原来只移 -100%，靠"躲在报头背后"实现 —— 那要求报头一动不动。
+   现在报头也跟着收（用户：「上滑的时候，导航栏也要能滑上去」），没人挡在前面了，
+   所以位移要把 top 那一截也算进来：-100% - var(--nav-h)，也就是整条移出视口。
+   用 calc 而不是改 top：top 是布局属性，改它会瞬间跳一下；transform 才是能过渡的。 */
+.toolbar--up { transform: translateY(calc(-100% - var(--nav-h, 40px))); }
 @media (prefers-reduced-motion: reduce) {
   /* 收放是功能（让位给内容），不能不做；但可以不要那 0.22s 的滑动 */
   .toolbar { transition: none; }

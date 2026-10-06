@@ -126,9 +126,17 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
   top: 0;
   z-index: 30;
   background: var(--white);
+  /* 收放的滑动时长**必须和 .toolbar 一致**（styles.css 里那条）——
+     两个盒子一起动，差一点就看出错位。 */
+  transition: transform .22s ease;
   padding: 0;
   margin-top: var(--nav-gap, 44px);
 }
+/* 往下滚时整条收上去（判断在 App.vue，和工具条共用一份）。
+   收放是**功能**（让位给内容），所以 prefers-reduced-motion 下只去掉滑动时长，
+   不做"干脆不动"——见 styles.css 里那段。 */
+.masthead--up { transform: translateY(-100%); }
+
 .masthead__eyebrow {
   display: flex;
   align-items: center;

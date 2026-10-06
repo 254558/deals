@@ -28,6 +28,8 @@ import { META } from '../lib/site.js';
 
 const props = defineProps({
   recorded: { type: Number, default: 0 },
+  /** 往下滚时收上去（判断在 App.vue，和工具条共用一份，保证同步） */
+  hidden: { type: Boolean, default: false },
   /** 点「我的」：切到那块视图（没给就不渲染这一条） */
   onMine: { type: Function, default: null },
   /** 现在是不是在「我的」那块（决定右边那条是「我的」还是「优衣库」） */
@@ -63,7 +65,7 @@ const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink
 </script>
 
 <template>
-  <header ref="navRef" class="masthead">
+  <header ref="navRef" class="masthead" :class="{ 'masthead--up': props.hidden }">
     <div class="wrap">
       <div class="masthead__eyebrow">
         <!-- 品牌标记：**细密的方块点阵**（2026-10-06 用户：「改回前面是方块点阵，

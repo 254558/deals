@@ -134,6 +134,7 @@ const { visible, sentinelRef } = useIncremental(rowsCount, resetKey, saved?.visi
  */
 onMounted(() => {
   if (!saved) return;
+  lastNavY = window.scrollY || 0;
   const hasAnchor = Boolean(saved.anchor);
   if (!hasAnchor && !saved.scrollY) return;
   // 浏览器自己的还原会和我们打架（它不知道我们恢复了多少张卡片），交给这里接管
@@ -145,10 +146,16 @@ onMounted(() => {
       if (el) {
         const y = window.scrollY + el.getBoundingClientRect().top - stickyBottom() - saved.anchorOffset;
         window.scrollTo(0, Math.max(0, Math.round(y)));
+        // 恢复位置是一次跳转，别让它被当成"往下滚"（否则一回来导航栏就是收着的）
+        lastNavY = window.scrollY || 0;
         return true;
       }
     }
-    if (saved.scrollY) { window.scrollTo(0, saved.scrollY); return true; }
+    if (saved.scrollY) {
+      window.scrollTo(0, saved.scrollY);
+      lastNavY = window.scrollY || 0;
+      return true;
+    }
     return false; // 锚点那件已经不在榜上了 —— 停在顶部
   };
 
@@ -172,8 +179,46 @@ onMounted(() => {
 const lastListY = ref(0);
 /** 上一次在榜单上记下的锚点（进「我的」之后要沿用它，别被覆盖成空） */
 const lastAnchor = ref({ anchor: '', anchorOffset: 0 });
+
+/**
+ * 报头和工具条**一起收放**（2026-10-06 用户：「上滑的时候，导航栏也要能滑上去，
+ * 下滑的时候滑下来」）。
+ *
+ * 原来这套逻辑在 Toolbar.vue 里，只管工具条自己。但那两个都是 position: sticky，
+ * 而且**工具条的 top 正好是报头高度**（--nav-h，由 Masthead 的 ResizeObserver 实测写入）——
+ * 也就是说工具条是"躲到报头背后"来实现收起的。报头一旦也跟着收走，
+ * 这个位移就不够了（会剩二十几像素露在视口顶上），CSS 那边因此改成了
+ * `translateY(calc(-100% - var(--nav-h)))`：整条移出视口，不再依赖谁挡在前面。
+ *
+ * 放这里是为了**只有一个滚动监听、一份判断** —— 两个都收才叫同步，
+ * 各算各的迟早在某个方向上错开。
+ */
+const navHidden = ref(false);
+/** 上一次用于判断方向的滚动位置 */
+let lastNavY = 0;
 function onScrollRemember() {
-  if (mineOpen.value) return;
+  /**
+   * 收放判断。阈值和原来 Toolbar 里那套一模一样（那套是调过手感的），
+   * 只是现在同时管报头和工具条：
+   *   · 位移小于 6px 不算 —— 手指抖动、惯性回弹、iOS 地址栏收起都会产生一两像素；
+   *   · 顶部 60px 以内永远露着；
+   *   · 往下滚且滚过 144px 才收；往上滚立刻放（收放是"让位"，放要跟手）。
+   */
+  const y = window.scrollY || document.documentElement.scrollTop || 0;
+  const dy = y - lastNavY;
+  if (Math.abs(dy) >= 6) {
+    if (y < 60) navHidden.value = false;
+    else if (dy > 0 && y > 144) navHidden.value = true;
+    else if (dy < 0) navHidden.value = false;
+    lastNavY = y;
+  }
+
+  // 「我的」里导航栏必须露着（用户 2026-10-06：「点了我的之后，最上面的导航栏别消失」），
+  // 而且那一页没有工具条、榜单也是 hidden 的，下面记进度的部分要跳过。
+  if (mineOpen.value) {
+    navHidden.value = false;
+    return;
+  }
   lastListY.value = Math.round(window.scrollY);
   lastAnchor.value = currentAnchor();
 }
@@ -242,6 +287,7 @@ function reset() {
   <Masthead
     :recorded="DATA.recorded ?? deals.length"
     :mine-open="mineOpen"
+    :hidden="navHidden"
     :on-mine="openMine"
   />
 
@@ -256,6 +302,7 @@ function reset() {
     :size="size"
     :on-size="(v) => (size = v)"
     :sizes="sizeOptions"
+    :hidden="navHidden"
   />
 
   <div class="wrap" :hidden="mineOpen">
