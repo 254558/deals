@@ -131,7 +131,11 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
+  /* 行间距 14px、**列间距 6px**（用户 2026-10-06：「goodprices 和点阵的距离缩小」）。
+     只收紧横向：这个 gap 同时管着窄屏换行后的行距，行距跟着变紧会显得挤。
+     横向那 6px 实际只作用于「点阵 ↔ 站名」—— 站名右边挂着 margin-right: auto，
+     把后面那几条全推到行尾了，所以它们之间的列间距是被 auto 吃掉的，看不出来。 */
+  gap: 14px 6px;
   padding-bottom: 14px;
   border-bottom: 1px solid var(--rule);
   color: var(--ink-4);
