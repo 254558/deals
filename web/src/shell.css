@@ -147,8 +147,20 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    平铺用内联 SVG（data URI）而不是堆两层渐变：方块的边界精确，缩放时也不会糊。
    颜色写死十六进制而不是 var()：这个项目栽过两次「var() 解析不到 → 整条声明失效」，
    品牌色这一处不值得再赌一次（--red 也是同一个值）。 */
-/* .masthead__dot 于 2026-10-06 删除：用户说「goodprices 前面不要图标了」，
-   那个钞票图标挪去商品卡片的「降多少钱」前面了（见 ProductCard.vue）。 */
+/* 品牌标记：**细密的方块点阵**（2026-10-06 用户：「改回前面是方块点阵，
+   后面是普通字体那种」）。
+   中间换过三版：Pixelarticons 的 ai-view（像素机器人）→ 它的实心版 →
+   lucide 的 banknote-arrow-down（钞票 + 箭头）。用户最终要回到**最早这一版**：
+   9×9 里铺 3×3 个「2px 方块 + 1px 空隙」。
+   平铺用内联 SVG（data URI）—— 颜色写死十六进制，因为 data URI 继承不到
+   currentColor，而 --red 也是同一个值。 */
+.masthead__dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3Crect width='2' height='2' fill='%23e20c18'/%3E%3C/svg%3E");
+  background-size: 3px 3px;
+}
 /* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
    迪卡侬 13px ink-2），而报头必须两家一模一样。 */
 .masthead__text {
@@ -157,38 +169,19 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
   letter-spacing: 0.12em;
   color: var(--ink-4);
 }
-/* 左上角那格是品牌名，也是回首页的入口：比右侧入口深一点，看得出是可点的 */
-/* 品牌名：粗体 + 品牌蓝。用复合选择器是为了压过上面 `.masthead__text` 里的
-     font-weight: 400 —— 那条规则在本文件里位置更靠后，单靠 `.masthead__home` 会被它盖掉。 */
-/* 品牌名：粗体 + 红。色值带字面兜底 —— 这个项目里已经栽过两次
-     「var() 解析不到 → 整条声明失效」（降幅条灰底、页签边框），所以不再裸用变量。 */
-/* 站名（用户 2026-10-06 挑的 Fjalla One，SIL OFL）：报头左上角那一格。
-   两处和别处不同，都是有意的：
-     · font-weight: 400 —— Fjalla One 只有一个字重，而它本身就够重；
-       这里要是写 700，浏览器会去**合成粗体**（把字描粗一圈），糊。
-     · letter-spacing 收紧到 .04em —— 它是压缩展示体，天生字距紧，
-       沿用旁边那条 .12em 会显得散。
-   拿不到字体时退回 Helvetica 那一栈，版面不变。 */
+/* 左上角那格是品牌名，也是回首页的入口：用了品牌红，比右侧入口深一点。
+   2026-10-06 用户：「改回前面是方块点阵，后面是普通字体那种」——要的是最早那一版：
+   **点阵 + 系统字体**。这一路换过：系统字体 → Fjalla One（压缩展示体）→
+   Pixelify Sans（像素）→ Fjalla One → **系统字体**，所以这里不再指定 font-family，
+   让它继承正文那一栈。
+   font-size 12px 和 font-weight 700 都保留：那是用户后来单独提的两个要求，
+   而系统字体下的 700 是**真粗体**，不像 Fjalla One 那样要靠浏览器合成。
+   color 的 var() 带字面兜底 —— 这个项目里栽过两次「var() 解析不到 → 整条声明失效」
+   （降幅条灰底、页签边框）。 */
 .masthead__text.masthead__home {
   color: var(--red, #e20c18);
-  /* **2026-10-06 从像素字体改回 Fjalla One**（用户：「这种像素数字难以辨认……
-     goodprices 的字体都改回去，不要像素的了」）。下面这段是 Fjalla One 的老规矩：
-       · letter-spacing 保持 0 —— 压缩展示体天生字距紧，加字距会显得散；
-       · font-weight 用 700（用户要求加粗）—— Fjalla One 只有一个字重，
-         所以那是**合成粗体**；模糊了就改回 400。 */
-  font-family: 'Fjalla One', 'Helvetica Neue', Arial, sans-serif;
-  /* **站名单独大一档**（2026-10-06 用户：「goodprices 的字体大一点」）。
-     它是从 .masthead__text 继承 10px 的 —— 和右边「我的」「优衣库」一样大，
-     看不太出谁是品牌。这里单独提到 12px：右边那两条不动，所以对比是"品牌 > 入口"。
-     （想更明显就改 14；报头会跟着长高一点，而 top 用的是实测的 --nav-h，
-       所以下面的粘性工具条会自己接上，不用改别处。） */
   font-size: 12px;
-  /* 2026-10-06 用户要求加粗（「good prices 和我的还有优衣库这些字加粗」）。
-     ⚠️ Fjalla One **只有一个字重**，写 700 是浏览器**合成粗体**（给字形描一圈边），
-     不是真有一个更粗的字体文件。10px 下看着就是重一点；觉得糊了就换回 400，
-     或者换一个自带多字重的压缩体（scripts/font-preview.mjs 能出对比图）。 */
-  font-weight: 400;
-  letter-spacing: 0;
+  font-weight: 700;
   text-decoration: none;
 }
 /* ⚠️ 报头这几个入口**刻意不做 hover 下划线**（2026-10-06 用户：「点导航栏的内容的时候，

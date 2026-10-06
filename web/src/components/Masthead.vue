@@ -66,6 +66,9 @@ const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink
   <header ref="navRef" class="masthead">
     <div class="wrap">
       <div class="masthead__eyebrow">
+        <!-- 品牌标记：**细密的方块点阵**（2026-10-06 用户：「改回前面是方块点阵，
+             后面是普通字体那种」）。图案和颜色都在 styles.css 的 .masthead__dot 里。 -->
+        <span class="masthead__dot" aria-hidden="true" />
         <a class="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
         <span v-if="META.showRecorded" class="label">共记录 {{ num(props.recorded) }} 件</span>
 

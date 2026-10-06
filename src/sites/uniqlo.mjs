@@ -329,24 +329,11 @@ const FONTS = {
     { weight: 400, file: 'SourceHanSansCN-Regular.otf', url: 'https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Regular.otf' },
     { weight: 700, file: 'SourceHanSansCN-Medium.otf', url: 'https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf' },
   ],
-  wordmark: {
-    // 站名那个字体。**2026-10-06 从像素字体改回 Fjalla One** ——
-    // 用户试过像素字体之后说：「这种像素数字难以辨认，收藏图标，价格，删除图标，
-    // goodprices 的字体都改回去，不要像素的了」。像素这一层整层退掉。
-    // Fjalla One：SIL OFL，压缩展示体，笔画重，x 高度高。
-    // （先前那些关于它的说明见 git 历史：2026-10-06 挑它那次的提交。）
-    family: 'Fjalla One',
-    file: 'FjallaOne-Regular.ttf',
-    url: 'https://github.com/google/fonts/raw/main/ofl/fjallaone/FjallaOne-Regular.ttf',
-    text: 'GoodPrices',
-    // 拉丁字体很小，体积保险要单独给（中文那份的下限是 1MB）
-    minBytes: 10_000,
-    notice:
-      'Fjalla One — Copyright © 2013 The Fjalla One Project Authors ' +
-      '(https://github.com/google/fonts/tree/main/ofl/fjallaone), ' +
-      'Licensed under the SIL Open Font License, Version 1.1 ' +
-      '(https://openfontlicense.org). 站名用的是按实际字母裁剪后的子集（subset）。',
-  },
+  // 这里原来有个 wordmark 字段，给报头那个站名单独嵌一套字体（先是 Fjalla One，
+  // 后来是像素字体 Pixelify Sans）。2026-10-06 用户要回到「点阵 + 普通字体」那一版，
+  // 站名改回系统字体栈，这个字段就没人用了 —— 删掉。
+  // 顺带的好处：报告里少内嵌一份字体文件、少一条 @font-face。
+
 
 
   notice:
