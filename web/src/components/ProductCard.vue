@@ -87,7 +87,9 @@ const barStyle = computed(() => ({ '--w': `${Math.min(1, props.deal.rate) * 100}
 </script>
 
 <template>
-  <article class="card" role="listitem">
+  <!-- data-id：浏览进度按**商品 id** 锚定（见 lib/browse-memory.js）。
+       回来时靠它找到「上次压着工具条下沿的那一件」。只是属性，不影响渲染。 -->
+  <article class="card" role="listitem" :data-id="props.deal.id">
     <!-- 角标只有在 stickerTags 打开时才需要一个定位父盒（迪卡侬），
          否则就保持「一个光秃秃的 .picframe」——多包一层会让原本挂在
          .picframe 上的对齐规则失效。

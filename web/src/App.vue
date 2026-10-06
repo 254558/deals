@@ -133,16 +133,39 @@ const rowsCount = computed(() => rows.value.length);
 const resetKey = computed(() => `${size.value}|q|${query.value}`);
 const { visible, sentinelRef } = useIncremental(rowsCount, resetKey, saved?.visible);
 
-// 回来时把滚动位置接上：**必须在卡片渲染之后**（文档够高才滚得过去），
-// 所以放 onMounted。
+/**
+ * 回来时把位置接上：**必须在卡片渲染之后**（文档够高才滚得过去），所以放 onMounted。
+ *
+ * 优先用**锚点商品**（2026-10-06 改的）：找到上次压着工具条下沿的那一件，
+ * 把它放回原来的位置。这样报告重建过也照样对 —— 认的是商品，不是像素。
+ * 它掉榜了就**退回顶部**（把一个错位置硬塞给用户比从头开始更糟）。
+ * 老快照没锚点，才退回 scrollY。
+ */
 onMounted(() => {
-  if (!saved || !saved.scrollY) return;
+  if (!saved) return;
+  const hasAnchor = Boolean(saved.anchor);
+  if (!hasAnchor && !saved.scrollY) return;
   // 浏览器自己的还原会和我们打架（它不知道我们恢复了多少张卡片），交给这里接管
   if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-  const put = () => window.scrollTo(0, saved.scrollY);
+
+  const put = () => {
+    if (hasAnchor) {
+      const el = document.querySelector('.card[data-id="' + CSS.escape(saved.anchor) + '"]');
+      if (el) {
+        const y = window.scrollY + el.getBoundingClientRect().top - stickyBottom() - saved.anchorOffset;
+        window.scrollTo(0, Math.max(0, Math.round(y)));
+        return true;
+      }
+    }
+    if (saved.scrollY) { window.scrollTo(0, saved.scrollY); return true; }
+    return false; // 锚点那件已经不在榜上了 —— 停在顶部
+  };
+
   put();
-  // 图片是懒加载的，布局可能还会动一下，再对一次
-  setTimeout(put, 300);
+  // 图片是懒加载的，布局可能还会动一下，再对两次
+  const t1 = setTimeout(put, 300);
+  const t2 = setTimeout(put, 1200);
+  return () => { clearTimeout(t1); clearTimeout(t2); };
 });
 
 /**
@@ -156,17 +179,44 @@ onMounted(() => {
  * 所以滚动位置只在榜单可见时记，保存时用它。
  */
 const lastListY = ref(0);
+/** 上一次在榜单上记下的锚点（进「我的」之后要沿用它，别被覆盖成空） */
+const lastAnchor = ref({ anchor: '', anchorOffset: 0 });
 function onScrollRemember() {
-  if (!mineOpen.value) lastListY.value = Math.round(window.scrollY);
+  if (mineOpen.value) return;
+  lastListY.value = Math.round(window.scrollY);
+  lastAnchor.value = currentAnchor();
+}
+
+/** 工具条（粘性）的下沿在视口里的位置 —— 锚点就是相对它的 */
+function stickyBottom() {
+  const tb = document.querySelector('.toolbar');
+  return tb ? tb.getBoundingClientRect().bottom : 0;
+}
+
+/**
+ * 找到「压着工具条下沿的那件商品」—— 位置就锚在它身上。
+ * 顺带记下它当时相对工具条下沿的偏移，回来才能放回一模一样的地方。
+ */
+function currentAnchor() {
+  const top = stickyBottom();
+  for (const el of document.querySelectorAll('.card')) {
+    const r = el.getBoundingClientRect();
+    if (r.bottom > top) return { anchor: el.dataset.id || '', anchorOffset: Math.round(r.top - top) };
+  }
+  return { anchor: '', anchorOffset: 0 };
 }
 
 // 页面被收起 / 离开时把进度写下来
 function saveNow() {
+  // 在「我的」里的话，榜单是 hidden 的：window.scrollY 是 0、卡片也量不到，
+  // 这时候**不要**动锚点 —— 沿用上一次在榜单上记下的那份。
+  const here = mineOpen.value ? { anchor: lastAnchor.anchor, anchorOffset: lastAnchor.anchorOffset } : currentAnchor();
   saveProgress(DATA.site, DATA.generatedAt, {
     size: size.value,
     visible: visible.value,
-    // 在「我的」里的话，window.scrollY 是 0（榜单 hidden），用记下来的那个
     scrollY: mineOpen.value ? lastListY.value : Math.round(window.scrollY),
+    anchor: here.anchor,
+    anchorOffset: here.anchorOffset,
     query: query.value,
   });
 }
