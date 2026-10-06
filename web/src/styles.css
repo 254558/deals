@@ -656,17 +656,13 @@ body {
    现在它是**导航下面的一块普通视图**（榜单整块被 hidden 掉），
    所以导航栏一直在，右边那条也从「我的」变成「优衣库」。 */
 .mine { padding-bottom: 60px; }
-.mine__title {
-  margin: 26px 0 16px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: .06em;
-}
 
 /* 抖音式横条 tab（用户 2026-10-05 要的样子） */
+/* 上面那行标题 2026-10-06 删了，上间距改由这里撑着 */
 .mine__tabs {
   display: flex;
   gap: 26px;
+  margin-top: 22px;
   border-bottom: 1px solid var(--rule-soft);
 }
 .mine-tab {
