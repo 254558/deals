@@ -103,7 +103,20 @@ export async function buildFontCss({ files, text, family, notice, outDir = null,
     const woff2 = await subsetFont(buf, chars, { targetFormat: 'woff2', preserveNameIds: [0, 13, 14] });
     let src;
     if (outDir) {
-      const name = `font-${f.weight}.woff2`;
+      // ⚠️ 文件名里必须带**字体族**。原来只带字重（font-400.woff2），
+      // 于是一个站点有两个字体族时必然撞名 —— 中文那份和站名那份（Pixelify Sans）
+      // 互相覆盖，后写的赢，另一个 @font-face 就指向了错的字体。
+      //
+      // 2026-10-06 用户报「iPhone 上站名没变成像素字体」就是这么来的：
+      // 桌面看着是好的，因为我的探针每次用全新浏览器配置（没有缓存）；
+      // 而 iPhone 之前来过，font-400.woff2 在它缓存里还是中文那个文件
+      // （_headers 给 woff2 设了 7 天缓存），两个族都用了缓存里的中文文件。
+      // **换成带族名的文件名之后，旧缓存自然作废** —— 这也是这个修法的一个好处。
+      const slug = family
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const name = `font-${slug}-${f.weight}.woff2`;
       writeFileSync(join(outDir, name), woff2);
       written.push(name);
       src = `url(${urlBase}${name}) format('woff2')`;
