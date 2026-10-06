@@ -899,9 +899,14 @@ body {
 }
 .fav__delete {
   position: absolute;
-  top: 0;
+  /* ⚠️ 上下要和 .fav 的 padding 对齐（那边是 10px 0）——
+     原来是 top/bottom 都是 0，于是红块铺满了**整条 .fav**（含上下各 10px 的内边距），
+     而上面的白条 .fav__link 只占内容区，结果上下各露出一条 10px 的红。
+     用户 2026-10-06 报的就是这个：「删除按钮太高了，上下会有红色的部份露出来」。
+     这里写死同一个数，两边一起改的时候别忘了。 */
+  top: 10px;
   right: 0;
-  bottom: 0;
+  bottom: 10px;
   width: 88px;
   border: 0;
   background: var(--red, #e20c18);
