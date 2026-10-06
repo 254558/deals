@@ -562,7 +562,10 @@ body {
 .wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }
 /* ---------------- 工具条 ---------------- */
 
-.toolbar__row { gap: 18px; padding: 11px 0; }
+/* 上内衬 11 → **7**（2026-10-06 用户：「缩小导航栏和搜索框的间距」）。
+   下面那 11px **没动** —— 那是「搜索框下沿 → 商品图片上沿」的距离，
+   用户刚确认过要图片和工具条下沿齐平，动了会把那里又拉开。 */
+.toolbar__row { gap: 18px; padding: 7px 0 11px; }
   .search { flex: 0 1 240px; min-width: 0; font-size: 12px; padding: 7px 12px; }
 .search:focus { border-color: var(--ink); }
 
