@@ -834,7 +834,10 @@ body {
   resize: vertical;
 }
 
-.mine__favs { display: flex; flex-direction: column; }
+/* 行与行之间的空隙（2026-10-06 用户：「收藏一多，上面的图片和下面的图会连在一起」）。
+   用 gap 而不是给 .fav 加回上下内边距：缝隙落在行**外面**，
+   左滑露出的红块仍然只覆盖自己那一行，不会跟着变高。 */
+.mine__favs { display: flex; flex-direction: column; gap: 14px; }
 /* 2026-10-06 用户：「每条收藏的行高能高一点，最好不要上下边距」。
    上下内边距 10px → 0，行高完全由内容决定（行变高靠把缩略图放大到 76，
    不是靠 padding 撑 —— 这才是"不要上下边距"的意思）。
@@ -860,7 +863,7 @@ body {
 .fav__link::after {
   content: '';
   position: absolute;
-  left: calc(76px + 12px);
+  left: calc(60px + 12px);
   right: 0;
   bottom: 0;
   height: 1px;
@@ -870,10 +873,13 @@ body {
 .fav__img {
   -webkit-user-drag: none;   /* 见上：Safari 里图片默认可拖 */
   flex: none;
-  /* 52 → 76（2026-10-06）。行内边距归零之后，行高就只由这张图决定了：
-     52 会比原来（52 + 上下各 10 = 72）更矮，所以放大到 76 —— 比原来还高一点。 */
-  width: 76px;
-  height: 76px;
+  /* 52 → 76 → **60**（2026-10-06）。
+     76 那版是"行内边距归零、行高由图片决定"时定的；用户看了一屏之后说
+     「图片小一点，现在收藏一多，上面的图片和下面的图会连在一起」，所以缩到 60，
+     并在 .mine__favs 上加了行间距 —— **光缩小是分不开两行的**（行高等于图片高，
+     缩小只会让两张图一起变小、还是贴着）。 */
+  width: 60px;
+  height: 60px;
   object-fit: cover;
   background: var(--surface-2);
 }
