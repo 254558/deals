@@ -35,13 +35,10 @@
        --ink-faint   收藏 / 隐藏按钮的静默灰（要比任何彩色角标都安静）
        --ls-price    榜单大字价格的字符间距
        --badge-ink   榜单黄角标上的字色
-       --bar-dur / --bar-ease  降幅条动画的时长与缓动（这里才是它们的家；
-                     .card__bar > i 里那两个 var() 兜底值留着，当第二道保险 */
+  */
   --bg: #fff;
   --ink-3: #8a8f96;
   --ink-faint: #d3d8de;
-  --bar-dur: 600ms;
-  --bar-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 }
 
 .wrap { max-width: 1560px; margin: 0 auto; padding: 0 var(--pad); }

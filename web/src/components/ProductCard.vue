@@ -69,14 +69,27 @@ const sizeLine = computed(() => {
 });
 
 // 动效错开只给前几行，否则滚到下面时动画早跑完了
-const delay = computed(() => Math.min(props.index, 11) * 40);
 const now = computed(() => priceParts(props.deal.price));
 const was = computed(() => priceParts(props.deal.launchPrice));
 const cut = computed(() => props.deal.launchPrice > props.deal.price);
 // 连续两轮没在抓取池里见到（只有手动 track 的商品会带着这个标记进来，见 db.mjs 的 missed）
 const gone = computed(() => props.deal.gone === true);
 const text = computed(() => chips(props.deal.tags));
-const barStyle = computed(() => ({ '--w': `${Math.min(1, props.deal.rate) * 100}%`, animationDelay: `${delay.value}ms` }));
+/**
+ * 降幅条：**一排 12 根竖条**，亮到降幅位置为止（用户 2026-10-06：
+ * 「把降了多少钱左边的条换成这种样式」，给的是 vue-bits 的 wake-slider 截图）。
+ *
+ * 原来是一根轨道 + 一条填充（宽度 = 降幅%）。改成竖条是为了：
+ *   · 读起来是**刻度**不是"进度"—— 一眼能数出"亮了 9 格 / 一共 12 格"；
+ *   · 数字（降 190 元）隔壁有这么一排小竖条，比一根实心横条轻。
+ *
+ * 只取它**静止时的长相**，不做尾迹：那个尾迹要「有人在拖」才出现，
+ * 而降幅是印在卡上的一个静态数字 —— 没有任何东西在动它。
+ */
+// 12 → 24（2026-10-06）：参照图里是 ~32 根**细**条，12 根在卡片宽度下太胖，
+// 像积木不像刻度。24 根配 4px 上限，密度和细度都贴近参照图。
+const BAR_SEGMENTS = 24;
+const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(props.deal.rate * BAR_SEGMENTS))));
 
 // 名字**原样显示**，不再按斜杠截断。
 //
@@ -135,11 +148,11 @@ const barStyle = computed(() => ({ '--w': `${Math.min(1, props.deal.rate) * 100}
     <!-- 优衣库：比例条和降幅红字同行，红字贴在条尾，条占满剩余宽度。
          直接说「降 190 元」——省下的钱是实打实的数，百分比还得自己换算 -->
     <div v-else-if="props.deal.rate > 0 && feats.dealBarNumber" class="card__deal">
-      <span class="card__bar" aria-hidden="true"><i :style="barStyle" /></span>
+      <span class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
       <span class="card__off n">降 {{ num(Math.round(props.deal.saving)) }} 元</span>
     </div>
     <!-- 迪卡侬：只有一根条，长度同样等于降幅 -->
-    <span v-else-if="props.deal.rate > 0" class="card__bar" aria-hidden="true"><i :style="barStyle" /></span>
+    <span v-else-if="props.deal.rate > 0" class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
     <div v-else class="card__deal--flat" :class="{ 'card__deal': feats.dealBarNumber }">尚未降价，正在替你盯着</div>
 
     <!-- 这一行现在只剩「待拔草」标签；没有标签也照样留着，托住卡片底边 -->

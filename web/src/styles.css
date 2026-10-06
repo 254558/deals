@@ -290,11 +290,6 @@ button {
 .dealact:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
 /* 爱心一律实心，形状不再表示状态，收没收由颜色说：淡灰 → 品牌蓝 */
 .dealact--on { color: var(--blue); }
-@keyframes scale-fill {
-  from { width: 0; }
-  to { width: var(--w, 0); }
-}
-@keyframes scale-notch { from { left: 0; } to { left: var(--w); } }
 
 /* ---------------- 大图浏览（PLP 卡片网格） ----------------
    两家的网格几何完全不同（优衣库 auto-fill 258px、卡片间距 24px；
@@ -384,21 +379,30 @@ button {
 }
 
 /* 标尺的卡片版：一根细横条，条的长度就是降幅 */
+/* 降幅条：**一排 12 根竖条**（用户 2026-10-06：「把降了多少钱左边的条换成这种样式」，
+   参照 vue-bits 的 wake-slider 截图）。原来是一根 3px 高的轨道 + 一条按百分比拉宽的填充。
+
+   两个约束值得记：
+     · 竖条**不随宽度拉伸**（max-width: 10px）—— 桌面版是单列，条能到 300px 宽，
+       不设上限的话一格能有二十几 px 宽，看着像积木而不是刻度（24 格 × 4px + 23 个 2px 缝 ≈ 142px，
+       正好是一张卡能给那根条的宽度）；
+     · 高度 3px → 9px：这么细的横条改成竖条后，3px 根本看不出是"一根一根的"。
+   原来那条会从 0 长到 --w 的 scale-fill 动画一并去掉：现在"长多少"由**亮几格**表达，
+   不需要动画，也就不需要那两个 var()（它们的兜底注释见 git 历史）。 */
 .card__bar {
-  display: block;
-  /* 4 → 3px（用户 2026-10-01：「底下的那个进度条更纤细一点」） */
-  height: 3px;
-  background: var(--rule-soft);
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 9px;
+  background: none;
 }
 .card__bar > i {
-  display: block;
+  flex: 1;
+  max-width: 4px;
   height: 100%;
-  width: 0;
-  /* 两个变量用 var() 自带兜底值：它们原先定义在按站点分的变量块里，
-     统一皮肤时连同那个块一起删掉了 → 整条 animation 简写作废 →
-     填充宽度停在 0，也就是「-74% 左边那条不见了」。 */
-    animation: scale-fill var(--bar-dur, 600ms) var(--bar-ease, cubic-bezier(0.2, 0.7, 0.3, 1)) forwards;
+  background: var(--rule-soft);
 }
+.card__bar > i.is-on { background: #000f17; }
 .card__deal--flat { font-size: 12px; color: var(--ink-4); }
 
 /* ---------------- 空状态 / 加载更多 / 页脚 ---------------- */
@@ -579,7 +583,10 @@ body {
    条是「降了多少」的**度量**，不是主角 —— 让它安静下来，价格才跳得出来。
    !important 保留：上面那段注释记着，这里和 .card__now 的红色是排查过
    var() 变量链才写死的，动它容易把 2026-10-01 修好的红色又弄丢。 */
-.card__bar > i { background: #000f17 !important; }
+/* 2026-10-06：这条原先给「填充」上墨色（见上面 .card__bar 那段），改成竖条之后
+   上色由 .card__bar > i.is-on 负责，这里不再需要。留着会把**所有**格子（含未亮的）
+   都刷成墨色 —— 那就成了一整排黑条。 */
+
 
 /* ---------------- 空状态 / 页脚 ---------------- */
 
