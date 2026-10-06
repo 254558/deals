@@ -90,19 +90,10 @@ const sizeOptions = computed(() => {
   return [...all].sort((a, b) => sizeRank(a) - sizeRank(b));
 });
 
-/**
- * 尺码是**抓取那一刻**的库存快照，热门款几小时就会变。
- * 用户 2026-10-05 报「筛 XS 点进去没有」—— 查下来字段没抓错，是这份快照旧了，
- * 而界面上没说。所以这里把「多久之前抓的」和「以官网为准」直接摆出来。
- */
-const sizeNote = computed(() => {
-  const at = DATA.generatedAt ? new Date(DATA.generatedAt) : null;
-  if (!at || Number.isNaN(at.getTime())) return '尺码是抓取时的快照，以官网为准';
-  const mins = Math.max(0, Math.round((Date.now() - at.getTime()) / 60000));
-  const age = mins < 90 ? `${mins} 分钟` : `${Math.round(mins / 60)} 小时`;
-  return `尺码是 ${age}前的快照，以官网为准`;
-});
-
+/* 这里原来有个 sizeNote，算「尺码是 N 分钟前的快照，以官网为准」摆给用户看
+   （起因是 2026-10-05 「筛 XS 点进去没有」那一报）。2026-10-06 用户要求
+   「也不要有尺码是两分钟前的快照这个提示」，整条删掉 —— 连带 Toolbar 的 note
+   prop 和那个 <p>。 */
 function pick(d) {
   const currentlyOn = d.dbTracked ? !watchBooks.dropped.has(d.id) : watchBooks.picks.has(d.id);
   togglePick(d.id, d.dbTracked);
@@ -265,7 +256,6 @@ function reset() {
     :size="size"
     :on-size="(v) => (size = v)"
     :sizes="sizeOptions"
-    :note="sizeNote"
   />
 
   <div class="wrap" :hidden="mineOpen">

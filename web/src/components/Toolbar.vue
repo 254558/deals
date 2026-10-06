@@ -32,7 +32,6 @@ const props = defineProps({
   size: { type: String, default: '' },
   onSize: { type: Function, default: null },
   sizes: { type: Array, default: () => [] },
-  note: { type: String, default: '' },
 });
 
 const open = ref(false);
@@ -96,7 +95,6 @@ function pickSize(v) {
             <!-- 2026-10-06 用户：「选尺码的换成这种风格」（vue-bits 的 jelly-radio）。
                  原来每个尺码占满一整行（竖排），果冻效果必须让它们**并排**才推得开。 -->
             <JellyChips :items="jellyItems" :value="props.size" @pick="pickSize" />
-            <p v-if="props.note" class="sizefilter__note">{{ props.note }}</p>
           </div>
         </div>
       </div>
