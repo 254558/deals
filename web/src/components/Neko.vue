@@ -46,6 +46,15 @@ const props = defineProps({
 const x = ref(0);
 const y = ref(0);
 const frame = ref('mati3');
+/**
+ * 要不要真的渲染。
+ * ⚠️ 2026-10-06 用户报：「猫消失后，我再往下滑，有时候会卡一个猫消失前的残影，
+ *    停留很久」。这是**合成层残影**：元素是 position:fixed，原来还带
+ *    will-change: transform —— 浏览器会把它单独提成一层，挪到画面外之后
+ *    那一层的贴图不一定被回收，滚动时就留下旧像素。
+ *    所以跑出去（OUT）之后改成 display:none：不渲染的东西不会留残影。
+ */
+const visible = ref(true);
 
 /* ── 帧表 ── */
 const WALK = {
@@ -204,6 +213,7 @@ function pickDir() {
 
 /** 进入某个状态；ms = 持续多久（Infinity = 一直） */
 function go(next, ms, now) {
+  visible.value = next !== 'OUT';   // OUT = 画面外，真的别渲染它
   state = next;
   stateUntil = ms === Infinity ? Infinity : now + ms;
   t = 0;
@@ -299,7 +309,7 @@ function advance(now) {
       x.value += ex * 1.9;
       y.value += ey * 1.9;
       frame.value = frameOf(WALK[escapeDir] || WALK.down, FRAME_MS * 0.7);
-      if (isOutside()) state = 'OUT';   // 整只出去了才算完，这时才不再画它
+      if (isOutside()) go('OUT', Infinity, now);   // 整只出去了才算完：这时才不渲染它
       return;
     }
     case 'OUT':
@@ -453,6 +463,7 @@ onBeforeUnmount(() => {
 
 <template>
   <i
+    v-show="visible"
     class="neko"
     :style="{
       width: size + 'px',

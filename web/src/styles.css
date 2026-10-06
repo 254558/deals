@@ -1049,7 +1049,10 @@ body {
   background-size: 376px 104px;
   /* 放大后保持硬边方块 */
   image-rendering: pixelated;
-  will-change: transform;
+  /* ⚠️ 这里原来有 will-change: transform —— 已删（2026-10-06）。
+     它会把这个 fixed 元素**单独提成一个合成层**，而猫跑出画面之后那一层的贴图
+     不一定被回收，滚动时就留下一块"残影"（用户报的现象）。
+     这只是个 32px 的位移，本来就犯不上提层；配套的 display:none 见 Neko.vue。 */
 }
 /* 说了不看动效的人：猫就别出现（它整只都是动效） */
 @media (prefers-reduced-motion: reduce) {
