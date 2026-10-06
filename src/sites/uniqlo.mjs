@@ -139,20 +139,36 @@ async function exactStockCodes(productCode, sizeCodes, vocab) {
   }
 }
 
+/**
+ * 商品名：取官网**完整标题**里「截到货号为止」那一段。
+ *
+ * 官网搜索结果的标题长这样（`productName4zhCN`）：
+ *   「男装/男女同款 UT Disney x F1®印花T恤/短袖T恤 488131  超值精选 3XL,XS,4XL,S 白色,珊瑚红色,」
+ * 结构是 `{人群前缀} {name4zhCN} {货号}  {标签} {在售尺码} {颜色},` —— 货号后面那串是
+ * **搜索结果的装饰**（标签/尺码/颜色），不是名字的一部分，所以截到货号为止。
+ * 实测 100/100 件都能在标题里找到货号；找不到时退回 name4zhCN。
+ *
+ * 2026-10-06 用户：「商品名，写成和官网一样的，比如
+ * 男装/男女同款 UT Disney x F1®印花T恤/短袖T恤 488131，这种，我有一次说只保留斜杠
+ * 前面的，现在用户反馈说要全的」。此前 `name` 存的是 `name4zhCN`（「UT Disney x
+ * F1®印花T恤/短袖T恤」），**少了人群前缀和货号**；而卡片那边还会再按斜杠截一刀
+ * （见 ProductCard 的 shownName），两道叠起来才是用户看到的样子。两处都改了。
+ */
+function fullProductName(p) {
+  const raw = String(p.productName4zhCN || p.productName || '').trim();
+  const code = String(p.code ?? '').trim();
+  const i = code ? raw.indexOf(code) : -1;
+  const cut = i >= 0 ? raw.slice(0, i + code.length) : raw;
+  return cut.replace(/\s+/g, ' ').trim() || String(p.name4zhCN || p.name || '').trim();
+}
+
 function normalize(p) {
   return {
     productCode: p.productCode,
     code: p.code,
-    // 官网的名字是「主名/一堆形容词」拼的，例如
-    // 「高性能修身防皱衬衫/长袖衬衣商务通勤」——斜线后面那截是给搜索/分类用的，
-    // 卡片上没人看（图片比字清楚）。只留斜线前面那一段，实测这样读起来正好。
-    // 完整名字没丢：它照旧进 extra.fullName。
-    // 直接用官网的中文名，**不做任何缩写**。
-    // 原先是 shortName()（取第一个 / 之前那半段），把「AIRism棉混纺圆领T恤/短袖」
-    // 砍成了「AIRism棉混纺圆领T恤」——版面好看了，但和官网不一致（用户 2026-10-01 要求
-    // 「所有商品都要有产品名称，并且和官网一致」）。版面上的截断交给 CSS 与 title 提示。
-    name: String(p.name4zhCN || p.name || '').trim(),
-    fullName: (p.productName4zhCN || p.productName || '').trim(),
+    // 官网完整标题截到货号为止（见 fullProductName 的注释）。
+    // 版面上的截断交给 CSS 的省略号与 title 提示，数据这一层不再自作主张砍名字。
+    name: fullProductName(p),
     season: p.season4zhCN || p.season || '',
     sex: p.sex4zhCN || '',
     material: p.material4zhCN || '',
@@ -261,8 +277,9 @@ function toCanonical(p) {
     images: p.image ? [p.image] : [],
     tags: p.identities || [],
     // 报告不渲染、但值得留档的字段进 extra：不进 payload，不会撑大单文件报告
+    // （`fullName` 2026-10-06 删掉了：name 现在本身就是官网完整标题，
+    //   再存一份「更完整的」已经没意义，而且全项目没人读它）
     extra: {
-      fullName: p.fullName,
       sex: p.sex,
       material: p.material,
       colors: p.colors,

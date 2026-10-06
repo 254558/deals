@@ -72,12 +72,14 @@ export function ProductCard({ deal, index, onPick, onHide }) {
   const feats = META.features;
   const text = chips(tags);
 
-  // 显示用的短名：官网名里的斜杠后半段是面料/系列说明（「高弹力紧身牛仔裤/水洗产品」），
-  // 卡片上只写斜杠前那半段 —— 官网自己也是这么显示的，名字能短一大截。
-  // **数据里存的仍是官网原名**，完整名字留在 title / aria-label 里（鼠标停一下能看到）。
-  // 2026-10-01 用户的说法：先说「要和官网一致」（于是不再缩写），再说「带斜杠的只显示斜杠前」
-  // —— 两件事不冲突：数据一致、显示精简。
-  const shownName = String(name).includes('/') ? String(name).split('/')[0].trim() : name;
+  // 名字**原样显示**，不再按斜杠截断。
+  //
+  // 2026-10-06 用户：「商品名，写成和官网一样的，比如
+  // 男装/男女同款 UT Disney x F1®印花T恤/短袖T恤 488131，这种……现在用户反馈说要全的」。
+  // 这里原先写的是 `name.split('/')[0]`（只留斜杠前面那半段）。它和数据侧那版
+  // 「name 存 name4zhCN」叠在一起，用户实际看到的就只剩「UT Disney x F1®印花T恤」。
+  // 现在数据侧给的是官网完整标题（含人群前缀与货号），这里也照原样渲染；
+  // 长出去的部分由 CSS 的省略号兜着，`title` / `aria-label` 里始终是全名。
 
   /** 图片那一块。角标只有在 stickerTags 打开时才需要一个定位父盒（迪卡侬），
    *  否则优衣库那边就保持「一个光秃秃的 .picframe」——多包一层会让原本
@@ -153,8 +155,8 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         aria-label={sizeLine ? `${name}　${sizeLine.lead}${sizeLine.plain}` : name}
       >
         {/* 名称**永远显示**（原来断码时会被尺码顶掉，优衣库有 26% 的卡片因此没有名字），
-            显示的是 shownName（官网原名去掉斜杠后半段），断码时把剩余尺码跟在名称后面。 */}
-        {shownName}
+            显示的就是官网完整标题，断码时把剩余尺码跟在名称后面。 */}
+        {name}
       </a>
 
       {/* 价格三件套，右端跟着收藏 / 不再出现两个动作——动作挨着价格，
