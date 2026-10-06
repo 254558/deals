@@ -170,18 +170,14 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
   color: var(--ink-4);
 }
 /* 左上角那格是品牌名，也是回首页的入口：用了品牌红，比右侧入口深一点。
-   2026-10-06 用户：「改回前面是方块点阵，后面是普通字体那种」——要的是最早那一版：
-   **点阵 + 系统字体**。这一路换过：系统字体 → Fjalla One（压缩展示体）→
-   Pixelify Sans（像素）→ Fjalla One → **系统字体**，所以这里不再指定 font-family，
-   让它继承正文那一栈。
-   font-size 12px 和 font-weight 700 都保留：那是用户后来单独提的两个要求，
-   而系统字体下的 700 是**真粗体**，不像 Fjalla One 那样要靠浏览器合成。
+   2026-10-06 用户：「goodprices 不要加粗，字号和右边的我的保持一致」——
+   所以字号和字重**都不再单独指定**，全部继承 .masthead__text（10px / 400），
+   和右边那条入口一模一样；只留"品牌红"这一处不同。
+   （再往前它单独设过 12px + 700：那是更早一次"放大 / 加粗"的要求，现在撤销。）
    color 的 var() 带字面兜底 —— 这个项目里栽过两次「var() 解析不到 → 整条声明失效」
    （降幅条灰底、页签边框）。 */
 .masthead__text.masthead__home {
   color: var(--red, #e20c18);
-  font-size: 12px;
-  font-weight: 700;
   text-decoration: none;
 }
 /* ⚠️ 报头这几个入口**刻意不做 hover 下划线**（2026-10-06 用户：「点导航栏的内容的时候，
@@ -191,13 +187,11 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    ⚠️ **只有第一个**吃掉剩余空间把自己顶到行尾——两个都写 margin-left: auto 的话，
    flex 会把空白**平分**给它们，两个链接之间空出一大块（2026-09-30 加了第二个入口
    之后露出来的）。后面的紧挨着排，间距就是 eyebrow 的 gap。 */
-/* 「我的」和另一家的入口（2026-10-06 用户要求加粗）。
-   ⚠️ 这里**没验证过**是真字重还是浏览器合成的。实测 computed font-family 是
-   「Uniqlo Pro」，不是内嵌的思源黑体 —— 它有没有 700 这个槽位我没查。
-   我上一版注释里写「走思源黑体、是真的换字重」，那是想当然，已改正。 */
+/* 「我的」和另一家的入口。2026-10-06 用户：「右边的我的也不用加粗了」——
+   去掉原来那个 700，跟随 .masthead__text 的 400。
+   （加粗那版是 2026-10-06 早些时候按"这些字加粗"的要求加的，现在撤销。） */
 .masthead__cross {
   color: var(--ink, #000f17);
-  font-weight: 700;
   text-decoration: none;
 }
 /* GoodPrices 留在左边，其余（各页入口）由它推到右边。
