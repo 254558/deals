@@ -21,9 +21,6 @@ const ROOT = new URL('..', import.meta.url).pathname;
 const FILES = [
   'web/src/shell.css',
   'web/src/styles.css',
-  'market/market.css',   // 2026-10-01 从 market/index.html 拆出来
-  'market/index.html',
-  'market/admin/index.html',
 ];
 
 /**
@@ -118,11 +115,11 @@ test('没有哪个变量是靠「兜底值」硬撑的（有的话说明定义�
  * 一起废掉了，但定义一直留在 shell.css 里）。加这条钉住。
  *
  * 注意：扫的是**所有** CSS 拼起来的一份，因为令牌常定义在一处、用在另一处
- * （shell.css 定义、market.css 使用）。运行时由 JS 写上去的（--w / --i 那些）
+ * （shell.css 定义）。运行时由 JS 写上去的（--w / --i 那些）
  * 本来就不在 CSS 里定义，所以不会误报。
  */
 test('没有「定义了却一处都没用」的令牌（死令牌）', () => {
-  const all = ['web/src/shell.css', 'web/src/styles.css', 'market/market.css']
+  const all = ['web/src/shell.css', 'web/src/styles.css']
     .map((f) => readFileSync(ROOT + f, 'utf8')).join('\n');
   const used = usedTokens(all);
   const dead = [...definedTokens(all)].filter((n) => !used.has(n));

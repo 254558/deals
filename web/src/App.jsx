@@ -11,7 +11,7 @@ import { DATA, DEALS, META } from './lib/site.js';
 
 /**
  * 收藏快照：报告页点爱心时，把整件商品存进 localStorage（同源共享），
- * 供「我的」页（/market/?mine=1）展示。原来只存 id 到 picks，
+ * 存在本地（原来是发给「我的」页展示的，那个页面 2026-10-06 删了）。原来只存 id 到 picks，
  * 「我的」那边没有报告数据，光有 id 也渲染不出东西，所以这里存完整字段。
  * 键 `deals.favorites` 跨优衣库/迪卡侬共用（「我的」要一起看）。
  */
@@ -37,7 +37,7 @@ function saveFavorite(d, on) {
 
 
 /** 空结果提示，两个视图共用。搜索的措辞里那一串「名称或编号…」来自
- *  `meta.searchLabel`：迪卡侬的编号旁边还有品牌可搜，优衣库只有名称和吊牌编号 */
+ *  `meta.searchLabel`：优衣库只有名称和吊牌编号可搜 */
 function Empty({ query, onReset }) {
   return (
     <div className="empty">
@@ -189,7 +189,7 @@ export default function App() {
    * `DATA.site` 在这里只当 localStorage 的命名空间用，不做任何版面判断（契约第三节）。
    */
   const saved = useMemo(() => loadProgress(DATA.site, DATA.generatedAt), []);
-  // 支持 ?q= 深链：测评页里点商品名会带过来（/uniqlo/?q=488089）。
+  // 支持 ?q= 深链（/uniqlo/?q=488089 这类直接进搜索）。
   // **URL 优先于「上次读到哪儿」** —— 你点的是一条明确的深链，就该看那一条，
   // 而不是上次停下的位置。没有 ?q= 时照旧接上次。
   const [query, setQuery] = useState(() => new URLSearchParams(location.search).get('q') || saved?.query || '');

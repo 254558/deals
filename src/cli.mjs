@@ -379,7 +379,7 @@ ${tagLine}  ${diff.added.length ? C.green('已加入关注列表。') : C.dim('�
   console.log(C.dim(`  以后用 deals ${site.id} list --tracked 只看待拔草的商品，或 deals ${site.id} report 在网页里看。\n`));
 }
 
-async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, crossLinkHref = null, marketHref = null, beacon = null, origin = null } = {}) {
+async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, crossLinkHref = null, beacon = null, origin = null } = {}) {
   const db = openDb(DB_PATH);
 
   const build = ensureBuild(ROOT, { force: rebuild });
@@ -423,12 +423,12 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   if (withFont && site.fonts) {
     const files = await ensureFontFiles(join(ROOT, 'data', 'fonts'), site.fonts, { onStatus: (m) => console.log(C.dim(`\n${m}`)) });
     if (files) {
-      const payloadText = JSON.stringify(buildPayload(db, site, images, { crossLinkHref, marketHref }));
+      const payloadText = JSON.stringify(buildPayload(db, site, images, { crossLinkHref }));
       fontCss = await buildFontCss({ files, text: js + payloadText, family: site.fonts.family, notice: site.fonts.notice });
     } else console.log(C.yellow('\n字体下载失败，报告改用系统字体栈（版面不受影响）。'));
   }
 
-  const payload = buildPayload(db, site, images, { crossLinkHref, marketHref });
+  const payload = buildPayload(db, site, images, { crossLinkHref });
   writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, payload, beacon, origin }), 'utf8');
 
   // 避免被识别成 Vite 预设、在部署机上白跑一遍 vite build。生成器从不清 reports/ 目录，
@@ -654,7 +654,7 @@ async function cmdDeployCloudflare() {
   console.log(C.dim('  所以两份报告都会重新生成一遍，报头那个交叉入口改成同域的相对路径。\n'));
 
   for (const site of SITES)
-    await cmdReport(site, { open: false, crossLinkHref: cfCrossLink(site), marketHref: 'https://goodprices.online/market/', beacon: BEACON, origin: 'https://goodprices.online' });
+    await cmdReport(site, { open: false, crossLinkHref: cfCrossLink(site), beacon: BEACON, origin: 'https://goodprices.online' });
 
   // 第一次部署时项目还不存在，而 `pages deploy` 遇到不存在的项目会反过来问你一句
   // （非交互环境下就卡住了），所以先确保项目在。已经存在时这条会失败，属正常。

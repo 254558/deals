@@ -19,7 +19,6 @@
     "deploy:cloudflare": "node src/cli.mjs all deploy --target cloudflare",
     "test": "node --test",
     "test:watch": "node --test --watch",
-    "smoke:market": "node scripts/market-smoke.mjs",
     "pretest": "eslint ."
   },
   "engines": {

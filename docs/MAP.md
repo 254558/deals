@@ -10,8 +10,6 @@
 写库            src/core/db.mjs  →  data/deals.db         （node:sqlite，进 git 当备份）
 生成报告        src/core/report.mjs + web/                （React → Vite → 单文件 HTML）
 推送            src/cli.mjs deploy --target cloudflare    （Cloudflare Pages: deals-pinouts）
-市集前端        market/index.html + market/admin/index.html
-市集后端        functions/api/*.js  +  D1 库 deals-market
 ```
 
 ## 改哪里
@@ -27,7 +25,6 @@
 | 一个站点的差异 | `src/sites/*.mjs` 的 `report` / `report.features` | 有测试 `test/sites-parity.test.mjs` 锁键集合 |
 | 抓取规则 / 接口 | `src/sites/*.mjs` | 优衣库前面有 EdgeOne WAF，要真浏览器 UA |
 | 市集接口 | `functions/api/*.js` + `functions/api/_lib.mjs` | **改完必须跑真 D1 冒烟**（见下） |
-| 市集页面 | `market/index.html` | 722 行挤一个文件（CSS/JS 都内联），建议下次拆开 |
 | 部署产物（robots/sitemap/_headers） | `src/core/report.mjs` 的 `writeDeployRoot` | `_headers` 的规则是**累加**的，别用 `/*` 再叠具体规则 |
 | 定时任务 | `.github/workflows/daily.yml` | 每 3 小时一次；只有 01:00 UTC 那次提交库、发提醒 |
 
@@ -84,19 +81,6 @@ report: {
 ## 改市集接口之后必须做的一件事
 
 ```bash
-npm run smoke:market        # = node scripts/market-smoke.mjs
-```
-
-它会自己起一台 `wrangler pages dev`（本地**真 D1**，新环境会先按 market/schema.sql 建表），
-把四条写路径全走一遍：发帖 → 评论 → 编辑（**不带新图**也要能改）→ 删评论 → 删帖，
-外加两条权限检查（错凭据必须 403）和一条校验检查（缺图必须 400）。16 项全过才退出 0。
-
-**为什么不能只跑单测**：`test/market.test.mjs` 里的 D1 是我手写的假货，SQL 只被正则匹配、
-**根本不执行** —— 「11 列写了 12 个 `?`」这种错它天然看不见。2026-10-01 线上发帖就是这么
-500 了几个小时，而当时 43 条单测全绿。
-
-它已经接进了 `.github/workflows/daily.yml`（部署前一步），也可以单独跑：
-`--url=http://localhost:8788` 用已起着的那台；要打线上得显式加 `--force`（会真的建/删数据）。
 
 ## 已经做完的整理（2026-10-01 那一轮）
 
@@ -105,7 +89,6 @@ npm run smoke:market        # = node scripts/market-smoke.mjs
 | 两条「保险」测试 | `6ad4fb4` | `test/css-tokens.test.mjs`（用到的变量必须有定义）+ `test/sites-parity.test.mjs`（两站描述符同一套键）。前者一上来就查出 **5 个线上一直失效的声明** |
 | 删死代码分支 | `0ce1ac8` | `ProductCard` 的「品牌内联 / 整行链接」两套分支合成一套（两站 `brandMark` 都是 false，那一支是死代码，害我插错两次） |
 | `data/deals.db` 标为二进制 | `0ce1ac8` | 不再每次推送都来一次「无法合并二进制文件」 |
-| 真 D1 端到端冒烟 | `420d1cd` | `npm run smoke:market`，16 项；已接进 CI 的部署前一步 |
 | 外壳 CSS 收敛到一处 | `2527b7c` `a367d98` `bd7a0f7` | `web/src/shell.css` 是令牌 + .wrap + 报头的唯一出处；报告 @import，市集页在部署时注入 |
 | 市集页拆开 | `a3fe047` | 725 行 → HTML 120 + CSS 192 + JS 413 |
 | 手机端两列 | `a465cc5` | 一屏能看的件数 1.4 → 2.4（≤560px） |

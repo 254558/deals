@@ -10,7 +10,7 @@ import { ensureImages } from '../src/core/images.mjs';
  * 图片缓存那层：统一出 WebP，老缓存（JPEG）就地升级。
  *
  * 这里不碰网络——老缓存升级那条路本来就只读本地文件。新下载那条路靠
- * scripts/market-smoke.mjs 那种打真服务的冒烟来验。
+ * 它只看静态数据本身（真服务那一层已经没有了）。
  */
 const SIZE = 800;
 

@@ -84,7 +84,6 @@ function toDeal(row, images, remote, site, vocab) {
  * @param {object} [opts]
  * @param {boolean} [opts.remote] 带上 CDN 候选图地址（只有下图那一趟需要）
  * @param {string|null} [opts.crossLinkHref] 覆盖报头那个「另一家的报告」的链接。
- * @param {string|null} [opts.marketHref] 测评的入口；给 null 就不显示那一格。
  *   Cloudflare 上两份在同一个域名的兄弟目录，改成相对路径 `../<站点>/` ——
  *   相对路径换域名、换本地双击都对。
  */
@@ -104,7 +103,7 @@ export const BEACON =
   '<!-- Cloudflare Web Analytics：只统计访问量，不用 cookie，也不跟踪个人 -->\n' +
   `<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${BEACON_TOKEN}"}'></script>`;
 
-export function buildPayload(db, site, images, { remote = false, crossLinkHref = null, marketHref = null } = {}) {
+export function buildPayload(db, site, images, { remote = false, crossLinkHref = null } = {}) {
   const deals = listDeals(db, site.id, { limit: 5000, minRate: 0.15 });
   const tracked = listTracked(db, site.id);
 
@@ -141,12 +140,11 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
   if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
 
   /**
-   * 报头行尾的入口先摆「另一家的报告」，再摆「测评」。
+   * 报头行尾的入口摆「另一家的报告」（有兄弟站点时才有）。
    * 市集那个链接是**全站共用的**（不属于哪一家），所以由核心补进来，适配器不用管。
    */
   meta.links = [
     ...(meta.crossLink ? [meta.crossLink] : []),
-    ...(marketHref ? [{ href: marketHref, label: '测评', title: '测评：买过的人怎么说' }] : []),
   ];
 
   return {
@@ -381,73 +379,11 @@ p{color:#616161}ul{padding-left:1.2em}li{margin:6px 0}a{color:#3643ba}</style>
  *
  * @returns {string[]} 写出去的文件路径
  */
-/**
- * 把 market/*.html 铺进部署目录，并把共享的「外壳 CSS」注入到它们 HTML 里 `<!-- @shell -->` 的位置。
- *
- * 为什么是注入而不是让它们各留一份：报头的样式原来在三个文件里各抄一份，改一次要改三处
- * （漏过）；四次令牌回归也全是「令牌定义散落」引起的。现在 web/src/shell.css 是唯一出处：
- * 报告的 styles.css 用 `@import` 拿，市集页与管理页在部署时注入同一份 —— 三处再也不会走偏。
- *
- * 只在这里注入（不在源码里）：本地直接打开 market/index.html 时看到的是没有外壳的样子，
- * 这是刻意的 —— 源码保持「只有这个页面自己的东西」。
- */
-export function stageMarketPages(dir, root, { beacon = true } = {}) {
-  const shellPath = join(root, 'web/src/shell.css');
-  const shell = existsSync(shellPath) ? readFileSync(shellPath, 'utf8') : '';
-  const marketSrc = join(root, 'market');
-  if (!existsSync(marketSrc)) return 0;
-
-  // 页面自己的 .css / .js 也一起铺（market/index.html 拆出来的那两个）
-  let assets = 0;
-  for (const name of readdirSync(marketSrc)) {
-    if (!/\.(css|js)$/.test(name)) continue;
-    const out = join(dir, 'market', name);
-    mkdirSync(dirname(out), { recursive: true });
-    copyFileSync(join(marketSrc, name), out);
-    assets++;
-  }
-
-  let n = 0;
-  for (const rel of htmlUnder(marketSrc)) {
-    const out = join(dir, 'market', rel);
-    mkdirSync(dirname(out), { recursive: true });
-
-    let src = readFileSync(join(marketSrc, rel), 'utf8');
-    // 注入外壳（在页面自己的 <style> 之前 → 页面自己的规则仍然压得住）
-    if (src.includes(SHELL_MARK)) src = src.replace(SHELL_MARK, shell ? `<style>\n${shell}</style>` : '');
-    // 部署产物里给市集页插一份访问统计；管理页不加（私人的）。
-    // 源码 market/index.html 保持干净——本地 wrangler pages dev 不该往线上报数据。
-    const isAdmin = rel.includes('admin');
-    // beacon 只在真正部署时插：本地 wrangler pages dev 不该往线上报数据
-    if (beacon && !isAdmin && src.includes('</body>')) src = src.replace('</body>', BEACON + '\n</body>');
-
-    writeFileSync(out, src, 'utf8');
-    n++;
-  }
-  return n + assets;
-}
-
-const SHELL_MARK = '<!-- @shell -->';
-
-/** market/ 下所有 .html 的相对路径（递归）。schema.sql 这类东西不发布 */
-function htmlUnder(base, prefix = '') {
-  const out = [];
-  for (const e of readdirSync(join(base, prefix), { withFileTypes: true })) {
-    const rel = prefix ? join(prefix, e.name) : e.name;
-    if (e.isDirectory()) out.push(...htmlUnder(base, rel));
-    else if (e.name.endsWith('.html')) out.push(rel);
-  }
-  return out;
-}
 
 export function writeDeployRoot(root, { defaultSite, sites }) {
   const dir = join(root, 'reports');
   mkdirSync(dir, { recursive: true });
 
-  // 有品：手写的页面（market/*.html，含 market/admin/）+ Pages Functions（仓库根的 functions/）。
-  // 页面不是报告，但和报告同一个域名、同一套视觉语言，所以跟着一起部署。
-  // 只拷 .html：market/schema.sql 是给 wrangler 建表用的，不该出现在网站上。
-  stageMarketPages(dir, root);
 
   // 只有 /api/* 需要走 Functions——其余（两份报告、图片、落地页）让 Pages 直接发静态文件，
   // 不为了市集给整站加一层函数调用。
@@ -476,13 +412,7 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const html = '  Cache-Control: public, max-age=300, stale-while-revalidate=3600\n';
   const headers = [
     ...sites.map((x) => `/${x.id}/img/*\n  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400\n`),
-    '/api/*\n  Cache-Control: no-store\n',
     ...sites.map((x) => `/${x.id}/\n${html}`),
-    '/market/\n' + html,
-    // 拆出来的两个静态资源：名字是固定的，跟着 HTML 一起短缓存
-    '/market/market.css\n' + html,
-    '/market/market.js\n' + html,
-    '/market/admin/\n  Cache-Control: no-store\n',
     '/\n' + html,
     '/*.html\n' + html,
   ].join('\n');
@@ -505,7 +435,6 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
       'User-agent: *',
       'Allow: /',
       'Disallow: /api/',
-      'Disallow: /market/admin/',
       '',
       'Sitemap: https://goodprices.online/sitemap.xml',
       '',
@@ -514,7 +443,7 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   );
 
   const today = new Date().toISOString().slice(0, 10);
-  const urls = [...sites.map((x) => `https://goodprices.online/${x.id}/`), 'https://goodprices.online/market/'];
+  const urls = [...sites.map((x) => `https://goodprices.online/${x.id}/`)];
   writeFileSync(
     join(dir, 'sitemap.xml'),
     [

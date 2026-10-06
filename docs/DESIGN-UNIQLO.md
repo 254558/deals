@@ -108,7 +108,7 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 ### 3.1 报头只剩一行
 
-报头只有一行站点信息：站点名（`meta.label`），然后是可选的「共记录 N 件」和行尾那组入口（另一家的报告 + 有品）。**「抓取于 2026/9/30 21:37」那一格 2026-10-01 删了**——页面上多一行时间对「这件要不要买」没有帮助，而且每天都在变、看着像过期提示；数据层照记（`payload.generatedAt`），浏览器标签页标题里继续带着日期，翻书签时才知道这份是哪天的。这一格现在两家都不开（`showRecorded: false`）：2026-09-30 之前只有迪卡侬显示，后来应要求去掉了。
+报头只有一行站点信息：站点名（`meta.label`），然后是可选的「共记录 N 件」和行尾那组入口（另一家的报告）。**「抓取于 2026/9/30 21:37」那一格 2026-10-01 删了**——页面上多一行时间对「这件要不要买」没有帮助，而且每天都在变、看着像过期提示；数据层照记（`payload.generatedAt`），浏览器标签页标题里继续带着日期，翻书签时才知道这份是哪天的。这一格现在两家都不开（`showRecorded: false`）：2026-09-30 之前只有迪卡侬显示，后来应要求去掉了。
 
 报头原来还有一排**总账数字**（在售降价 N 件 / 全部买下可省 ¥X / 降幅 ≥ 50% N 件 / 处于历史最低 N 件），现在删了。它们的问题不是不准确，是**对「这一件要不要买」没有任何帮助**——「全部买下可省多少」尤其如此，没人会全买。
 
@@ -413,7 +413,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 ⚠️ 报头里**不能用 `.label`**：那条是按站点定义的（优衣库 10px、迪卡侬 13px ink-2），
 用上就又不一致了。所以站点名和入口走 `.masthead__text`。
 另外页面外壳（`--pad` 40/24/16 与 `.wrap` 的 1560）也统一了——否则发丝线长度和左边距
-还是会不一样。市集页与管理页是手写的，照抄了这一段（market/index.html 里有注释指回来）。
+还是会不一样。
 
 ### 8.3 报头行尾那组入口
 
@@ -421,9 +421,6 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 1. **另一家的报告**（来自适配器的 `report.crossLink`）——两份报告互认是一家工具做的，
    指向 <https://goodprices.online/decathlon/> 与 <https://goodprices.online/uniqlo/>。
-2. **有品**（`https://goodprices.online/market/`）——全站共用，由核心在
-   `buildPayload` 里补进来，适配器不用管；只有 Cloudflare 那条部署路径给 `marketHref` 时才加
-   （Vercel 上没有这一页）。见 [MARKET.md](MARKET.md)。
 
 ⚠️ **只有第一个入口**能写 `margin-left: auto`。两个都写的话，flex 会把剩余空白**平分**给它们，
 两个链接之间就空出一大块——2026-09-30 加了第二个入口之后露出来的，改成
