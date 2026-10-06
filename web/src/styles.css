@@ -230,9 +230,7 @@ button {
   .sizechip--on { background: var(--ink); border-color: var(--ink); color: var(--white); }
 
 /* 名称下面那行小灰字（季节/尺码，或品牌+编号），两家的字号不同，见各自作用域 */
-.metaline { color: var(--ink-4); font-variant-numeric: tabular-nums; }
 /* ::before 的内容不进 textContent，只能靠几何验证（已验：每个后随 span 宽出 9.84px） */
-.metaline span + span::before { content: " · "; color: var(--rule); }
 
 /* ---------------- 图只干一件事：点一下去官网 ----------------
    收藏 / 不再出现两个动作从来不压在照片上 —— 图标盖着衣服，而图本来就只有一次
@@ -470,7 +468,6 @@ body {
 
 /* 榜单行名称底下那行小灰字（季节/尺码）——卡片和列表行的同款小字已经撤掉，
    这是它最后的使用处（用 rowMetaLine 开关的那一行是迪卡侬的，见第三段） */
-.metaline { font-size: 12px; letter-spacing: 0.02em; }
 
 /* ---------------- 大图浏览（PLP 卡片网格） ----------------
    尺寸照 uniqlo.cn 的 PLP 实测：图正好 3:4 铺满卡片宽、卡片间 24px 沟、

@@ -176,13 +176,7 @@
   @media (max-width: 640px) { .list { grid-template-columns: 1fr; } }
   .item { border: 1px solid var(--rule); display: flex; flex-direction: column; }
   .item img { width: 100%; aspect-ratio: 1/1; object-fit: cover; background: var(--surface); display: block; }
-  .item__body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
   /* 标题先占住两行：一行两行的卡片，价格行才对得齐 */
-  .item__title { font-size: 15px; font-weight: 600; line-height: 1.5; min-height: 45px; }
-  .item__price { color: var(--red); font-weight: 700; font-size: 18px; }
-  .item__meta { font-size: 13px; color: var(--ink-2); }
-  .item__note { font-size: 13px; color: var(--ink-2); }
-  .item__foot { margin-top: auto; padding-top: 8px; display: flex; align-items: center; gap: 10px; font-size: 12px; color: var(--ink-4); }
   .kbd {
     display: inline-block; padding: 0 5px; border: 1px solid var(--rule); background: var(--surface);
     font-family: var(--mono); font-size: 12px; line-height: 18px; color: var(--ink);
@@ -492,31 +486,6 @@
 /* 「我的」视图：把「我发的」这个小标题显出来。
    瀑布流那边它是藏着的（图墙自己说话），但这页需要一个标题交代「这是哪一页」。 */
 
-/* 转移码入口（「我的」页，在「我要出一件」下面）。
-   2026-10-01 手机端美化：原来它是个和主按钮几乎一样大的整宽描边盒子
-   （实测 374×44，主按钮 374×46）——两个大盒子叠在一起又重又抢眼，
-   而它其实是个**很少用**的次级功能（换手机才用）。
-   现在：浅底、更矮（38px）、更小（13px）、浅灰字，加一个展开时翻转的箭头。
-   层级变成「一个实心主按钮 + 一个安静的次级入口」。 */
-.transfer-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 100%;
-  height: 38px;
-  margin: 10px 0 10px;
-  padding: 0 12px;
-  border: 0;
-  background: var(--surface);
-  font-size: 13px;
-  letter-spacing: .02em;
-  color: var(--ink-3);
-  cursor: pointer;
-}
-.transfer-toggle:hover { color: var(--ink-2); }
-.transfer-toggle .ico { transition: transform .18s ease; }
-.transfer-toggle[aria-expanded="true"] .ico { transform: rotate(180deg); }
 
 /* 「我的」页的转移码面板：只在 .mine 下出现（HTML 里也有 hidden 兜底）。
    浅底是为了和上面那颗浅底入口连成一体（缩进感），描边留一条免得糊在一起。 */

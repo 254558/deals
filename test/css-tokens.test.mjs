@@ -108,3 +108,23 @@ test('没有哪个变量是靠「兜底值」硬撑的（有的话说明定义�
   }
   assert.deepEqual(onlyFallback, [], `这些变量全靠兜底值撑着，定义应该是丢了：${onlyFallback.join(', ')}`);
 });
+
+/**
+ * 反方向的那一半：**定义了、却没有任何地方 var() 的令牌**就是死令牌。
+ *
+ * 上面几条只管「用了没定义」——那会当场出视觉事故（整条声明失效），所以好抓；
+ * 反过来的「定义了没人用」是**无声**的：页面看不出任何异常，只是变量表一年年变长。
+ * 2026-10-06 清理时就抓到三个（--yellow / --ls-price / --badge-ink，都随折扣角标那套
+ * 一起废掉了，但定义一直留在 shell.css 里）。加这条钉住。
+ *
+ * 注意：扫的是**所有** CSS 拼起来的一份，因为令牌常定义在一处、用在另一处
+ * （shell.css 定义、market.css 使用）。运行时由 JS 写上去的（--w / --i 那些）
+ * 本来就不在 CSS 里定义，所以不会误报。
+ */
+test('没有「定义了却一处都没用」的令牌（死令牌）', () => {
+  const all = ['web/src/shell.css', 'web/src/styles.css', 'market/market.css']
+    .map((f) => readFileSync(ROOT + f, 'utf8')).join('\n');
+  const used = usedTokens(all);
+  const dead = [...definedTokens(all)].filter((n) => !used.has(n));
+  assert.deepEqual(dead, [], `这些变量定义了但全项目没有一处 var() 引用，删掉即可：${dead.join(', ')}`);
+});

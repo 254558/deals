@@ -23,7 +23,6 @@
   --surface-2: #fafafa;
   --blue: #3643ba;
   --red: #e20c18;
-  --yellow: #ffcd4e;
   /* 页面外壳的左右内边距。基准值 40px 丢了之后 `padding: 0 var(--pad)` 整条失效，
      左右边距直接算成 0（用户 2026-10-01 报的「整体左右边距没有了」）。
      1180 / 760 两档的收紧写在文件后面的媒体查询里，会覆盖这里。 */
@@ -42,8 +41,6 @@
   --bg: #fff;
   --ink-3: #8a8f96;
   --ink-faint: #d3d8de;
-  --ls-price: -0.01em;
-  --badge-ink: #000f17;
   --bar-dur: 600ms;
   --bar-ease: cubic-bezier(0.2, 0.7, 0.3, 1);
 }
@@ -123,7 +120,6 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
   /* 让点击穿过它落到图片链接上（这里是子元素，与「压在链接自己身上」那次的坑不同） */
   pointer-events: none;
 }
-.card__sizes__text { color: var(--ink); }
 
 .masthead {
   position: sticky;
