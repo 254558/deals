@@ -835,13 +835,11 @@ body {
 }
 
 .mine__favs { display: flex; flex-direction: column; }
-/* 2026-10-06 用户：「图片下面不要有收藏的下划线」「每条收藏的行高能高一点，
-   最好不要上下边距」。所以：
-     · 去掉 border-bottom（就是图片底下那条分隔线）；
-     · 上下内边距 10px → 0，行高完全由内容决定。
-   行变高靠的是把缩略图放大（.fav__img 52 → 76），不是靠 padding 撑 —— 这正是
-   用户要的"不要上下边距"。代价是行与行现在**紧贴**、中间没有任何空隙，
-   靠图片自己把两行分开；觉得挤的话给 .mine__favs 加个 gap 就行。 */
+/* 2026-10-06 用户：「每条收藏的行高能高一点，最好不要上下边距」。
+   上下内边距 10px → 0，行高完全由内容决定（行变高靠把缩略图放大到 76，
+   不是靠 padding 撑 —— 这才是"不要上下边距"的意思）。
+   代价是行与行紧贴、中间没有空隙，靠图片自己把两行分开；
+   觉得挤就给 .mine__favs 加个 gap。 */
 .fav {
   display: flex;
   align-items: center;
@@ -849,6 +847,25 @@ body {
   padding: 0;
 }
 .fav__link { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
+
+/* 行与行之间那条分隔线。
+   ⚠️ 2026-10-06 用户先说要"去掉"，看了之后纠正：「不是去掉下划线，而是图片下面没有
+   下划线，也就是下划线要短一点，不要延伸到图片下面」——
+   所以要的不是没有线，而是**线从文字那里才开始**。
+
+   做法：线不画在 .fav 上（那是整行宽，会伸到图片底下），而是画在 .fav__link 的
+   伪元素上，左边界跳过"图片 + 间距"那一截。顺带一个好处：.fav__link 是会跟着手指
+   滑的那一层，线挂在它身上就会一起滑；挂在 .fav 上左滑时线会僵在原地、压着文字。
+   ⚠️ calc 里那两个数要和 .fav__img 的宽度、.fav__link 的 gap 保持一致。 */
+.fav__link::after {
+  content: '';
+  position: absolute;
+  left: calc(76px + 12px);
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: var(--rule-soft);
+}
 .fav__link:hover .fav__name { color: var(--ink, #000f17); }
 .fav__img {
   -webkit-user-drag: none;   /* 见上：Safari 里图片默认可拖 */
