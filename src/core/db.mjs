@@ -16,11 +16,17 @@
  *
  * 2. **字段取并集，站点私有的塞进 `extra`（JSON）**。两个旧库的
  *    `origin_price` / `last_price` / `launch_price` / `min_price_ever` /
- *    `max_discount` 语义本来一致，直接留；差异在商品属性上：优衣库要
- *    season / sex / size_range / colors，迪卡侬要 brand / sports / nature /
- *    family / catch_line / model_code。报告真正会渲染的（brand / sports /
- *    season / size_range）给独立列，其余的进 `extra` —— 报告的数据是从列里
- *    组的，`extra` 不会流进 payload，不会白白撑大单文件报告。
+ *    `max_discount` 语义本来一致，直接留；差异在商品属性上：
+ *    优衣库要 season / sex / size_range / colors，迪卡侬要 brand / sports /
+ *    nature / family / catch_line / model_code。都进独立列，其余的进 `extra`
+ *    —— 报告的数据是从列里组的，`extra` 不会流进 payload。
+ *
+ *    ⚠️ 2026-10-06 清理：这段话原来写着「报告真正会渲染的（brand / sports /
+ *    season / size_range）给独立列」，把「存哪儿」和「报不报」混成了一句。
+ *    实际上 payload 只报 **brand**（站点描述符驱动，优衣库为空串）；
+ *    sports / season / size_range 只留在库里给适配器用（比如 size_range 是
+ *    尺码推断的输入），**不再往报告里塞** —— 878 件 × 三个字段 ≈ 43 KB 原始，
+ *    而 UI 一次都没读过。
  *
  * 3. **`in_stock` 成了两站共用的「还在售」开关**。优衣库那边是 `stock === 'Y'`，
  *    迪卡侬那边是 `price.on_sale !== false`，语义都是「这件现在能买」，

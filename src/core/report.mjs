@@ -41,9 +41,9 @@ function toDeal(row, images, remote, site, vocab) {
     code: row.code || row.product_code,
     name: row.name,
     brand: row.brand || '',
-    sports: row.sports || '',
-    season: row.season || '',
-    sizeRange: row.size_range || '',
+    // 2026-10-06 清理：这里原来还有 sports / season / sizeRange 三个字段（约 43 KB 原始），
+    // 都是「算出来、写进 payload、UI 一次都不读」。它们仍然存在库里（适配器的尺码逻辑
+    // 要用 size_range，db.mjs 的注释也说明了列的设计），只是**不再往报告里塞**。
     // 「还剩什么尺码」。这是**站点自己的知识**（内部码怎么翻译成 S / 110cm），
     // 所以问适配器；它答不出来（袜子/内衣那些推不出显示名的家族）就是 null，
     // 卡片回退显示商品名。

@@ -5,22 +5,23 @@ import { MinePanel } from './components/MinePanel.jsx';
 import { Toolbar } from './components/Toolbar.jsx';
 import { ProductCard } from './components/ProductCard.jsx';
 import { num } from './lib/format.js';
-import { useWatch } from './lib/watch.js';
+import { useWatch, FAVORITES_KEY } from './lib/watch.js';
 import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.js';
 import { ourSizes, sizeRank } from './lib/sizes.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
 /**
- * 收藏快照：报告页点爱心时，把整件商品存进 localStorage（同源共享），
- * 存在本地（原来是发给「我的」页展示的，那个页面 2026-10-06 删了）。原来只存 id 到 picks，
- * 「我的」那边没有报告数据，光有 id 也渲染不出东西，所以这里存完整字段。
- * 键 `deals.favorites` 跨优衣库/迪卡侬共用（「我的」要一起看）。
+ * 收藏快照：报告页点爱心时，把整件商品存进 localStorage（同源共享）。
+ * 原来是发给独立的一页「我的」看；那页 2026-10-06 收进了报告本身（MinePanel），
+ * 但存的内容没变 —— 整件商品的字段，因为「我的」那边没有报告数据，
+ * 光有 id 渲染不出东西。
+ *
+ * 键从 lib/watch.js 拿（唯一出处），别在这里再写一遍字面量。
  */
-const FAV_KEY = 'deals.favorites';
 function saveFavorite(d, on) {
   try {
     let list = [];
-    try { list = JSON.parse(localStorage.getItem(FAV_KEY) || '[]'); } catch {}
+    try { list = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'); } catch {}
     if (!Array.isArray(list)) list = [];
     list = list.filter((x) => x.id !== d.id);
     if (on) {
@@ -31,7 +32,7 @@ function saveFavorite(d, on) {
         url: d.url, site: DATA.site, prefix: META.storagePrefix, savedAt: Date.now(),
       });
     }
-    localStorage.setItem(FAV_KEY, JSON.stringify(list));
+    localStorage.setItem(FAVORITES_KEY, JSON.stringify(list));
   } catch { /* 存不下就算了 */ }
 }
 

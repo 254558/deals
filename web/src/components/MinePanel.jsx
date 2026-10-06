@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { META } from '../lib/site.js';
+import { FAVORITES_KEY } from '../lib/watch.js';
 
 /**
  * 「我的」——报告里的一个整屏视图，**只有两块：收藏 / 转移码**。
@@ -9,17 +10,16 @@ import { META } from '../lib/site.js';
  * 于是把它收进报告本身：报告是双击就能打开的单文件，而收藏和转移码**本来就是纯本地的**
  * （localStorage，没有服务端），放进来自带两个好处——离线可用、少一套部署。
  *
- * 键的来历见 App.jsx 顶部的注释：`deals.favorites` 跨站点共用，
+ * 键的来历见 lib/watch.js（收藏夹 + 三本账都在那儿定义）：`deals.favorites` 跨站点共用，
  * `${prefix}.picks / .dropped / .hidden` 是「待拔草 / 不再出现」那三本账（见 lib/watch.js）。
  */
 
-const FAV_KEY = 'deals.favorites';
 const TX_PREFIX = 'GP1.';
 
 /** 转移码里打包哪些键：收藏夹 + 「待拔草 / 不再出现 / 已隐藏」三本账 */
 function transferKeys() {
   const p = META.storagePrefix;
-  return [FAV_KEY, `${p}.picks`, `${p}.dropped`, `${p}.hidden`];
+  return [FAVORITES_KEY, `${p}.picks`, `${p}.dropped`, `${p}.hidden`];
 }
 
 /** 报告可能是 file:// 打开的，那时 /uniqlo/img/x.webp 这种绝对路径解不出来 —— 去掉开头的斜杠 */
@@ -40,7 +40,7 @@ export function MinePanel() {
   // 挂上来就重读一遍：可能刚在报告里点过爱心
   useEffect(() => {
     try {
-      const v = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
+      const v = JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]');
       setFavs(Array.isArray(v) ? v : []);
     } catch {
       setFavs([]);
@@ -55,7 +55,7 @@ export function MinePanel() {
     setFavs(next);
     const one = favs.find((x) => x.id === id);
     try {
-      localStorage.setItem(FAV_KEY, JSON.stringify(next));
+      localStorage.setItem(FAVORITES_KEY, JSON.stringify(next));
       if (one?.prefix) {
         const pk = `${one.prefix}.picks`;
         const dk = `${one.prefix}.dropped`;
@@ -95,7 +95,7 @@ export function MinePanel() {
     try {
       for (const [k, v] of Object.entries(bag)) {
         if (!transferKeys().includes(k) || typeof v !== 'string') continue;
-        if (k === FAV_KEY) {
+        if (k === FAVORITES_KEY) {
           // 收藏夹要**合并**：按 id 去重，本地已有的为准
           const cur = JSON.parse(localStorage.getItem(k) || '[]');
           const add = JSON.parse(v);
@@ -203,4 +203,3 @@ export function MinePanel() {
   );
 }
 
-export { FAV_KEY };

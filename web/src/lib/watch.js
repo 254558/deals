@@ -18,6 +18,15 @@ import { META } from './site.js';
  * `deals[].id` 沿用旧仓库那两个商品编号字段的值，键前缀也沿用旧的，
  * 两个旧报告里已经点过的收藏和隐藏，在新报告里原样还在（契约第五节）。
  */
+/**
+ * 收藏夹的键。**跨站点共用**（一份报告里两个站点都往里写）。
+ *
+ * 2026-10-06 清理：这个字符串原来在 App.jsx 和 MinePanel.jsx 里**各写了一遍**，
+ * 两边必须永远一致、却没有任何东西保证 —— 改一处另一处会静默失效。
+ * 收到这里当唯一出处（它和下面三本账本来就是一族）。
+ */
+export const FAVORITES_KEY = 'deals.favorites';
+
 const KEYS = {
   picks: `${META.storagePrefix}.picks`,
   dropped: `${META.storagePrefix}.dropped`,
