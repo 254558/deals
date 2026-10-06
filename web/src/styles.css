@@ -183,15 +183,63 @@ button {
   border-bottom: 1px solid var(--rule);
 }
 
-.search {
-  font-family: inherit;
-  color: var(--ink);
+/* 搜索框 + 它背景那片闪烁方格。
+   ⚠️ 白底和边框从 .search 挪到了外面这层：方格必须画在**输入框下面**，
+   而 input 自己的背景会把它盖住 —— 所以 input 透明、容器持白底。
+   （input 也**不能**用 ::before 放方格：input 不生成伪元素。） */
+.searchbox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
   background: var(--white);
   border: 1px solid var(--rule);
+}
+.searchbox:focus-within { border-color: var(--ink); }
+/* 方格铺在边框里侧，16 列 × 3 行 */
+.searchbox__grid {
+  position: absolute;
+  inset: 1px;
+  display: grid;
+  /* 固定 14px 的**方格**（原来写 1fr 等分，在宽搜索框里被拉成长方形 ——
+     组件叫 blinking *squares*，那就得真是方的）。auto-fill 让它们自己铺满宽度，
+     多出来的格子被 overflow: hidden 吃掉。 */
+  /* 14px → **6px**（2026-10-06：用户给了桌面那份 claude-range-slider-main 作参考 ——
+     那是 Claude Code 的 effort 滑块，轨道里铺的是约 6px 的小方格，密密麻麻一片。
+     我先前做的 14px 太大太稀，看着是几块灰斑，不是一片方格。 */
+  grid-template-columns: repeat(auto-fill, 6px);
+  grid-auto-rows: 6px;
+  overflow: hidden;
+  pointer-events: none;
+}
+/* 每格默认透明，各自按自己的延迟闪一下。
+   颜色用 --ink-4（最淡的那档灰）而不是墨色 —— 这是打字的地方，背景只能"有动静"，
+   不能抢字。整片同一瞬间大约亮三分之一，图案一直在变。 */
+.searchbox__grid > i {
+  background: var(--ink-4);
+  opacity: 0;
+  animation: blink-square 3.2s infinite;
+}
+@keyframes blink-square {
+  0%, 22% { opacity: 0; }
+  22.01%, 34% { opacity: 0.5; }
+  34.01%, 100% { opacity: 0; }
+}
+/* 关了动效就是一块干净白底（方格本来也几乎看不见，直接不动最省事） */
+@media (prefers-reduced-motion: reduce) {
+  .searchbox__grid > i { animation: none; }
+}
+.search {
+  position: relative; /* 压在方格上面 */
+  flex: 1;
+  min-width: 0;
+  font-family: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
   outline: none;
 }
 .search::placeholder { color: var(--ink-4); }
-.search:focus { border-color: var(--ink); }
 
   /* ---------------- 尺码筛选 ---------------- */
   /* 工具条那一行要当面板的定位上下文 */

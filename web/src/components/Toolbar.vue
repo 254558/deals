@@ -34,6 +34,22 @@ const props = defineProps({
   sizes: { type: Array, default: () => [] },
 });
 
+/**
+ * 搜索框背景那片方格：16 列 × 3 行。
+ * 260 格：390px 宽 ÷ 6px ≈ 65 列 × 3 行 ≈ 195 格，留点余量（多出来的被 overflow 裁掉）。每格错开一个**看起来没规律、但写死**的延迟，铺满整个 3.2s 周期 —— 整片一起闪就不叫"方格在闪"了，
+ * 而用随机数会让每次渲染都不一样（同一个页面刷新两次长得不同，不稳定也不好截图）。
+ */
+const GRID_CELLS = 260;
+// 步长 1373 与周期 3200 **互质**：n=1,2,3… 取模后会跳着走遍所有相位，
+// 而不是依次递增。用 137 那种小步长时，相邻格子会一个接一个亮 ——
+// 看着是一道扫过去的波（我第一版就是这样，截图里是明显的阶梯），
+// 不像“一片方格各自在闪”。
+// 延迟用 **n²**，不用 n 的线性式。线性式会踩到一个坑：格数是 auto-fill 出来的
+// （约 21 列），而 1373 × 21 恰好接近 3200 的整数倍 —— 于是 n 和 n+21（同一列的
+// 上下三格）相位几乎一样，一整列会同时亮，看着是一根竖条（截图里就是那样）。
+// 加一个平方项就把这个周期性打断了：同一列的相位会拉开到上千毫秒。
+const cellDelay = (n) => `${(n * n * 811) % 3200}ms`;
+
 const open = ref(false);
 const boxRef = ref(null);
 
@@ -72,14 +88,23 @@ function pickSize(v) {
   <div class="toolbar">
     <div class="wrap">
       <div class="toolbar__row">
-        <input
-          class="search"
-          type="search"
-          :value="props.query"
-          :placeholder="META.searchPlaceholder"
-          :aria-label="META.searchPlaceholder"
-          @input="props.onQuery?.($event.target.value)"
-        />
+        <!-- 搜索框外面这层是为了**闪烁方格**（用户 2026-10-06：
+             「搜索框的背景能弄成这种吗」，给的是 ReactBits **Pro** 的 blinking-squares）。
+             那个组件是付费的，源码拿不到也不该扒 —— 这里按它**描述的效果**自己写：
+             一片方格，各自错开着闪。纯 CSS，不进 966 张卡，只服务这一个输入框。 -->
+        <div class="searchbox">
+          <span class="searchbox__grid" aria-hidden="true">
+            <i v-for="n in GRID_CELLS" :key="n" :style="{ animationDelay: cellDelay(n) }" />
+          </span>
+          <input
+            class="search"
+            type="search"
+            :value="props.query"
+            :placeholder="META.searchPlaceholder"
+            :aria-label="META.searchPlaceholder"
+            @input="props.onQuery?.($event.target.value)"
+          />
+        </div>
 
         <div v-if="props.sizes.length > 0" ref="boxRef" class="sizefilter">
           <button
