@@ -835,14 +835,14 @@ body {
 }
 
 /* 行与行之间的空隙（2026-10-06 用户：「收藏一多，上面的图片和下面的图会连在一起」）。
+   14 → 6 → **3**（用户三次："太大了"「再小一点」"缝 再小一点"）。
    用 gap 而不是给 .fav 加回上下内边距：缝隙落在行**外面**，
    左滑露出的红块仍然只覆盖自己那一行，不会跟着变高。 */
-.mine__favs { display: flex; flex-direction: column; gap: 6px; }
+.mine__favs { display: flex; flex-direction: column; gap: 3px; }
 /* 2026-10-06 用户：「每条收藏的行高能高一点，最好不要上下边距」。
    上下内边距 10px → 0，行高完全由内容决定（行变高靠把缩略图放大到 76，
    不是靠 padding 撑 —— 这才是"不要上下边距"的意思）。
-   代价是行与行紧贴、中间没有空隙，靠图片自己把两行分开；
-   觉得挤就给 .mine__favs 加个 gap。 */
+   当时行与行是紧贴的；用户看了一屏之后说要留缝，于是 .mine__favs 加了 gap。 */
 .fav {
   display: flex;
   align-items: center;
@@ -950,7 +950,14 @@ body {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 88px;
+  /* **正方形**（2026-10-06 用户：「我希望左滑的删除的红色是个正方形」）。
+     原来写死 width: 88px，而行高是 60（由缩略图决定）→ 88×60 的长条。
+     现在用 aspect-ratio + width: auto：高度被 top/bottom 撑满整行，
+     宽度自动等于高度 —— 行高以后变了它自己跟着变方，不会再退回矩形。
+     ⚠️ 宽度变了要同步改 MineFavorites.vue 里的 OPEN_X（滑开停住的位置），
+       那个值就是这块的宽度。 */
+  aspect-ratio: 1;
+  width: auto;
   border: 0;
   background: var(--red, #e20c18);
   color: var(--white);
