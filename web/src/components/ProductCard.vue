@@ -88,7 +88,11 @@ const text = computed(() => chips(props.deal.tags));
  */
 // 12 → 24（2026-10-06）：参照图里是 ~32 根**细**条，12 根在卡片宽度下太胖，
 // 像积木不像刻度。24 根配 4px 上限，密度和细度都贴近参照图。
-const BAR_SEGMENTS = 24;
+// 24 → 27（2026-10-06 用户：「这个条整体可以长一点，因为条和降了多少钱中间有点空」）。
+// 那点空是**盒子比内容宽**造成的：盒子 flex:1 撑满 137px，而 24 格 × 3px + 23 个
+// 2px 缝只有 118px —— 右边空出 19px，看着就是条和字之间的一道缝。
+// 27 格 = 133px，正好填满（盒子缩进 2px 后是 135px）。
+const BAR_SEGMENTS = 27;
 const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(props.deal.rate * BAR_SEGMENTS))));
 
 // 名字**原样显示**，不再按斜杠截断。
