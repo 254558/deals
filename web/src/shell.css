@@ -136,7 +136,18 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
   border-bottom: 1px solid var(--rule);
   color: var(--ink-4);
 }
-.masthead__dot { flex: none; width: 6px; height: 6px; background: var(--red); }
+/* 品牌名前面那一点：**细密的方块点阵**（用户 2026-10-06：「能不能做成细密的方块点阵」）。
+   原本是个 6×6 的实心红方块。现在是 9×9 里铺 3×3 个「2px 方块 + 1px 空隙」——
+   平铺用内联 SVG（data URI）而不是堆两层渐变：方块的边界精确，缩放时也不会糊。
+   颜色写死十六进制而不是 var()：这个项目栽过两次「var() 解析不到 → 整条声明失效」，
+   品牌色这一处不值得再赌一次（--red 也是同一个值）。 */
+.masthead__dot {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3Crect width='2' height='2' fill='%23e20c18'/%3E%3C/svg%3E");
+  background-size: 3px 3px;
+}
 /* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
    迪卡侬 13px ink-2），而报头必须两家一模一样。 */
 .masthead__text {
