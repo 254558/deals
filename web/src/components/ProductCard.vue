@@ -145,7 +145,7 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
              **¥ 本身仍用 sr-only 留着**：不然读屏器念价格只剩「59」，丢了币种。 -->
         <span class="now__sym">
           <span class="sr-only">{{ now.sym }}</span>
-          <BadgeJapaneseYen :size="13" :stroke-width="2" aria-hidden="true" />
+          <BadgeJapaneseYen :size="11" :stroke-width="2" aria-hidden="true" />
         </span>
         <span class="now__int">{{ now.int }}</span>
         <span class="now__dec">{{ now.dec }}</span>
