@@ -139,7 +139,10 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
      把后面那几条全推到行尾了，所以它们之间的列间距是被 auto 吃掉的，看不出来。 */
   gap: 14px 6px;
   padding-bottom: 14px;
-  border-bottom: 1px solid var(--rule);
+  /* 这里原来有一条 1px 的分隔线（border-bottom: 1px solid var(--rule)）。
+     2026-10-06 用户：「删掉导航栏的下划线」——报头和它下面的工具条都是白底，
+     这条线只是把两个白块切开，去掉之后更干净。
+     （工具条自己那条更早就置零了，见 styles.css 的 .toolbar__row。） */
   color: var(--ink-4);
 }
 /* 品牌名前面那一点：**细密的方块点阵**（用户 2026-10-06：「能不能做成细密的方块点阵」）。
