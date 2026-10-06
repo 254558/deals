@@ -145,12 +145,28 @@ onMounted(() => {
   setTimeout(put, 300);
 });
 
+/**
+ * 列表**可见时**的最后滚动位置。
+ *
+ * ⚠️ 为什么不直接用 `window.scrollY`：进了「我的」之后榜单那一块是 `hidden` 的，
+ * 文档变短，`window.scrollY` 必然是 0。而进度是在 `pagehide` 那一刻读它——
+ * 于是「在『我的』里点『优衣库』回榜单」会把读到哪儿覆盖成 0，回来就停在顶部
+ * （用户 2026-10-06 报的正是这个：「点导航栏的 GoodPrices 或优衣库，停不到刚才浏览的位置」。
+ *  实测：从榜单上点 GoodPrices 能回到原处，从「我的」里点优衣库就回到顶部）。
+ * 所以滚动位置只在榜单可见时记，保存时用它。
+ */
+const lastListY = ref(0);
+function onScrollRemember() {
+  if (!mineOpen.value) lastListY.value = Math.round(window.scrollY);
+}
+
 // 页面被收起 / 离开时把进度写下来
 function saveNow() {
   saveProgress(DATA.site, DATA.generatedAt, {
     size: size.value,
     visible: visible.value,
-    scrollY: Math.round(window.scrollY),
+    // 在「我的」里的话，window.scrollY 是 0（榜单 hidden），用记下来的那个
+    scrollY: mineOpen.value ? lastListY.value : Math.round(window.scrollY),
     query: query.value,
   });
 }
@@ -160,11 +176,19 @@ function onVisibility() {
 onMounted(() => {
   window.addEventListener('pagehide', saveNow);
   document.addEventListener('visibilitychange', onVisibility);
+  window.addEventListener('scroll', onScrollRemember, { passive: true });
 });
 onBeforeUnmount(() => {
   window.removeEventListener('pagehide', saveNow);
   document.removeEventListener('visibilitychange', onVisibility);
+  window.removeEventListener('scroll', onScrollRemember);
 });
+
+/** 进「我的」之前先记一下当前位置 —— 进去之后 mineOpen 就挡着不再更新了 */
+function openMine() {
+  lastListY.value = Math.round(window.scrollY);
+  mineOpen.value = true;
+}
 
 function reset() {
   query.value = '';
@@ -177,7 +201,7 @@ function reset() {
   <Masthead
     :recorded="DATA.recorded ?? deals.length"
     :mine-open="mineOpen"
-    :on-mine="() => (mineOpen = true)"
+    :on-mine="openMine"
   />
 
   <!-- 「我的」是**一块视图**，不是盖住全屏的浮层 —— 导航栏必须一直在
