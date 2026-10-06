@@ -121,12 +121,18 @@ function pickSize(v) {
           >
             尺码{{ props.size ? ' · ' + props.size : '' }}
           </button>
-          <div v-if="open" class="sizefilter__pop">
-            <!-- 2026-10-06 用户：「选尺码的换成这种风格」（vue-bits 的 jelly-radio）。
-                 原来每个尺码占满一整行（竖排），果冻效果必须让它们**并排**才推得开。 -->
-            <JellyChips :items="jellyItems" :value="props.size" @pick="pickSize" />
-          </div>
         </div>
+      </div>
+      <!-- 尺码那一排：**整行展开**，不是浮层。
+           2026-10-06 用户：「我点尺码的时候，我希望搜索框下面能空出一些空间，
+           容纳选尺码的 xs，xl 这些按钮，而不是单开一个框框」。
+           原来它 absolute 定位在按钮下面、自带边框和阴影，像个小弹窗；
+           现在挪到 .toolbar__row 外面、下面 —— 工具条因此变高，
+           内容自然被往下推，正好"空出一些空间"。 -->
+      <div v-if="open" class="sizefilter__pop">
+      <!-- 2026-10-06 用户：「选尺码的换成这种风格」（vue-bits 的 jelly-radio）。
+      原来每个尺码占满一整行（竖排），果冻效果必须让它们**并排**才推得开。 -->
+        <JellyChips :items="jellyItems" :value="props.size" @pick="pickSize" />
       </div>
     </div>
   </div>

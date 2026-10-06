@@ -216,12 +216,15 @@ button {
   .sizefilter__btn[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
   .sizefilter__btn:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
   /* 展开的尺码面板：贴着按钮下面，可滚（优衣库有 66 种标签，童装 cm 那些都在里面） */
+  /* 尺码区：**整行展开**，不是浮层。
+     2026-10-06 用户：「我点尺码的时候，我希望搜索框下面能空出一些空间，
+     容纳选尺码的 xs，xl 这些按钮，而不是单开一个框框」。
+     所以去掉了 absolute / z-index / 固定宽度 / 最大高度+滚动 / 边框 / 阴影 ——
+     它现在就是 .toolbar__row 下面的一段普通区块，工具条跟着变高，内容被往下推。
+     （上面那条 .toolbar__row 的 border-bottom 正好成了它和搜索框之间的分隔线。） */
   .sizefilter__pop {
-    position: absolute; right: 0; top: calc(100% + 6px); z-index: 6;
-    display: flex; flex-wrap: wrap; gap: 6px;
-    width: min(360px, calc(100vw - 32px)); max-height: 46vh; overflow-y: auto;
-    padding: 10px; background: var(--white); border: 1px solid var(--rule);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, .10);
+    display: block;
+    padding: 12px 0 14px;
   }
     /* 尺码那一排：**果冻选项**（2026-10-06 用户：「选尺码的换成这种风格」，
        效果来自 vue-bits 的 jelly-radio，见 components/JellyChips.vue 的手写移植）。
@@ -645,7 +648,7 @@ body {
        改法：把 .sizefilter 变 static，面板的包含块就升到 .toolbar__row（它是 relative），
        再 left/right: 0 就正好铺满这一行 —— 两边都等于页面内衬（.wrap 的 8px），对称。 */
     .sizefilter { position: static; }
-    .sizefilter__pop { left: 0; right: 0; width: auto; }
+    /* 尺码区现在是整行展开，不再需要手机上那条定位补丁 */
 
   /* --pad 的三档已挪到 shell.css（唯一的出处） */
   .masthead { margin-top: 26px; }
