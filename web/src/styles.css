@@ -837,7 +837,7 @@ body {
 /* 行与行之间的空隙（2026-10-06 用户：「收藏一多，上面的图片和下面的图会连在一起」）。
    用 gap 而不是给 .fav 加回上下内边距：缝隙落在行**外面**，
    左滑露出的红块仍然只覆盖自己那一行，不会跟着变高。 */
-.mine__favs { display: flex; flex-direction: column; gap: 14px; }
+.mine__favs { display: flex; flex-direction: column; gap: 6px; }
 /* 2026-10-06 用户：「每条收藏的行高能高一点，最好不要上下边距」。
    上下内边距 10px → 0，行高完全由内容决定（行变高靠把缩略图放大到 76，
    不是靠 padding 撑 —— 这才是"不要上下边距"的意思）。
