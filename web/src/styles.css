@@ -569,7 +569,13 @@ body {
    下面那 11px 始终**没动** —— 那是「搜索框下沿 → 商品图片上沿」的距离，
    用户确认过要图片和工具条下沿齐平，动了会把那里又拉开。 */
 .toolbar__row { gap: 18px; padding: 4px 0 11px; }
-  .search { flex: 0 1 240px; min-width: 0; font-size: 12px; padding: 7px 12px; }
+  /* 左内边距 12 → **0**（2026-10-06 用户：「搜索商品名或吊牌编号和前面的图标间距缩小」）。
+     实测图标右沿到文字起点是 18px = 图标的 margin-right 6px + 这里的 padding-left 12px。
+     这 12px 本来是"没有图标时"给文字留的缩进；现在左边站着图标，它就成了多余的空隙。
+     归零后文字紧跟图标（18 → 6px，剩下那 6px 是图标自己的 margin-right，
+     想再紧就改 .searchbox__icon 里那个数）。右边 12px 不动。
+     ⚠️ 注意别顺手改到 .sizefilter__btn —— 它也有个一模一样的 padding: 7px 12px。 */
+  .search { flex: 0 1 240px; min-width: 0; font-size: 12px; padding: 7px 12px 7px 0; }
 .search:focus { border-color: var(--ink); }
 
 /* 榜单行名称底下那行小灰字（季节/尺码）——卡片和列表行的同款小字已经撤掉，
