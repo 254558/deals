@@ -355,12 +355,15 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   /** 拆成独立文件的那些 .woff2 名字（要发 preload） */
   let fontFiles = [];
   if (withFont && site.fonts) {
-    const files = await ensureFontFiles(join(ROOT, 'data', 'fonts'), site.fonts, { onStatus: (m) => console.log(C.dim(`\n${m}`)) });
+    // **线上才拆**（有 origin = 会挂到 CDN 上）：那时页面能被缓存、字体也能永久缓存。
+    // 本地/离线那份继续内联 —— 报告要能双击打开，不能依赖旁边有没有文件。
+    const external = origin ? dirname(reportPath(site)) : null;
+    const payloadText = JSON.stringify(buildPayload(db, site, images, { crossLinkHref }));
+    const fontDir = join(ROOT, 'data', 'fonts');
+    const dim = (m) => console.log(C.dim(`\n${m}`));
+
+    const files = await ensureFontFiles(fontDir, site.fonts, { onStatus: dim });
     if (files) {
-      const payloadText = JSON.stringify(buildPayload(db, site, images, { crossLinkHref }));
-      // **线上才拆**（有 origin = 会挂到 CDN 上）：那时页面能被缓存、字体也能永久缓存。
-      // 本地/离线那份继续内联 —— 报告要能双击打开，不能依赖旁边有没有文件。
-      const external = origin ? dirname(reportPath(site)) : null;
       const built = await buildFontCss({
         files, text: js + payloadText, family: site.fonts.family, notice: site.fonts.notice,
         outDir: external,
@@ -368,6 +371,20 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
       fontCss = built?.css ?? null;
       fontFiles = built?.files ?? [];
     } else console.log(C.yellow('\n字体下载失败，报告改用系统字体栈（版面不受影响）。'));
+
+    // 站名那个字体（Fjalla One）：只裁 "GoodPrices" 几个字母，2~3 KB。
+    // 和中文字体拼在同一段 CSS 里 —— renderHtml 只收一个 fontCss 字符串。
+    const wm = site.fonts.wordmark;
+    if (withFont && wm) {
+      const wmFiles = await ensureFontFiles(fontDir, { faces: [{ weight: 400, file: wm.file, url: wm.url, minBytes: wm.minBytes }] }, { onStatus: dim });
+      if (wmFiles) {
+        const wmBuilt = await buildFontCss({ files: wmFiles, text: wm.text, family: wm.family, notice: wm.notice, outDir: external });
+        if (wmBuilt) {
+          fontCss = (fontCss ? fontCss + '\n' : '') + wmBuilt.css;
+          fontFiles = [...fontFiles, ...wmBuilt.files];
+        }
+      }
+    }
   }
 
   const payload = buildPayload(db, site, images, { crossLinkHref });

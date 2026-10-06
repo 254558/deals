@@ -27,14 +27,15 @@ import { join } from 'node:path';
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-async function download(url, dest, retries = 2) {
+async function download(url, dest, retries = 2, minBytes = 1_000_000) {
   for (let i = 0; i <= retries; i++) {
     try {
       const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(120_000) });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const buf = Buffer.from(await res.arrayBuffer());
-      // 字体文件 8MB 起步，太小说明拿到的是错误页
-      if (buf.length < 1_000_000) throw new Error(`返回内容异常（${buf.length} 字节）`);
+      // 太小说明拿到的是错误页。**中文那份是 8MB 起步，拉丁字体只有几十 KB** ——
+      // 所以下限由调用方给（2026-10-06 加 Fjalla One 时踩到：40KB 被这条挡下过）。
+      if (buf.length < minBytes) throw new Error(`返回内容异常（${buf.length} 字节）`);
       writeFileSync(dest, buf);
       return true;
     } catch (err) {
@@ -51,7 +52,7 @@ async function download(url, dest, retries = 2) {
  * @param {{faces:Array<{weight:number,file:string,url:string}>}} fonts 站点描述符里的字体配置
  * @returns {Promise<Array<{weight:number,path:string}>|null>} 拿不到就返回 null（报告退回系统字体栈）
  */
-export async function ensureFontFiles(dir, fonts, { onStatus } = {}) {
+export async function ensureFontFiles(dir, fonts, { onStatus, minBytes } = {}) {
   if (!fonts?.faces?.length) return null;
   mkdirSync(dir, { recursive: true });
   const out = [];
@@ -62,7 +63,7 @@ export async function ensureFontFiles(dir, fonts, { onStatus } = {}) {
       continue;
     }
     onStatus?.(`首次运行，下载中文字体（${f.file}，约 8MB）…`);
-    if (!(await download(f.url, path))) return null;
+    if (!(await download(f.url, path, 2, minBytes ?? (f.minBytes || 1_000_000)))) return null;
     out.push({ weight: f.weight, path });
   }
   return out;

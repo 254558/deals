@@ -314,10 +314,34 @@ const sizeVariant = (imageUrl, size) => imageUrl.replace(/\/first\/\d+\//, `/fir
  */
 const FONTS = {
   family: 'Source Han Sans CN',
+  /**
+   * **站名**（报头左上角那个 GoodPrices）单独一个字体 —— 用户 2026-10-06：
+   * 「good prices 用这个网站的那种高高长长的字体」（指的是 hermes-agent.nousresearch.com）。
+   *
+   * 那家用的 Rules Gothic Condensed 是 Blaze Type 的**付费商业字体**
+   * （MyFonts 上按 Webfont & Desktop 卖，没有免费/非商业档），不能拿来用。
+   * 挑了 Fjalla One —— **SIL Open Font License 1.1**，免费、可商用、可嵌入、可改，
+   * 观感上也是压缩展示体、笔画重、x 高度高，最贴「高高长长」。
+   *
+   * 只裁 `text` 里那几个字母 → 2~3 KB，对首屏没有影响。
+   */
   faces: [
     { weight: 400, file: 'SourceHanSansCN-Regular.otf', url: 'https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Regular.otf' },
     { weight: 700, file: 'SourceHanSansCN-Medium.otf', url: 'https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf' },
   ],
+  wordmark: {
+    family: 'Fjalla One',
+    file: 'FjallaOne-Regular.ttf',
+    url: 'https://github.com/google/fonts/raw/main/ofl/fjallaone/FjallaOne-Regular.ttf',
+    text: 'GoodPrices',
+    // 拉丁字体很小，体积保险要单独给（中文那份的下限是 1MB）
+    minBytes: 10_000,
+    notice:
+      'Fjalla One — Copyright © 2013 The Fjalla One Project Authors ' +
+      '(https://github.com/google/fonts/tree/main/ofl/fjallaone), ' +
+      'Licensed under the SIL Open Font License, Version 1.1 ' +
+      '(https://openfontlicense.org). 站名用的是按实际字母裁剪后的子集（subset）。',
+  },
   notice:
     'Source Han Sans CN (思源黑体) — Copyright © 2014 Adobe Systems Incorporated, ' +
     'Licensed under the Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0.html). ' +
