@@ -182,11 +182,6 @@ export function MinePanel() {
           </div>
         ) : (
           <div className="mine__pane">
-            <p className="mine__hint">
-              收藏和「待拔草 / 不再出现」都只存在这个浏览器里（报告是双击打开的单文件，
-              没有服务端）。换手机、清了缓存就没了 —— 用这串码把它们搬过去。
-              <b>它不是账号：谁拿到这串码，谁就能改你的收藏。</b>
-            </p>
             <div className="mine__row">
               <button className="btn btn--sm" type="button" onClick={exportCode}>生成转移码</button>
               <button className="btn btn--sm btn--ghost" type="button" onClick={importCode}>导入</button>
