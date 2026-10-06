@@ -316,28 +316,38 @@ export function saveSnapshot(db, site, products, { tracked = false, full = false
     throw err;
   }
 
-  // ---- 谁这次没见到（只有整站抓取才更新，见函数头那三条边界）----
-  let missedOne = 0;
-  let gone = 0;
-  let bulkDrop = false;
+  // 谁这次没见到 —— 和「写今天这批」是两件事，抽到下面那个函数里
+  const missing = full ? markMissing(db, site, products, now) : { missedOne: 0, gone: 0, bulkDrop: false };
 
-  if (full) {
-    // 安全阀：跟「上一次成功抓取」的件数比，暴跌就整轮跳过判定
-    const prevRun = db
-      .prepare('SELECT discounted FROM runs WHERE site = ? AND finished_at IS NOT NULL AND discounted > 0 ORDER BY id DESC LIMIT 1')
-      .get(site);
-    if (prevRun && products.length < prevRun.discounted * 0.6) {
-      bulkDrop = true;
-    } else {
-      const count = (where, ...args) => db.prepare(`SELECT COUNT(*) AS n FROM products WHERE site = ? AND ${where}`).get(site, ...args).n;
-      missedOne = count('last_seen_at < ? AND missed = 0', now);
-      gone = count('last_seen_at < ? AND missed = 1', now);
-      db.prepare('UPDATE products SET missed = 0 WHERE site = ? AND last_seen_at >= ?').run(site, now);
-      db.prepare('UPDATE products SET missed = missed + 1 WHERE site = ? AND last_seen_at < ? AND missed < 99').run(site, now);
-    }
+  return { added, dropped, raised, permanent, ...missing };
+}
+
+/**
+ * 「这一轮谁没见到」的记账。**只有整站抓取才更新**（边界见 saveSnapshot 函数头那三条）。
+ *
+ * 2026-10-06 整理从 saveSnapshot 里抽出来的：那边是「把今天抓到的一批写进去」，
+ * 这边是「给没抓到的那批记账」，两件事共用一个事务之外的东西只有 `db / site / now`。
+ * 抽开之后 saveSnapshot 回到 ~80 行，这一段也终于有了自己的名字。
+ *
+ * @returns {{missedOne:number, gone:number, bulkDrop:boolean}}
+ */
+function markMissing(db, site, products, now) {
+  // 安全阀：跟「上一次成功抓取」的件数比，暴跌就整轮跳过判定。
+  // 一次半截的抓取（翻页断在中途）不该让全站下架 —— 这是这个函数存在的理由。
+  const prevRun = db
+    .prepare('SELECT discounted FROM runs WHERE site = ? AND finished_at IS NOT NULL AND discounted > 0 ORDER BY id DESC LIMIT 1')
+    .get(site);
+  if (prevRun && products.length < prevRun.discounted * 0.6) {
+    return { missedOne: 0, gone: 0, bulkDrop: true };
   }
 
-  return { added, dropped, raised, permanent, missedOne, gone, bulkDrop };
+  const count = (where, ...args) => db.prepare(`SELECT COUNT(*) AS n FROM products WHERE site = ? AND ${where}`).get(site, ...args).n;
+  // 先数再改：missed = 0 的这轮第一次没见到，missed = 1 的这轮跨过 2 次、正式判为「已不在特价」
+  const missedOne = count('last_seen_at < ? AND missed = 0', now);
+  const gone = count('last_seen_at < ? AND missed = 1', now);
+  db.prepare('UPDATE products SET missed = 0 WHERE site = ? AND last_seen_at >= ?').run(site, now);
+  db.prepare('UPDATE products SET missed = missed + 1 WHERE site = ? AND last_seen_at < ? AND missed < 99').run(site, now);
+  return { missedOne, gone, bulkDrop: false };
 }
 
 /** 覆盖写一站点的尺码词表（每次 sync 刷新一遍） */
