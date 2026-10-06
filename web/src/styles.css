@@ -764,7 +764,10 @@ button {
 .card__now .now__sym {
   display: inline-flex;
   align-items: center;
-  vertical-align: -2px;
+  /* **压到左下角**（2026-10-06 用户：「放价格左下角，就和以前的 ¥ 一样小」）。
+     13px 的尺寸靠组件上的 :size 给，这里管位置：-3px 让这个圆圈坐到数字的
+     下沿附近 —— 原来的 ¥ 是个文字符号，本来就在基线上；换成圆圈之后按圆圈来对。 */
+  vertical-align: -3px;
   margin-right: 2px;
 }
 /* 现价 16 → 19px（用户 2026-10-01：「价格放大」）。数字用的是 DIN Alternate 这类窄体，

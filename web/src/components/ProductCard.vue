@@ -26,7 +26,7 @@
  *   · `style={{ '--w': … }}` → `:style`，自定义属性照样能绑。
  */
 import { computed } from 'vue';
-import { BanknoteArrowDown } from 'lucide-vue-next';
+import { BadgeJapaneseYen } from 'lucide-vue-next';
 import { chips, goneNote, num, priceParts, tagLabel } from '../lib/format.js';
 import { META } from '../lib/site.js';
 import CardActions from './CardActions.vue';
@@ -136,13 +136,16 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
     <!-- 价格三件套，右端跟着收藏 / 不再出现两个动作 -->
     <div class="card__prices">
       <span class="card__now n" :class="{ 'card__now--flat': !(props.deal.rate > 0 && !gone) }">
-        <!-- ¥ 符号换成那个钞票图标（2026-10-06 用户：「换到价格前面，也就是替换
-             价格的 ¥ 这个符号」）。图标是 stroke=currentColor，所以它跟着价格的颜色走 ——
-             现价是红的，它就是红的；没降价时价格是灰的，它也是灰的。
-             **¥ 本身用 sr-only 留着**：读屏器念价格时仍会说「¥59」，而不是光一个 59。 -->
+        <!-- ¥ 符号换成 lucide 的 **badge-japanese-yen**（一个圆圈里一个 ¥）——
+             2026-10-06 用户先要「钞票图标替换 ¥」，接着改主意：「换成这个图标，
+             放价格左下角，就和以前的 ¥ 一样小」。
+             尺寸跟旧的 ¥ 一样是 13px（那是 .now__sym 原来的字号），靠 CSS 的
+             vertical-align 把它压到**左下角**。
+             图标是 stroke=currentColor，所以跟着价格的颜色走 —— 现价红的它就红。
+             **¥ 本身仍用 sr-only 留着**：不然读屏器念价格只剩「59」，丢了币种。 -->
         <span class="now__sym">
           <span class="sr-only">{{ now.sym }}</span>
-          <BanknoteArrowDown :size="17" :stroke-width="2" aria-hidden="true" />
+          <BadgeJapaneseYen :size="13" :stroke-width="2" aria-hidden="true" />
         </span>
         <span class="now__int">{{ now.int }}</span>
         <span class="now__dec">{{ now.dec }}</span>
