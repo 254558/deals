@@ -58,12 +58,18 @@ test('开机动画那块要排在最前面：关键 CSS → 开机动画 → 整
 
 test('首屏那几张图要 preload，而且点名点得对', () => {
   const h = html();
-  const links = [...h.matchAll(/<link rel="preload" as="image" href="([^"]+)">/g)].map((m) => m[1]);
+  const links = [...h.matchAll(/<link rel="preload" as="image" href="([^"]+)"/g)].map((m) => m[1]);
   assert.deepEqual(links, ['img/a@561.webp', 'img/b@561.webp', 'img/c@561.webp', 'img/d@561.webp'], '前 4 张，按榜单顺序');
   assert.ok(at(h, 'rel="preload"') < at(h, 'window.__DEALS_DATA__'), 'preload 要在 head 里，早于 payload');
 
   // 卡片是 React 渲染的，img 标签在 JS 跑完前不在文档里——浏览器自己扫不到，只能靠这里点名
   assert.equal((h.match(/rel="preload"/g) || []).length, 4, '只点名首屏那几张，别把 800 多张全 preload');
+
+  // 2026-10-06：preload 现在带 imagesrcset —— 手机是 2x 屏，卡片约 175 CSS px，
+  // 需要 350；不写 imagesrcset 的话预载的还是 561 大图（61 KB 而不是 12 KB），
+  // 等于白优化。所以这条也钉住。
+  assert.equal((h.match(/imagesrcset="/g) || []).length, 4, '每条 image preload 都要带 imagesrcset');
+  assert.ok(h.includes('400w'), '小图那一档要写进 imagesrcset');
 });
 
 test('没有本地图（remote 那一路）时不 preload，也不炸', () => {
