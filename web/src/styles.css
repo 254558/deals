@@ -402,6 +402,15 @@ button {
   text-decoration-thickness: 1px;
 }
 
+/* 金额前面那个钞票图标（2026-10-06）。flex: none 是必须的 —— 它是 flex 行里的
+   固定宽度项，不给就会和条一起被压缩变形。颜色写死成和「降 N 元」一样的墨色：
+   那个 span 的颜色本来就是硬编码的（见 .card__off 那段注释）。 */
+.card__icon {
+  flex: none;
+  margin-right: 6px;
+  color: #000f17;
+}
+
 /* 标尺的卡片版：一根细横条，条的长度就是降幅 */
 /* 降幅条：**一排 12 根竖条**（用户 2026-10-06：「把降了多少钱左边的条换成这种样式」，
    参照 vue-bits 的 wake-slider 截图）。原来是一根 3px 高的轨道 + 一条按百分比拉宽的填充。
@@ -597,10 +606,6 @@ body {
    色值写死而不是 var(--ink)：这个文件里 var() 已经栽过两次（见下面 .card__now 那段注释），
    这里不值得再赌一次。 */
 .card__off {
-  /* 图标 + 金额排一行（2026-10-06：图标挪到这里，「降」字去掉） */
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
   font-size: 12px;
   /* 600 → 500（2026-10-06，同上） */
   font-weight: 500;

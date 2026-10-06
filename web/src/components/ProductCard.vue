@@ -89,9 +89,11 @@ const text = computed(() => chips(props.deal.tags));
  */
 // 12 → 24（2026-10-06）：参照图里是 ~32 根**细**条，12 根在卡片宽度下太胖，
 // 像积木不像刻度。24 根配 4px 上限，密度和细度都贴近参照图。
-// 25 → **23**：文字前面加了一个 13px 的图标（钞票+箭头），而条是 flex:1 撑满的 ——
-// 条会被挤窄，格子跟着被压缩。23 格 = 23×3 + 22×2 = 113px，正好塞得进新的宽度。
-const BAR_SEGMENTS = 23;
+// 25 → 23 → **21**。这一行现在是 [图标] [条] 降 N 元，图标占掉 13px + 6px 间距，
+// 条是 flex:1 撑满的，这 19px 得从它身上出。
+// 23 格时实测条到文字只剩 **1px**（空隙被吃光）；21 格 = 21×3 + 20×2 = 103px，
+// 留出约 10px —— 正是用户先前就定过的那个距离。
+const BAR_SEGMENTS = 21;
 const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(props.deal.rate * BAR_SEGMENTS))));
 
 // 名字**原样显示**，不再按斜杠截断。
@@ -151,16 +153,13 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
     <!-- 优衣库：比例条和降幅红字同行，红字贴在条尾，条占满剩余宽度。
          直接说「降 190 元」——省下的钱是实打实的数，百分比还得自己换算 -->
     <div v-else-if="props.deal.rate > 0 && feats.dealBarNumber" class="card__deal">
+      <!-- 2026-10-06 顺序改过两次，最终是用户要的这样：
+           **[图标] [降幅条] 降 190 元** —— 图标在条的**前面**，「降」字写回来。
+           （中间一度是「[条] [图标] 190 元」，用户看了之后说「还是写成降多少钱，
+             把那个图标放到降价左边的长条前面」。） -->
+      <BanknoteArrowDown class="card__icon" :size="13" :stroke-width="2" aria-hidden="true" />
       <span class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
-      <!-- 2026-10-06 用户：「把那个图标放到降多少钱前面，降字不要了，换成那个图标」。
-           所以这里是 [图标] 190 元，不再写「降」。
-           图标和数字**同色**（都用 .card__off 的颜色，图标是 stroke=currentColor），
-           而「降」这个意思留给读屏器 —— sr-only 里还留着它，视觉上才是纯图标。 -->
-      <span class="card__off n">
-        <span class="sr-only">降</span>
-        <BanknoteArrowDown :size="13" :stroke-width="2" aria-hidden="true" />
-        {{ num(Math.round(props.deal.saving)) }} 元
-      </span>
+      <span class="card__off n">降 {{ num(Math.round(props.deal.saving)) }} 元</span>
     </div>
     <!-- 迪卡侬：只有一根条，长度同样等于降幅 -->
     <span v-else-if="props.deal.rate > 0" class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
