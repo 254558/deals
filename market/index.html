@@ -4,13 +4,24 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="robots" content="noindex">
-<title>GoodPrices · 有品</title>
+<title>GoodPrices · 测评</title>
 <!--
-  有品。
+  测评。
+
+  2026-10-06：这一页原来是「有品」市集（卖二手杂物）。用户把它换成了测评：
+  「大家可以分享自己在优衣库买的具体的衣服的测评，心得，值不值」。
+
+  和市集的根本区别：**测评绑在一件优衣库商品上**（?productCode=…）。
+  所以这个页面的入口不在导航里，而在**报告卡片**上 —— 你在榜单上看到一件，
+  点「写测评 / N 条测评」就带着那件商品过来。这样两个功能共享同一个对象，
+  而不是各说各话（市集卖的东西和榜单毫无关系，那才是它一直没人的原因）。
+
+  字段只有三个：哪件商品 + 心得 + 可选的一张图。评分、尺码、身高体重都问过用户，
+  他都不要（「就可以发图片，发心得」「连尺码也不要」）。
 
   为什么是手写的单页、不走报告那套 React 管线：报告要能双击打开（file://）、要单文件内联，
-  这个页面反过来——它必须有后端（/api/*），也永远只在线上用。所以怎么简单怎么来：
-  一个文件、原生 JS、零构建，改完直接部署。
+  这个页面反过来 —— 它必须有后端（/api/*），也永远只在线上用。所以怎么简单怎么来：
+  一个文件、原生 JS、零构建、零依赖。
 
   和报告共用同一套视觉语言：墨 #000f17、品牌蓝 #3643ba、发丝线 #d9dde1、全站直角。
 -->
@@ -34,83 +45,58 @@
 
 <div class="wrap">
 
-  <!-- 发帖表单：**底部弹层**（原来是一张内联卡，压在 feed 上面，进页面要先滚一下才看得见刷）
-       2026-10-01 用户要「打开就是满屏刷」，于是把它改成弹层 + 一个悬浮按钮 -->
+  <!-- 写测评：**只有带着商品进来时才打开**（入口在报告卡片上）。
+       单独点进来时这个按钮不显示 —— 因为「给哪件写」这个问题没有答案。 -->
   <div class="card card--form" id="postCard">
     <div class="card__head">
-      <!-- 顶部这个 2026-10-01 按用户要求换掉：「最顶部的我要出一件，换成和最下面的发布
-           一样的返回按钮」。用同一个 .btn，所以上下看起来是一对。
-           id 仍是 postClose（JS 里那个收起弹层的监听挂在它身上）。 -->
       <button class="btn" type="button" id="postClose">返回</button>
     </div>
     <div class="card__body" id="postBody">
     <form id="form" autocomplete="off">
-      <div class="poster">
-        <!-- 照片也是一个「字段」：**有标签**，标签和右边「商品名」并排，
-             框于是正好和「商品名」下面那个输入框的上边框对齐（之前照片没标签，
-             它跟的是对方的标签，看着就是错位的）。
-             原生 file 输入藏在框里，看得见的是这块虚线区 -->
-        <div class="field field--photo">
-          
-          <div class="photo" id="photoBox">
-            <input type="file" id="photo" accept="image/*">
-            <label class="photo__pick" for="photo" id="pick">
-              <span class="photo__icon">＋</span>
-              <span class="photo__text">选择照片</span>
-            </label>
-            <img id="previewImg" alt="预览" hidden>
-            <button class="photo__swap" type="button" id="swap" hidden>换一张</button>
-          </div>
-        </div>
+      <!-- 要评的是哪一件：从报告卡片带来（?productCode=&code=&name=），只读展示 -->
+      <p class="subject" id="subject"></p>
 
-        <div class="fields">
-          <div class="field field--full">
-            <label for="title">商品名</label>
-            <input type="text" id="title" maxlength="60" placeholder="如：羊毛混纺大衣 米白">
-          </div>
-          <div class="field">
-            <label for="price">价格（元）</label>
-            <input type="number" id="price" min="0" step="1" placeholder="如：299">
-          </div>
-          <!-- 尺码与联系方式这两个字段 2026-10-01 按用户要求去掉：
-               表单只留 图片 / 商品名 / 详情，其余（尺码、联系方式…）都写进详情里。
-               老帖子里的这两个字段仍然照常显示。 -->
-          <div class="field field--full">
-            <label for="note">说明</label>
-            <textarea id="note" maxlength="240" placeholder="包邮还是到付、有没有瑕疵、联系方式（微信号）…"></textarea>
-          </div>
-        </div>
+      <div class="field field--full">
+        <label for="body">心得</label>
+        <textarea id="body" maxlength="500" placeholder="穿了多久、面料手感、值不值这个价…"></textarea>
+      </div>
 
-        <div class="submit-row">
-          <button class="btn" type="submit" id="submit">发布</button>
-          <button class="btn btn--ghost" type="button" id="cancelEdit" hidden>取消编辑</button>
-          <div class="msg" id="msg"></div>
+      <div class="field field--photo">
+        <div class="photo" id="photoBox">
+          <input type="file" id="photo" accept="image/*">
+          <label class="photo__pick" for="photo" id="pick">
+            <span class="photo__icon">＋</span>
+            <span class="photo__text">加张实拍（可选）</span>
+          </label>
+          <img id="previewImg" alt="预览" hidden>
+          <button class="photo__swap" type="button" id="swap" hidden>换一张</button>
         </div>
       </div>
 
-      <div class="hp"><label for="website">网址</label><input type="text" id="website" tabindex="-1"></div>
+      <div class="submit-row">
+        <button class="btn" type="submit" id="submit">发布</button>
+        <div class="msg" id="msg"></div>
+      </div>
 
+      <div class="hp"><label for="website">网址</label><input type="text" id="website" tabindex="-1"></div>
     </form>
     </div><!-- /.card__body -->
   </div>
 
-  <!-- 发布入口（按钮文案 2026-10-06 由「我要出一件」改成「我要代购」），放在最顶部 -->
-  <button class="btn" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">我要代购</button>
+  <button class="btn" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody" hidden>写测评</button>
 
-  <!-- 抖音式「我的」tab 条：作品 / 转移码 / 收藏（用户 2026-10-05：
-       「弄成抖音那种我的界面，做个横条，分别是作品、转移码、收藏」）。
-       只在「我的」页显示，默认停在「作品」。 -->
+  <!-- 抖音式 tab 条（用户 2026-10-05 要的样式）。只在「我的」页显示。 -->
   <div class="mine-tabs" id="mineTabs" role="tablist" hidden>
     <button class="mine-tab mine-tab--on" type="button" role="tab" aria-selected="true" data-tab="favs">收藏</button>
-    <button class="mine-tab" type="button" role="tab" aria-selected="false" data-tab="works">作品</button>
+    <button class="mine-tab" type="button" role="tab" aria-selected="false" data-tab="works">我的测评</button>
     <button class="mine-tab" type="button" role="tab" aria-selected="false" data-tab="transfer">转移码</button>
   </div>
 
-  <!-- 作品：我发布的市集帖子（小红书式两列瀑布流） -->
+  <!-- 测评流（公开页 = 最新一批；「我的」页 = 我写过的） -->
   <div class="mine-pane" id="paneWorks">
-    <div id="list" class="wall"></div>
+    <div id="list" class="reviews"></div>
     <div id="loading" class="empty">正在加载…</div>
-    <div id="empty" class="empty" style="display:none">还没有人发。你要是在店里捡到漏，点上面的「我要代购」发一件试试。</div>
+    <div id="empty" class="empty" style="display:none"></div>
   </div>
 
   <!-- 转移码 -->
@@ -138,7 +124,6 @@
     <p class="favs__empty" id="favsEmpty" hidden>还没收藏。去 <a href="/uniqlo/" target="_blank" rel="noreferrer">优衣库</a> 点商品卡片上的爱心，这里就会列出来。</p>
   </div>
 
-  <div id="detail" class="detail" hidden></div>
 </div>
 
   <script defer src="market.js"></script>

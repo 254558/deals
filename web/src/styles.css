@@ -645,3 +645,18 @@ body {
  * ⚠️ 它是常驻的（没有 JS 判断"是否粘住"）—— 没粘住时这一层几乎看不见，
  * 因为工具条本来就在榜单与商品之间。 */
 .toolbar { box-shadow: 0 2px 6px rgba(0, 0, 0, .06); }
+
+/* ---------------- 测评入口（卡片底部那行小字） ----------------
+   2026-10-06：报告卡片现在能显示「N 条测评」并点进去看/写。
+   刻意做得**很小很安静**：没有测评时是一句邀请（「写测评」，灰的），
+   有条数时才变蓝。它是卡片的配角，不该跟价格抢注意力。 */
+.card__review {
+  display: inline-block;
+  margin-top: 3px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-4);
+  text-decoration: none;
+}
+.card__review:hover { color: var(--blue); }
+.card__review--has { color: var(--blue); }

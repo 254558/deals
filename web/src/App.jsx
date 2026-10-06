@@ -238,6 +238,22 @@ export default function App() {
     return `尺码是 ${age}前的快照，以官网为准`;
   }, []);
 
+  /**
+   * 测评数：报告卡片上那个「N 条测评」，点进去看 / 写。
+   *
+   * 报告是**静态单文件**（要能双击打开），所以这只是锦上添花：接口挂了、或者离线用
+   * file:// 打开（根本没有 /api/*），就不显示 —— 绝不能让主功能依赖它。
+   */
+  const [reviewCounts, setReviewCounts] = useState({});
+  useEffect(() => {
+    let alive = true;
+    fetch('/api/reviews?counts=1')
+      .then((r) => r.json())
+      .then((d) => { if (alive && d && d.ok) setReviewCounts(d.counts || {}); })
+      .catch(() => { /* 离线或接口挂了就算了，卡片不依赖它 */ });
+    return () => { alive = false; };
+  }, []);
+
   const pick = useCallback((d) => {
     const currentlyOn = d.dbTracked ? !watch.dropped.has(d.id) : watch.picks.has(d.id);
     togglePick(d.id, d.dbTracked);
@@ -341,6 +357,7 @@ export default function App() {
                   index={i}
                   onPick={() => pick(deal)}
                   onHide={() => hideDeal(deal)}
+                  reviewCount={reviewCounts[deal.id] || 0}
                 />
               ))}
             </div>

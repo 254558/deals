@@ -539,3 +539,87 @@
 .mine-tab--on { color: var(--ink); font-weight: 700; }
 .mine-tab--on::after { content: ""; position: absolute; left: 50%; transform: translateX(-50%); bottom: -1px; width: 24px; height: 3px; background: var(--ink); }
 .mine-pane { margin-bottom: 8px; }
+/* ============================ 测评 ============================
+   一条测评 = 商品名 + 心得 + 可选的一张图。
+
+   2026-10-06：这一页原来是市集（两列瀑布流封面）。瀑布流那套样式（.wall / .item /
+   详情层 / 评论 / 点赞）已经没人用了 —— 留在文件里只会误导，所以整段删掉了，
+   只留这里这几条。视觉沿用同一套：直角、发丝线、墨 #000f17、品牌蓝 #3643ba。 */
+.reviews { margin: 6px 0 40px; }
+
+.review {
+  padding: 16px 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+.review:first-child { border-top: 1px solid var(--rule-soft); }
+
+.review__head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-width: 0;
+}
+/* 商品名是链回榜单的：那件商品现在多少钱、长什么样，点一下就对得上 */
+.review__name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.review__name:hover { color: var(--blue); }
+.review__code {
+  flex: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: var(--ink-4);
+}
+.review__ago { flex: none; font-size: 11px; color: var(--ink-4); }
+
+/* 图最多 400KB、最长边 1200 左右，这里给个上限免得小图被拉糊 */
+.review__pic { margin: 0 0 10px; }
+.review__img {
+  display: block;
+  max-width: 100%;
+  max-height: 420px;
+  width: auto;
+  background: var(--surface-2);
+}
+
+.review__body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.review__del {
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--ink-4);
+  cursor: pointer;
+}
+.review__del:hover { color: var(--red); }
+
+/* 写测评时顶部那行「你在评哪件」 */
+.subject {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--blue);
+  background: var(--surface-2);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+  word-break: break-word;
+}

@@ -84,7 +84,7 @@ function toDeal(row, images, remote, site, vocab) {
  * @param {object} [opts]
  * @param {boolean} [opts.remote] 带上 CDN 候选图地址（只有下图那一趟需要）
  * @param {string|null} [opts.crossLinkHref] 覆盖报头那个「另一家的报告」的链接。
- * @param {string|null} [opts.marketHref] 有品的入口；给 null 就不显示那一格。
+ * @param {string|null} [opts.marketHref] 测评的入口；给 null 就不显示那一格。
  *   Cloudflare 上两份在同一个域名的兄弟目录，改成相对路径 `../<站点>/` ——
  *   相对路径换域名、换本地双击都对。
  */
@@ -141,12 +141,12 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
   if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
 
   /**
-   * 报头行尾的入口先摆「另一家的报告」，再摆「有品」。
+   * 报头行尾的入口先摆「另一家的报告」，再摆「测评」。
    * 市集那个链接是**全站共用的**（不属于哪一家），所以由核心补进来，适配器不用管。
    */
   meta.links = [
     ...(meta.crossLink ? [meta.crossLink] : []),
-    ...(marketHref ? [{ href: marketHref, label: '有品', title: '有品：大家出的闲置' }] : []),
+    ...(marketHref ? [{ href: marketHref, label: '测评', title: '测评：买过的人怎么说' }] : []),
   ];
 
   return {
