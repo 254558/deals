@@ -577,6 +577,16 @@ body {
        一行 57px（手机的 7%）钉着，比滚回顶部去搜划算。 */
     .search { display: block; flex: 1 1 auto; width: auto; min-width: 0; }
 
+    /* 尺码面板在手机上**铺满工具条这一行**（2026-10-06 用户：「弹出来的尺码选择框框
+       左边和屏幕有缝隙」）。
+       原因：面板是 `position: absolute; right: 0`，贴着**尺码按钮**（它在行尾）的右边缘；
+       而宽度是 `min(360px, 100vw - 32px)`，在 390 宽的屏上是 358px —— 于是左边缘落在
+       382 - 358 = 24px，右边却只剩 8px，两边不对称，左边那道缝就是这么来的。
+       改法：把 .sizefilter 变 static，面板的包含块就升到 .toolbar__row（它是 relative），
+       再 left/right: 0 就正好铺满这一行 —— 两边都等于页面内衬（.wrap 的 8px），对称。 */
+    .sizefilter { position: static; }
+    .sizefilter__pop { left: 0; right: 0; width: auto; }
+
   /* --pad 的三档已挪到 shell.css（唯一的出处） */
   .masthead { margin-top: 26px; }
 }
