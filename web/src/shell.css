@@ -142,12 +142,21 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    平铺用内联 SVG（data URI）而不是堆两层渐变：方块的边界精确，缩放时也不会糊。
    颜色写死十六进制而不是 var()：这个项目栽过两次「var() 解析不到 → 整条声明失效」，
    品牌色这一处不值得再赌一次（--red 也是同一个值）。 */
+/* 品牌标记：**用小方块拼的像素图案** —— 一个向下的箭头（这个站就是看降价）。
+   2026-10-06 用户给了一个参考：Nous 落地页那张 `features…svg`。读了那个文件，
+   它是个 1.3 KB 的 24×24 图标，由 25 个 2×2 小方块拼成 —— 那是 **Nous 自己的
+   品牌标记**，不拿（和之前那个字体是同一类问题）。但它的**手法**和我们原本这个
+   点阵是同一路：小方块 + 直角。所以照着这个手法，画一个属于本站的图案。
+
+   原来是 9×9 的 3×3 点阵（也就是下面那个平铺的 data URI）。现在换成
+   12×12 的整幅箭头 —— 一共 4 个矩形，比平铺更容易看出是个图形。
+   `shape-rendering='crispEdges'` 是必要的：默认的抗锯齿会把 2px 的边糊掉。 */
 .masthead__dot {
   flex: none;
-  width: 9px;
-  height: 9px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3Crect width='2' height='2' fill='%23e20c18'/%3E%3C/svg%3E");
-  background-size: 3px 3px;
+  width: 12px;
+  height: 12px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cg fill='%23e20c18'%3E%3Crect x='0' y='0' width='12' height='4'/%3E%3Crect x='2' y='4' width='8' height='2'/%3E%3Crect x='4' y='6' width='4' height='2'/%3E%3Crect x='5' y='8' width='2' height='4'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 12px 12px;
 }
 /* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
    迪卡侬 13px ink-2），而报头必须两家一模一样。 */
