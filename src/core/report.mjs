@@ -227,7 +227,7 @@ function renderBoot() {
   );
 }
 
-export function renderHtml({ js, css, fontCss, payload, beacon = null, origin = null }) {
+export function renderHtml({ js, css, fontCss, fontFiles = [], payload, beacon = null, origin = null }) {
   const when = new Date(payload.generatedAt ?? Date.now()).toLocaleString('zh-CN');
   const top = payload.top || payload.deals || [];
 
@@ -289,6 +289,9 @@ ${preload}
 <h1 style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0">${payload.meta.pageTitle}</h1>
 <div id="root"></div>
 ${renderBoot()}
+${/* 字体拆成独立文件时，**用 preload 让它和 HTML 并行下**（它是首屏最大的一块）。
+       不 preload 的话要等 CSS 解析完才发起，白等一个 RTT。 */ ''}
+${fontFiles.map((f) => `<link rel="preload" as="font" type="font/woff2" href="${f}" crossorigin>`).join('\n')}
 ${fontCss ? `<style>\n${fontCss}\n</style>` : ''}
 <style>${css}</style>
 <script>window.__DEALS_DATA__ = ${safeJson(payload)};</script>
@@ -412,6 +415,9 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const html = '  Cache-Control: public, max-age=300, stale-while-revalidate=3600\n';
   const headers = [
     ...sites.map((x) => `/${x.id}/img/*\n  Cache-Control: public, max-age=2592000, stale-while-revalidate=86400\n`),
+    // 字体文件名带字重、内容随子集变 —— 但子集由内容决定，内容没变文件就没变，
+    // 所以能长缓存；真变了会因为 URL 同名而被 max-age 挡住（见下）。
+    ...sites.map((x) => `/${x.id}/*.woff2\n  Cache-Control: public, max-age=604800, stale-while-revalidate=86400\n`),
     ...sites.map((x) => `/${x.id}/\n${html}`),
     '/\n' + html,
     '/*.html\n' + html,

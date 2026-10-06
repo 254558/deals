@@ -651,34 +651,17 @@ body {
    用户 2026-10-06：「我的里面就放：收藏，转移码就好，别的都删掉」。
    这里原来属于独立的一页（market/market.css，跟着市集一起删了），
    现在收进报告本身 —— 所以样式也搬回来，用同一套令牌（直角、发丝线、墨、蓝）。 */
-.mine {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  overflow-y: auto;
-  background: var(--white);
-  padding-bottom: 60px;
+/* 2026-10-06 用户：「点了我的之后，最上面的导航栏别消失」——
+   原来这里是 position:fixed; inset:0 的整屏浮层，会把导航盖掉 ✗。
+   现在它是**导航下面的一块普通视图**（榜单整块被 hidden 掉），
+   所以导航栏一直在，右边那条也从「我的」变成「优衣库」。 */
+.mine { padding-bottom: 60px; }
+.mine__title {
+  margin: 26px 0 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .06em;
 }
-.mine__bar {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 18px 0 14px;
-  border-bottom: 1px solid var(--rule-soft);
-}
-.mine__title { font-size: 13px; font-weight: 700; letter-spacing: .06em; }
-.mine__close {
-  margin-left: auto;
-  width: 34px;
-  height: 34px;
-  border: 1px solid var(--rule);
-  background: var(--white);
-  font-size: 20px;
-  line-height: 1;
-  color: var(--ink-2);
-  cursor: pointer;
-}
-.mine__close:hover { color: var(--ink); }
 
 /* 抖音式横条 tab（用户 2026-10-05 要的样子） */
 .mine__tabs {

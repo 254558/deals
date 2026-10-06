@@ -323,8 +323,17 @@ export default function App() {
 
   return (
     <>
-      <Masthead recorded={DATA.recorded ?? deals.length} onMine={() => setMineOpen(true)} />
+      <Masthead
+        recorded={DATA.recorded ?? deals.length}
+        onMine={() => setMineOpen(true)}
+        mineOpen={mineOpen}
+      />
 
+      {/* 「我的」是**一块视图**，不是盖住全屏的浮层 —— 导航栏必须一直在
+          （用户 2026-10-06：「点了我的之后，最上面的导航栏别消失」）。 */}
+      {mineOpen && <MinePanel />}
+
+      {!mineOpen && (
       <Toolbar
         query={query}
         onQuery={setQuery}
@@ -333,8 +342,9 @@ export default function App() {
         sizes={sizeOptions}
         note={sizeNote}
       />
+      )}
 
-      <div className="wrap">
+      <div className="wrap" hidden={mineOpen}>
         {rows.length === 0 ? (
           <Empty query={query} onReset={reset} />
         ) : (
@@ -355,7 +365,6 @@ export default function App() {
         )}
       </div>
 
-      <MinePanel open={mineOpen} onClose={() => setMineOpen(false)} />
     </>
   );
 }

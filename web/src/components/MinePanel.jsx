@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { DATA, META } from '../lib/site.js';
+import { META } from '../lib/site.js';
 
 /**
  * 「我的」——报告里的一个整屏视图，**只有两块：收藏 / 转移码**。
@@ -31,15 +31,14 @@ function imgSrc(u) {
 const b64e = (s) => btoa(unescape(encodeURIComponent(s))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 const b64d = (s) => decodeURIComponent(escape(atob(s.replace(/-/g, '+').replace(/_/g, '/'))));
 
-export function MinePanel({ open, onClose }) {
+export function MinePanel() {
   const [tab, setTab] = useState('favs');
   const [favs, setFavs] = useState([]);
   const [code, setCode] = useState('');
   const [hint, setHint] = useState('');
 
-  // 每次打开重读一遍：可能刚在报告里点过爱心
+  // 挂上来就重读一遍：可能刚在报告里点过爱心
   useEffect(() => {
-    if (!open) return;
     try {
       const v = JSON.parse(localStorage.getItem(FAV_KEY) || '[]');
       setFavs(Array.isArray(v) ? v : []);
@@ -48,22 +47,7 @@ export function MinePanel({ open, onClose }) {
     }
     setCode('');
     setHint('');
-  }, [open]);
-
-  // 开着的时候别让背后的榜单跟着滚
-  useEffect(() => {
-    if (!open) return undefined;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = prev; };
-  }, [open]);
-
-  useEffect(() => {
-    if (!open) return undefined;
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [open, onClose]);
+  }, []);
 
   /** 取消收藏：删快照，并同步那三本账（不然刷新时爱心又亮回来） */
   const removeFav = useCallback((id) => {
@@ -141,15 +125,13 @@ export function MinePanel({ open, onClose }) {
     }
   }, [code]);
 
-  if (!open) return null;
-
   return (
-    <div className="mine" role="dialog" aria-modal="true" aria-label="我的">
+    <div className="mine">
       <div className="wrap">
-        <div className="mine__bar">
-          <span className="mine__title">我的</span>
-          <button className="mine__close" type="button" onClick={onClose} aria-label="关闭">×</button>
-        </div>
+        {/* 这里不再有自己的「返回/关闭」——顶上的导航一直在，右边那条「优衣库」
+            就是回榜单的路（用户 2026-10-06 要的：进「我的」之后导航栏不能消失，
+            而且那时右边应该是「优衣库」）。 */}
+        <h1 className="mine__title">我的</h1>
 
         {/* 两块，别的都删了（用户 2026-10-06） */}
         <div className="mine__tabs" role="tablist">

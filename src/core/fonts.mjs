@@ -69,12 +69,21 @@ export async function ensureFontFiles(dir, fonts, { onStatus } = {}) {
 }
 
 /**
- * 按 `text` 里实际出现的字符裁剪字体，输出可直接内联的 @font-face CSS。
- * 用 base64 data URI —— 报告要能双击打开，不能依赖外部文件。
+ * 按 `text` 里实际出现的字符裁剪字体，输出 @font-face CSS。
  *
- * @returns {Promise<string|null>} 失败返回 null，调用方应退回系统字体栈
+ * **两种模式**（2026-10-06 加的后一种）：
+ *   · 不传 outDir → base64 内联。报告要能双击打开（file://），不能依赖外部文件。
+ *   · 传 outDir   → 写成独立 .woff2 + 相对 url。**线上走这条。**
+ *
+ * 为什么要拆出来：字体子集 271 KB（brotli 后），占整页传输的 **79%**；
+ * 而它内联在 <style> 里，浏览器必须把这段全解析完才能画第一个字 ——
+ * 首屏要等 343 KB。拆出去之后 HTML 只剩 72 KB（立刻能渲染，文字先用系统字体，
+ * `font-display:swap` 会让它随后换过来），字体本身并行下、而且能永久缓存。
+ * 量出来的账见 git 记录：整页 964 KB → brotli 343 KB，其中字体 271 KB。
+ *
+ * @returns {Promise<{css:string, files:string[]}|null>} 失败返回 null，调用方退回系统字体栈
  */
-export async function buildFontCss({ files, text, family, notice }) {
+export async function buildFontCss({ files, text, family, notice, outDir = null, urlBase = '' }) {
   if (!files?.length || !family) return null;
   let subsetFont;
   try {
@@ -87,14 +96,24 @@ export async function buildFontCss({ files, text, family, notice }) {
   if (!chars) return null;
 
   const blocks = [];
+  const written = [];
   for (const f of files) {
     const buf = readFileSync(f.path);
     const woff2 = await subsetFont(buf, chars, { targetFormat: 'woff2', preserveNameIds: [0, 13, 14] });
+    let src;
+    if (outDir) {
+      const name = `font-${f.weight}.woff2`;
+      writeFileSync(join(outDir, name), woff2);
+      written.push(name);
+      src = `url(${urlBase}${name}) format('woff2')`;
+    } else {
+      src = `url(data:font/woff2;base64,${woff2.toString('base64')}) format('woff2')`;
+    }
     blocks.push(
       `@font-face{font-family:'${family}';font-style:normal;font-weight:${f.weight};font-display:swap;` +
-        `src:url(data:font/woff2;base64,${woff2.toString('base64')}) format('woff2')}`
+        `src:${src}}`
     );
   }
   if (notice) blocks.push(`/* ${notice} */`);
-  return blocks.join('\n');
+  return { css: blocks.join('\n'), files: written };
 }

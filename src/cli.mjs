@@ -420,16 +420,26 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
   // 内嵌中文字体（只有声明了 fonts 的站点有）。按「页面真正会渲染到的字符」裁剪：
   // 数据里的商品名 + 整个前端包（UI 文案都在里面），这样不会漏字，也不用手工维护字符表。
   let fontCss = null;
+  /** 拆成独立文件的那些 .woff2 名字（要发 preload） */
+  let fontFiles = [];
   if (withFont && site.fonts) {
     const files = await ensureFontFiles(join(ROOT, 'data', 'fonts'), site.fonts, { onStatus: (m) => console.log(C.dim(`\n${m}`)) });
     if (files) {
       const payloadText = JSON.stringify(buildPayload(db, site, images, { crossLinkHref }));
-      fontCss = await buildFontCss({ files, text: js + payloadText, family: site.fonts.family, notice: site.fonts.notice });
+      // **线上才拆**（有 origin = 会挂到 CDN 上）：那时页面能被缓存、字体也能永久缓存。
+      // 本地/离线那份继续内联 —— 报告要能双击打开，不能依赖旁边有没有文件。
+      const external = origin ? dirname(reportPath(site)) : null;
+      const built = await buildFontCss({
+        files, text: js + payloadText, family: site.fonts.family, notice: site.fonts.notice,
+        outDir: external,
+      });
+      fontCss = built?.css ?? null;
+      fontFiles = built?.files ?? [];
     } else console.log(C.yellow('\n字体下载失败，报告改用系统字体栈（版面不受影响）。'));
   }
 
   const payload = buildPayload(db, site, images, { crossLinkHref });
-  writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, payload, beacon, origin }), 'utf8');
+  writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, fontFiles, payload, beacon, origin }), 'utf8');
 
   // 避免被识别成 Vite 预设、在部署机上白跑一遍 vite build。生成器从不清 reports/ 目录，
   // 所以这份配置不会被下次生成冲掉；已存在就不覆盖。
@@ -616,7 +626,7 @@ async function cmdDev(site) {
     }
   }
   // 没有字体的站点也写一个空文件：开发页那份 <link> 是共用的，缺文件会 404
-  writeFileSync(join(ROOT, 'web', 'public', 'font.css'), fontCss ?? '', 'utf8');
+  writeFileSync(join(ROOT, 'web', 'public', 'font.css'), fontCss?.css ?? '', 'utf8');
 
   const vite = join(ROOT, 'node_modules', '.bin', 'vite');
   if (!existsSync(vite)) {
