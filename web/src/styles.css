@@ -832,6 +832,10 @@ body {
 }
 .fav__price { display: block; margin-top: 2px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .fav__del {
+  /* 里面现在是图标（原来是一个文字 ×），需要自己居中 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: none;
   width: 30px;
   height: 30px;

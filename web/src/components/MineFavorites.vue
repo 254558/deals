@@ -14,6 +14,7 @@
  *   `.map()` 里的 JSX            → v-for
  */
 import { ref } from 'vue';
+import { Trash } from 'lucide-vue-next';
 import { META } from '../lib/site.js';
 import { FAVORITES_KEY } from '../lib/use-watch.js';
 
@@ -65,7 +66,11 @@ function removeFav(id) {
             <span class="fav__price">{{ f.currency || META.currency?.sym || '¥' }}{{ f.price }}</span>
           </span>
         </a>
-        <button class="fav__del" type="button" aria-label="取消收藏" @click="removeFav(f.id)">×</button>
+        <!-- 移除收藏用**垃圾桶**（2026-10-06 用户指定 lucide 的 trash）。
+             原来是个文字「×」—— 和站上其它图标不是一套写法，也说不清"删除"。 -->
+        <button class="fav__del" type="button" aria-label="取消收藏" @click="removeFav(f.id)">
+          <Trash :size="15" :stroke-width="2" aria-hidden="true" />
+        </button>
       </div>
     </div>
   </div>
