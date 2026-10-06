@@ -658,11 +658,13 @@ body {
 .mine { padding-bottom: 60px; }
 
 /* 抖音式横条 tab（用户 2026-10-05 要的样子） */
-/* 上面那行标题 2026-10-06 删了，上间距改由这里撑着 */
+/* 上间距：22px → 6px（用户 2026-10-06：「收藏和转移码距离导航栏的间距不要太大」）。
+   量过：导航栏下沿在 56px，那 22px 全来自这里（.wrap / .mine / .masthead 的下边距都是 0），
+   所以只改这一处就够。tab 自己还有 12px 的上内边距，6px 之后不至于贴着导航栏。 */
 .mine__tabs {
   display: flex;
   gap: 26px;
-  margin-top: 22px;
+  margin-top: 6px;
   border-bottom: 1px solid var(--rule-soft);
 }
 .mine-tab {
