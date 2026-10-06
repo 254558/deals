@@ -23,6 +23,7 @@
  *     而且**只在打开时才挂**（打开状态一变的 watch）。
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { Search } from 'lucide-vue-next';
 import { META } from '../lib/site.js';
 import JellyChips from './JellyChips.vue';
 
@@ -102,14 +103,20 @@ function pickSize(v) {
   <div class="toolbar" :class="{ 'toolbar--up': hidden }">
     <div class="wrap">
       <div class="toolbar__row">
-        <input
-          class="search"
-          type="search"
-          :value="props.query"
-          :placeholder="META.searchPlaceholder"
-          :aria-label="META.searchPlaceholder"
-          @input="props.onQuery?.($event.target.value)"
-        />
+        <!-- 搜索框前面加个放大镜（2026-10-06 用户指定 lucide 的 search）。
+             外层用 <label> 而不是 <div>：点图标那一片也能聚焦到输入框，
+             不用去点中缝。白底和边框也跟着挪到这一层 —— 见 styles.css 里那段说明。 -->
+        <label class="searchbox">
+          <Search class="searchbox__icon" :size="16" :stroke-width="2" aria-hidden="true" />
+          <input
+            class="search"
+            type="search"
+            :value="props.query"
+            :placeholder="META.searchPlaceholder"
+            :aria-label="META.searchPlaceholder"
+            @input="props.onQuery?.($event.target.value)"
+          />
+        </label>
 
         <div v-if="props.sizes.length > 0" ref="boxRef" class="sizefilter">
           <button

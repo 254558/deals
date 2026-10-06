@@ -193,15 +193,39 @@ button {
   border-bottom: 1px solid var(--rule);
 }
 
+/* 搜索框：**图标 + 输入框**（2026-10-06 用户：「搜索商品名或吊牌编号前面加上这个图标」）。
+   ⚠️ 白底和边框从 .search 挪到了外面这层 —— 因为 <input> **不生成伪元素**，
+   "在输入框里、文字前面"放东西只有两条路：外层容器，或者把图标当 background-image。
+   这里选外层容器：图标用组件（和站上其它图标一套写法，颜色跟着 CSS 走），
+   而 background-image 那条路必须把颜色写死进 data URI。
+   外层用 <label>：点图标那一片也能聚焦输入框。 */
+.searchbox {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  background: var(--white);
+  border: 1px solid var(--rule);
+}
+.searchbox:focus-within { border-color: var(--ink); }
+/* 放大镜：颜色和占位符同为 --ink-4，看着是一体的 */
+.searchbox__icon {
+  flex: none;
+  margin: 0 6px 0 10px;
+  color: var(--ink-4);
+}
 .search {
   font-family: inherit;
   color: var(--ink);
-  background: var(--white);
-  border: 1px solid var(--rule);
+  /* 已经在外层的盒子里了，自己不再画一遍底和边 */
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 0;
   outline: none;
 }
 .search::placeholder { color: var(--ink-4); }
-.search:focus { border-color: var(--ink); }
 
   /* ---------------- 尺码筛选 ---------------- */
   /* 工具条那一行要当面板的定位上下文 */
