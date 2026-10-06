@@ -38,6 +38,18 @@ import { join } from 'node:path';
  * `npm ci --omit=dev`）就退回 JPEG——扩展名跟着变，上游拿到的路径永远是对的。
  */
 const WEBP_QUALITY = 82;
+
+/**
+ * 卡片用的小图宽度。
+ *
+ * 2026-10-06 加：手机上卡片才 180 来 px 宽，却在下 1200px 的源图 ——
+ * 首屏十几张图就是 ~700 KB，比整页 HTML（93 KB）大一个量级。
+ * 官方只有 80（120×160，太小、糊）和 561（1200×1600）两档，中间档一律 404，
+ * 所以自己缩一档。宽度取 **400**：卡片约 175 CSS px，2x 屏需要 350 ——
+ * 先试过 280，结果浏览器**正确地跳过它**去拿 561（因为它不够 350），白缩了；
+ * 400 才真的会被用上，而体积只有 561 的四分之一左右。
+ */
+const SMALL_WIDTH = 400;
 let sharp = null;
 try {
   sharp = (await import('sharp')).default;
@@ -183,5 +195,26 @@ export async function ensureImages(products, imgDir, { size = 800, concurrency =
   }
 
   await Promise.all(Array.from({ length: Math.min(concurrency, total || 1) }, worker));
-  return { images: result, downloaded: total - failed - converted, converted, failed, cached: products.length - total, dead };
+
+  // 小图那一档：从刚落盘的大图缩出来（已经有的跳过）。
+  // 放在主循环**之后**，是为了不跟下载的并发抢资源，也不让「命中缓存」那条快路
+  // （上面 existsSync 直接 continue）漏掉小图 —— 老缓存里的图也要补一张。
+  let small = 0;
+  if (sharp) {
+    for (const [code, rel] of result) {
+      const smallPath = join(imgDir, `${code}@${SMALL_WIDTH}.webp`);
+      if (existsSync(smallPath)) continue;
+      try {
+        await sharp(join(imgDir, rel.replace(/^img\//, '')))
+          .resize({ width: SMALL_WIDTH })
+          .webp({ quality: WEBP_QUALITY })
+          .toFile(smallPath);
+        small++;
+      } catch {
+        // 缩不出来也不算失败：srcset 少一档，浏览器回落到大图
+      }
+    }
+  }
+
+  return { images: result, downloaded: total - failed - converted, converted, failed, cached: products.length - total, dead, small };
 }

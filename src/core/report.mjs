@@ -242,7 +242,7 @@ export function renderHtml({ js, css, fontCss, fontFiles = [], payload, beacon =
   const preload = (payload.deals || [])
     .slice(0, 4)
     .filter((d) => d.image)
-    .map((d) => `<link rel="preload" as="image" href="${d.image}">`)
+    .map((d) => `<link rel="preload" as="image" href="${d.image}" imagesrcset="${d.image.replace('@561.', '@400.')} 400w, ${d.image} 561w" imagesizes="(max-width: 760px) 45vw, 200px">`)
     .join('\n');
 
   /**

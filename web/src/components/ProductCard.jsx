@@ -90,7 +90,17 @@ export function ProductCard({ deal, index, onPick, onHide }) {
         {/* 不写 width/height 属性：属性会变成 used height 把 aspect-ratio 顶掉，
             图就被塞进一个非本比例的框里留白。比例靠 CSS 的 aspect-ratio 定
             （优衣库 3:4、迪卡侬 1:1），所以这里只给 src */}
-        <img className="card__img" src={image} alt="" loading="lazy" decoding="async" />
+        <img
+          className="card__img"
+          src={image}
+          /* 卡片约 175 CSS px，2x 屏需要 350 —— 400 那档正好够，体积只有 561 的四分之一。
+             没有 srcset 时，手机首屏十几张图全是 1200px 的源图，约 700 KB。 */
+          srcSet={image.replace('@561.', '@400.') + ' 400w, ' + image + ' 561w'}
+          sizes="(max-width: 760px) 45vw, 200px"
+          alt=""
+          loading="lazy"
+          decoding="async"
+        />
       </a>
           {/* 断码的剩余尺码压在**图片左下角**（用户 2026-10-01：「弄到图片左下角，和图片重叠在一起，
               不要占标题的位置」）。它排在 <a> 外面，不改变链接的点击范围；
