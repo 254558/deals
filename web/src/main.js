@@ -1,10 +1,10 @@
-import { createRoot } from 'react-dom/client';
-import App from './App.jsx';
+import { createApp } from 'vue';
+import App from './App.vue';
 import { DATA, META } from './lib/site.js';
 import './styles.css';
 
 /**
- * `<html data-site>` 是**版面差异的唯一开关**：两家共用这一张 styles.css，
+ * `<html data-site>` 是**版面差异的唯一开关**：共用这一张 styles.css，
  * 站点特有的几何（图片比例、网格列宽、标尺配色、卡片信息层级、字体栈）
  * 全部挂在 `[data-site="…"]` 作用域里。
  *
@@ -21,4 +21,8 @@ document.documentElement.dataset.site = DATA.site;
  */
 if (META.pageTitle) document.title = META.pageTitle;
 
-createRoot(document.getElementById('root')).render(<App />);
+// 2026-10-06 React → Vue：原来这里两行是
+//   import { createRoot } from 'react-dom/client';
+//   createRoot(document.getElementById('root')).render(<App />);
+// 挂载点 #root 没变（正式报告里那个 <div id="root"> 是 renderHtml 写死的）。
+createApp(App).mount('#root');

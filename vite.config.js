@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import vue from '@vitejs/plugin-vue';
 
 /**
  * 报告要能双击直接打开（file://），有两个坑：
@@ -7,8 +7,8 @@ import react from '@vitejs/plugin-react';
  *  2. 拆出来的 js/css 也要能内联进单个 HTML，所以文件名和资源目录都固定下来，
  *     交给 `deals <站点> report` 读出来塞进一个自包含的 reports/<站点>/index.html。
  *
- * 两个站点共用这一份 bundle 和一张 styles.css，版面差异全靠
- * `<html data-site="uniqlo|decathlon">` 选择（见 docs/REPORT-CONTRACT.md）。
+ * 一份 bundle 和一张 styles.css，版面差异全靠
+ * `<html data-site="uniqlo">` 选择（见 docs/REPORT-CONTRACT.md）。
  *
  * 产物落在 .build/，那只是中间件；报告目录 reports/<站点>/ 里还有缓存的商品图。
  *
@@ -21,7 +21,7 @@ export default defineConfig(({ command }) => ({
   root: 'web',
   base: './',
   publicDir: command === 'build' ? false : 'public',
-  plugins: [react()],
+  plugins: [vue()],
   build: {
     outDir: '../.build',
     emptyOutDir: true,

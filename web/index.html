@@ -12,7 +12,7 @@
        data.js  = `window.__DEALS_DATA__ = {…}`（合并前两家各用各的全局变量名，见契约）
        font.css = 思源黑体子集，只有优衣库那一站生成；迪卡侬那站是个空文件
 
-     data-site 由 main.jsx 从 payload 里写上去（真报告里是 renderHtml 直接写在 <html> 上），
+     data-site 由 main.js 从 payload 里写上去（真报告里是 renderHtml 直接写在 <html> 上），
      这样 dev 页的版面也和正式报告一致。 -->
 <link rel="stylesheet" href="/font.css">
 <script src="/data.js"></script>
@@ -25,6 +25,6 @@
   <div class="boot__dots" aria-hidden="true"><i style="--i:0"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:1"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:2"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:3"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:4"></i><i style="--i:5"></i><i style="--i:6"></i><i style="--i:7"></i><i style="--i:8"></i></div>
   <div class="boot__note">正在加载今天的榜单</div>
 </div>
-<script type="module" src="/src/main.jsx"></script>
+<script type="module" src="/src/main.js"></script>
 </body>
 </html>
