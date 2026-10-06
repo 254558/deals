@@ -623,3 +623,31 @@
   color: var(--ink);
   word-break: break-word;
 }
+
+/* ---------------- 「评的是哪件」的搜索结果 ---------------- */
+.presults {
+  margin-top: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+  border: 1px solid var(--rule);
+}
+.presults__hint { margin: 0; padding: 12px; font-size: 13px; color: var(--ink-4); }
+.presult {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-bottom: 1px solid var(--rule-soft);
+  background: var(--white);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.presult:last-child { border-bottom: 0; }
+.presult:hover { background: var(--surface-2); }
+.presult__img { flex: none; width: 40px; height: 40px; object-fit: cover; background: var(--surface-2); }
+.presult__body { min-width: 0; }
+.presult__name { display: block; font-size: 13px; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.presult__meta { display: block; font-size: 11px; color: var(--ink-4); margin-top: 2px; font-variant-numeric: tabular-nums; }

@@ -35,7 +35,7 @@ import { CardActions } from './CardActions.jsx';
  */
 const MAX_SIZE_LABELS = 5;
 
-export function ProductCard({ deal, index, onPick, onHide, reviewCount = 0 }) {
+export function ProductCard({ deal, index, onPick, onHide }) {
   const { url, image, name, brand, tags, tracked, rate, saving, sizes } = deal;
 
   /**
@@ -208,22 +208,6 @@ export function ProductCard({ deal, index, onPick, onHide, reviewCount = 0 }) {
           尚未降价，正在替你盯着
         </div>
       )}
-
-      {/* 测评入口：**没有测评时也是一句邀请**（不然第一条永远没人写），
-          有测评就显示条数并变蓝。
-          链到 /market/?productCode=… —— 那一页拿着商品号才知道你在评哪件；
-          这正是「测评」和原来那个市集的根本区别：它绑在**这件商品**上。 */}
-      <a
-        className={'card__review' + (reviewCount ? ' card__review--has' : '')}
-        href={'/market/?productCode=' + encodeURIComponent(deal.id)
-          + '&code=' + encodeURIComponent(deal.code || '')
-          + '&name=' + encodeURIComponent(name || '')}
-        target="_blank"
-        rel="noreferrer"
-        title={reviewCount ? '看看 ' + reviewCount + ' 条测评' : '写条测评：穿了怎么样、值不值'}
-      >
-        {reviewCount ? reviewCount + ' 条测评' : '写测评'}
-      </a>
 
       {feats.cardChips && (
         /* 收藏 / 不再出现已经挪到价格行，这一行现在只剩「待拔草」标签。

@@ -4,8 +4,10 @@ import { requireAdmin } from './list.js';
 /**
  * POST /api/admin/act —— 管理动作：隐藏 / 放回 / 真删。
  *
- * 跟发帖人自己那条删除凭据是两条路：这条要口令（站长），那条要发帖时回的那个 token。
+ * 跟写测评的人自己那条删除凭据是两条路：这条要口令（站长），那条要发布时回的那个 token。
  * 口令只存在 Pages 的环境变量里，页面上由你自己填一次（存这个浏览器的 localStorage）。
+ *
+ * 2026-10-06：对象从「二手 + 评论」收成「测评」一张表，三个评论动作随之删掉。
  */
 export async function onRequestPost({ request, env }) {
   const denied = await requireAdmin(request, env);
@@ -22,32 +24,18 @@ export async function onRequestPost({ request, env }) {
   if (!id) return fail('缺少 id');
 
   if (action === 'hide' || action === 'unhide') {
-    const r = await env.DB.prepare('UPDATE listings SET hidden = ? WHERE id = ? RETURNING id')
+    const r = await env.DB.prepare('UPDATE reviews SET hidden = ? WHERE id = ? RETURNING id')
       .bind(action === 'hide' ? 1 : 0, id)
       .first();
-    if (!r) return fail('没找到这件', 404);
+    if (!r) return fail('没找到这条', 404);
     // 放回时把举报数清零：不清的话它一被举报就又会自动下架
-    if (action === 'unhide') await env.DB.prepare('UPDATE listings SET reports = 0 WHERE id = ?').bind(id).run();
-    return json({ ok: true, id, action });
-  }
-
-  // 评论：hideComment / unhideComment / removeComment
-  if (action === 'hideComment' || action === 'unhideComment') {
-    const r = await env.DB.prepare('UPDATE comments SET hidden = ? WHERE id = ? RETURNING id')
-      .bind(action === 'hideComment' ? 1 : 0, id)
-      .first();
-    if (!r) return fail('没找到这条评论', 404);
-    return json({ ok: true, id, action });
-  }
-  if (action === 'removeComment') {
-    const r = await env.DB.prepare('DELETE FROM comments WHERE id = ? RETURNING id').bind(id).first();
-    if (!r) return fail('没找到这条评论', 404);
+    if (action === 'unhide') await env.DB.prepare('UPDATE reviews SET reports = 0 WHERE id = ?').bind(id).run();
     return json({ ok: true, id, action });
   }
 
   if (action === 'remove') {
-    const r = await env.DB.prepare('DELETE FROM listings WHERE id = ? RETURNING id').bind(id).first();
-    if (!r) return fail('没找到这件', 404);
+    const r = await env.DB.prepare('DELETE FROM reviews WHERE id = ? RETURNING id').bind(id).first();
+    if (!r) return fail('没找到这条', 404);
     return json({ ok: true, id, action });
   }
 

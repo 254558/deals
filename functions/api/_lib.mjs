@@ -1,7 +1,11 @@
 /**
- * 有品接口用的小工具：JSON 回应、字段校验、限速、凭据哈希。
+ * 测评接口用的小工具：JSON 回应、字段校验、限速、凭据哈希。
  *
  * 这一层刻意不碰数据库句柄的形状（只当 `env.DB` 是 D1）——测试里塞一个假的进去就能跑。
+ *
+ * 2026-10-06：这里原来还有一整套「二手 + 评论」的校验与限速（validate / checkRate /
+ * validateComment / checkCommentRate，以及各自的上限常量）。「有品」换成测评之后
+ * 那些全没人用了，**整块删掉** —— 留着只会让下一个人以为还有别的写入路径。
  */
 
 export const json = (data, status = 200, extra = {}) =>
@@ -35,105 +39,14 @@ export const randomToken = (bytes = 16) =>
   [...crypto.getRandomValues(new Uint8Array(bytes))].map((b) => b.toString(16).padStart(2, '0')).join('');
 
 /**
- * 发帖人 IP 的哈希（只用来限速）。
+ * 写入者 IP 的哈希（只用来限速）。
  * 不存原始 IP；固定盐只是别让哈希能被彩虹表直接反查，不是安全边界。
  */
 export const ipHash = (request) =>
-  SHA('deals-market|' + (request.headers.get('CF-Connecting-IP') || request.headers.get('x-forwarded-for') || 'unknown'));
+  SHA('deals-reviews|' + (request.headers.get('CF-Connecting-IP') || request.headers.get('x-forwarded-for') || 'unknown'));
 
-/** 允许的图片类型与体积（浏览器端已经压过一轮，这里再卡一道） */
-export const IMAGE_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+/** 图片体积上限（浏览器端已经压过一轮，这里再卡一道） */
 export const MAX_IMAGE_BYTES = 400 * 1024;
-
-/**
- * 整个市集一天最多几件（最后一道阀门）。
- *
- * **单 IP 每天 5 件那条 2026-10-01 按用户要求去掉了**：他自己发东西时被挡过，
- * 而且这个市集本来也没多少人来。留下的这条只防「一晚上灌进来几千件」那种，
- * 正常人碰不到。评论那条（每 IP 24 小时 20 条）没动 —— 评论更容易被刷。
- */
-export const PER_DAY_GLOBAL = 200;
-
-/**
- * 限速。返回 null 表示放行（并把这次记上），否则返回该回给用户的话。
- */
-export async function checkRate(env, hash, now = new Date()) {
-  const day = now.toISOString().slice(0, 10);
-
-  // 单 IP 的每日件数不再限制（见上面 PER_DAY_GLOBAL 的说明），只留全站上限
-  const all = await env.DB.prepare("SELECT COUNT(*) AS n FROM posts WHERE at LIKE ?").bind(day + '%').first();
-  if ((all?.n ?? 0) >= PER_DAY_GLOBAL) return '今天整个市集的新帖到上限了，明天再来。';
-
-  await env.DB.prepare('INSERT INTO posts (ip_hash, at) VALUES (?, ?)').bind(hash, now.toISOString()).run();
-  // 顺手清掉一周前的记录，表不会一直长
-  await env.DB.prepare('DELETE FROM posts WHERE at < ?').bind(new Date(now.getTime() - 7 * 24 * 3600 * 1000).toISOString()).run();
-  return null;
-}
-
-/**
- * 校验一条待发布的商品；返回 { ok:true, value } 或 { ok:false, error }。
- *
- * `imageOptional` 给「编辑」用：编辑时可以不换图（沿用库里那张），所以 image 允许缺失；
- * 但**给了就必须是合法的**——不能指望前端一定压过。
- */
-export function validate(input, { imageOptional = false } = {}) {
-  const title = clean(input.title, 60);
-  const contact = clean(input.contact, 80);
-  const size = clean(input.size, 24);
-  const note = clean(input.note, 240);
-  const price = Number(input.price);
-  const image = String(input.image || '');
-  const m = image.match(/^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/);
-
-  if (len(title) < 2) return { ok: false, error: '商品名太短了（至少 2 个字）' };
-  if (!Number.isFinite(price) || price <= 0) return { ok: false, error: '价格没填对' };
-  if (price > 99999) return { ok: false, error: '价格超出范围' };
-  // 联系方式**不再必填**（2026-10-01 用户要求表单只留 图片 / 标题 / 详情：
-  // 「联系方式尺码等等都可以写到详情里面」）。老帖子里的 contact 仍然照常显示，
-  // 新帖子多半是空的 —— 前端那时候会把「联系：」那一段整块省掉。
-  // 长度不用在这里判：上面 clean(contact, 80) 已经截断了（我一开始写了条
-  // 「超过 80 字就报错」，测试立刻指出那永远不会触发 —— 死代码，删掉）。
-  if (len(note) > 240) return { ok: false, error: '说明太长了' };
-  if (!m) {
-    if (imageOptional && !image) return { ok: true, value: { title, price, size, note, contact, mime: null, b64: null } };
-    return { ok: false, error: '图片格式不对（只收 jpg / png / webp）' };
-  }
-
-  const approxBytes = Math.floor((m[2].length * 3) / 4);
-  if (approxBytes > MAX_IMAGE_BYTES) return { ok: false, error: `图片太大了（${Math.round(approxBytes / 1024)}KB，上限 400KB）` };
-
-  return { ok: true, value: { title, price, size, note, contact, mime: m[1], b64: m[2] } };
-}
-
-/** 每条评论最长多少字、每个 IP 24 小时最多几条、全站一天最多几条 */
-export const MAX_COMMENT_LEN = 200;
-export const COMMENTS_PER_IP_PER_DAY = 20;
-export const COMMENTS_PER_DAY_GLOBAL = 500;
-
-/** 校验一条评论；返回 { ok:true, value } 或 { ok:false, error } */
-export function validateComment(input) {
-  const body = clean(input.body, MAX_COMMENT_LEN);
-  if (len(body) < 1) return { ok: false, error: '写点什么吧' };
-  if (len(String(input.body ?? '').trim()) > MAX_COMMENT_LEN) return { ok: false, error: `评论最多 ${MAX_COMMENT_LEN} 字` };
-  return { ok: true, value: { body } };
-}
-
-/**
- * 评论限速。**和发帖分开算**（各查各的表）——共用一份预算的话，聊两句就发不了东西了。
- * 返回 null 表示放行，否则返回该回给用户的话。
- */
-export async function checkCommentRate(env, hash, now = new Date()) {
-  const since = new Date(now.getTime() - 24 * 3600 * 1000).toISOString();
-  const day = now.toISOString().slice(0, 10);
-
-  const mine = await env.DB.prepare('SELECT COUNT(*) AS n FROM comments WHERE ip_hash = ? AND created_at > ?').bind(hash, since).first();
-  if ((mine?.n ?? 0) >= COMMENTS_PER_IP_PER_DAY) return `今天你评论得有点多，歇一会儿（每 24 小时最多 ${COMMENTS_PER_IP_PER_DAY} 条）。`;
-
-  const all = await env.DB.prepare('SELECT COUNT(*) AS n FROM comments WHERE created_at LIKE ?').bind(day + '%').first();
-  if ((all?.n ?? 0) >= COMMENTS_PER_DAY_GLOBAL) return '今天整个市集的评论到上限了，明天再来。';
-
-  return null;
-}
 
 /** 一条测评最长多少字、每个 IP 24 小时最多几条、全站一天最多几条 */
 export const MAX_REVIEW_LEN = 500;
@@ -169,9 +82,8 @@ export function validateReview(input) {
 }
 
 /**
- * 测评限速。**和「发布」共用 posts 那张日志表**（它本来就是个纯日志，
- * 记的是「谁在什么时候干了一次写操作」），但计数按 note 区分开，
- * 免得两件事互相吃预算。
+ * 写入限速。日志表 `posts` 一张表服务所有写动作，靠 note 区分
+ * （'' = 旧的二手发布，已经没了；'review' = 测评），计数也按 note 分开算。
  * 返回 null 表示放行，否则返回该回给用户的话。
  */
 export async function checkReviewRate(env, hash, now = new Date()) {

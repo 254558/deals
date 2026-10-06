@@ -53,8 +53,16 @@
     </div>
     <div class="card__body" id="postBody">
     <form id="form" autocomplete="off">
-      <!-- 要评的是哪一件：从报告卡片带来（?productCode=&code=&name=），只读展示 -->
-      <p class="subject" id="subject"></p>
+      <!-- 评的是哪件：**搜优衣库全站**，不限于榜单。
+           2026-10-06 用户纠正：「不一定非要去榜单上找一件你用过的，他可以测评任何优衣库的东西」。
+           榜单只有几百件打折的，优衣库在售的有几万件 —— 所以这里给一个通用搜索
+           （走后端代理 /api/search，浏览器直连优衣库会被 CORS 挡）。 -->
+      <div class="field field--full">
+        <label for="psearch">评的是哪件</label>
+        <input type="search" id="psearch" placeholder="搜商品名或吊牌号，比如「抽褶裙」或 488089" autocomplete="off">
+        <div class="presults" id="presults" hidden></div>
+      </div>
+      <p class="subject" id="subject" hidden></p>
 
       <div class="field field--full">
         <label for="body">心得</label>
@@ -83,7 +91,7 @@
     </div><!-- /.card__body -->
   </div>
 
-  <button class="btn" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody" hidden>写测评</button>
+  <button class="btn" type="button" id="postToggle" aria-expanded="false" aria-controls="postBody">写测评</button>
 
   <!-- 抖音式 tab 条（用户 2026-10-05 要的样式）。只在「我的」页显示。 -->
   <div class="mine-tabs" id="mineTabs" role="tablist" hidden>

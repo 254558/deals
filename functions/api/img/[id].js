@@ -9,12 +9,9 @@
  * `new Uint8Array(...)` 对数组 / ArrayBuffer / TypedArray 三种都对，所以这里用它。
  */
 export async function onRequestGet({ params, env }) {
-  // 两张表都查：`reviews` 是 2026-10-06 之后的新东西，`listings` 是老的二手帖。
-  // 过渡期两边的图都得能出（老帖还在页面上，新测评也在写），所以先 reviews 后 listings。
-  // 等老表拆掉之后，这里只剩 reviews 那一条。
-  const row =
-    (await env.DB.prepare('SELECT image_mime, image_bytes FROM reviews WHERE id = ?').bind(params.id).first()) ||
-    (await env.DB.prepare('SELECT image_mime, image_bytes FROM listings WHERE id = ?').bind(params.id).first());
+  // 2026-10-06：只剩 reviews 一张表了（`listings` 那套二手已经拆掉），
+  // 过渡期的那句「先 reviews 后 listings」也一起收掉。
+  const row = await env.DB.prepare('SELECT image_mime, image_bytes FROM reviews WHERE id = ?').bind(params.id).first();
   if (!row) return new Response('not found', { status: 404 });
 
   return new Response(new Uint8Array(row.image_bytes), {

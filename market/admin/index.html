@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
 <meta name="robots" content="noindex">
-<title>GoodPrices · 有品 · 管理</title>
+<title>GoodPrices · 测评 · 管理</title>
 <!--
   管理页。跟市集同一套视觉语言，但**没有任何服务端渲染**：它就用口令调 /api/admin/*。
 
@@ -101,15 +101,13 @@
   </div>
 
   <div id="box"></div>
-  <div id="boxComments"></div>
   <div id="empty" class="empty" hidden>还没有人发东西。</div>
 
   <footer>
     口令来自 Pages 项目的环境变量 <b>ADMIN_TOKEN</b>；它只存在这个浏览器里，每次请求放在
     <span class="id">x-admin-token</span> 头上。<b>真删</b>会连图一起删掉，不可恢复；
-    <b>下架</b>只是从市集隐藏（库里留着，能放回）。发帖人自己那条「下架」走的是另一条路
-    （发帖时回给他的凭据），跟这里互不影响。
-  </footer>
+    <b>下架</b>只是从测评页隐藏（库里留着，能放回）。写测评的人自己那条「删掉我这条」
+    走的是另一条路（发布时回给他的凭据），跟这里互不影响。</footer>
 </div>
 
 <script>
@@ -128,41 +126,24 @@
     return { status: r.status, body: await r.json().catch(() => null) };
   };
 
-  function renderComments(list) {
-    const box = $('boxComments');
-    if (!list.length) { box.innerHTML = ''; return; }
-    box.innerHTML = '<h2 style="margin:26px 0 10px;font-size:10px;font-weight:400;letter-spacing:.12em;color:var(--ink-4)">评论（' + list.filter((c) => !c.hidden).length + ' 条）</h2>' +
-      '<table><thead><tr><th>评论</th><th>在哪件</th><th>状态</th><th>时间</th><th>操作</th></tr></thead><tbody>' +
-      list.map((c) => '<tr class="' + (c.hidden ? 'is-hidden' : '') + '"><td>' + esc(c.body) + '</td><td>' + esc(c.listing_title || '（商品没了）') + '</td><td>' +
-        (c.hidden ? '<span class="tag tag--hidden">已下架</span>' : '<span class="tag">在</span>') + '</td><td class="id">' + when(c.created_at) + '</td><td><div class="acts">' +
-        (c.hidden
-          ? '<button class="btn btn--ghost btn--sm" data-act="unhideComment" data-id="' + esc(c.id) + '">放回</button>'
-          : '<button class="btn btn--ghost btn--sm" data-act="hideComment" data-id="' + esc(c.id) + '">下架</button>') +
-        '<button class="btn btn--danger btn--sm" data-act="removeComment" data-id="' + esc(c.id) + '">真删</button>' +
-        '</div></td></tr>').join('') + '</tbody></table>';
-  }
-
-  function render(items, counts, comments) {
+  function render(items, counts) {
     $('counts').textContent = items.length
-      ? `在售 ${counts.live} · 已下架 ${counts.hidden} · 被举报 ${counts.reported}`
+      ? `在 ${counts.live} · 已下架 ${counts.hidden} · 被举报 ${counts.reported} · 带图 ${counts.withImage}`
       : '';
     $('empty').hidden = items.length > 0;
-    renderComments(comments || []);
     if (!items.length) { $('box').innerHTML = ''; return; }
     $('box').innerHTML = `<table>
-      <thead><tr><th>图</th><th>商品</th><th>价格 / 尺码</th><th>联系</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
+      <thead><tr><th>图</th><th>评的是哪件</th><th>心得</th><th>状态</th><th>时间</th><th>操作</th></tr></thead>
       <tbody>${items.map((it) => `
         <tr class="${it.hidden ? 'is-hidden' : ''}${it.reports > 0 && !it.hidden ? ' is-reported' : ''}">
-          <td><img class="pic" src="/api/img/${esc(it.id)}" alt="" loading="lazy"></td>
+          <td>${it.hasImage ? `<img class="pic" src="/api/img/${esc(it.id)}" alt="" loading="lazy">` : '<span class="id">无图</span>'}</td>
           <td>
-            <div>${esc(it.title)}</div>
-            <div class="id">${esc(it.id)}</div>
-            ${it.note ? `<div style="font-size:12px;color:var(--ink-2)">${esc(it.note)}</div>` : ''}
+            <div>${esc(it.name || '（没有商品名）')}</div>
+            <div class="id">${esc(it.code || '')}　${esc(it.product_code || '')}</div>
           </td>
-          <td>¥${Number(it.price).toLocaleString('zh-CN')}${it.size ? `<div><span class="tag">${esc(it.size)}</span></div>` : ''}</td>
-          <td>${esc(it.contact)}</td>
+          <td style="max-width:420px">${esc(it.body)}</td>
           <td>
-            ${it.hidden ? '<span class="tag tag--hidden">已下架</span>' : '<span class="tag">在售</span>'}
+            ${it.hidden ? '<span class="tag tag--hidden">已下架</span>' : '<span class="tag">在</span>'}
             ${it.reports > 0 ? `<span class="tag tag--reported">被举报 ${it.reports}</span>` : ''}
           </td>
           <td class="id">${when(it.created_at)}</td>
@@ -188,7 +169,7 @@
     }
     $('msg').className = 'msg msg--ok';
     $('msg').textContent = '已载入';
-    render(body.items || [], body.counts || {}, body.comments || []);
+    render(body.items || [], body.counts || {});
   }
 
   $('load').addEventListener('click', load);

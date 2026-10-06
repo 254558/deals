@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { validateReview, MAX_REVIEW_LEN } from '../functions/api/_lib.mjs';
+import { validateReview, MAX_REVIEW_LEN, REVIEWS_PER_IP_PER_DAY } from '../functions/api/_lib.mjs';
 import { onRequestGet as listReviews, onRequestPost as createReview } from '../functions/api/reviews.js';
 import { onRequestPost as deleteReview } from '../functions/api/review-delete.js';
 
@@ -159,4 +159,17 @@ test('删自己的测评：凭据对就删，不对就 403；删掉之后列表�
 
   const list = await (await listReviews({ request: new Request('https://x/api/reviews?productCode=u1'), env })).json();
   assert.equal(list.items.length, 0, 'hidden = 1 的不该再出现在列表里');
+});
+
+test('限速：同一个 IP 一天写满之后就不给写了', async () => {
+  const { db, state } = fakeDB();
+  const env = { DB: db };
+  const mk = () => createReview({ request: post('https://x/api/reviews', { productCode: 'u1', body: '凑数用的一条测评' }), env });
+  for (let i = 0; i < REVIEWS_PER_IP_PER_DAY; i++) {
+    const r = await mk();
+    assert.equal(r.status, 200, '第 ' + (i + 1) + ' 条应该是放行的');
+  }
+  const overflow = await mk();
+  assert.equal(overflow.status, 429, '超出之后必须挡住');
+  assert.equal(state.reviews.length, REVIEWS_PER_IP_PER_DAY);
 });

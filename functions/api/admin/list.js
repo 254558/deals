@@ -14,33 +14,31 @@ export async function requireAdmin(request, env) {
   return null; // 通过
 }
 
-/** GET /api/admin/list —— 全部（含已下架），管理页用 */
+/**
+ * GET /api/admin/list —— 全部测评（含已下架），管理页用。
+ *
+ * 2026-10-06：原来列的是「二手 + 评论」，「有品」换成测评之后只剩一张表，
+ * 于是评论那一整块（连 JOIN）都删掉了。
+ */
 export async function onRequestGet({ request, env }) {
   const denied = await requireAdmin(request, env);
   if (denied) return denied;
 
   const { results } = await env.DB.prepare(
-    `SELECT id, created_at, title, price, size, contact, note, reports, hidden
-       FROM listings ORDER BY hidden ASC, created_at DESC LIMIT 500`
+    `SELECT id, created_at, product_code, code, name, body, reports, hidden,
+            CASE WHEN image_mime IS NULL THEN 0 ELSE 1 END AS hasImage
+       FROM reviews ORDER BY hidden ASC, created_at DESC LIMIT 500`
   ).all();
   const items = results || [];
-
-  // 评论也一起带上：站长要能删别人的评论，否则只能看着
-  const { results: comments } = await env.DB.prepare(
-    `SELECT c.id, c.listing_id, c.created_at, c.body, c.hidden, l.title AS listing_title
-       FROM comments c LEFT JOIN listings l ON l.id = c.listing_id
-      ORDER BY c.hidden ASC, c.created_at DESC LIMIT 300`
-  ).all();
 
   return json({
     ok: true,
     items,
-    comments: comments || [],
     counts: {
       live: items.filter((x) => !x.hidden).length,
       hidden: items.filter((x) => x.hidden).length,
       reported: items.filter((x) => x.reports > 0).length,
-      comments: (comments || []).filter((c) => !c.hidden).length,
+      withImage: items.filter((x) => x.hasImage).length,
     },
   });
 }

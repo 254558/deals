@@ -83,12 +83,15 @@ async function startServer() {
   for (let i = 0; i < 60; i++) {
     await sleep(1000);
     try {
-      const res = await fetch(BASE + '/api/listings');
+        // 探针要打**现在还活着**的接口。2026-10-06 这里踩过一次：接口从 listings
+        // 换成 reviews 之后，探针忘了改，于是一直 404、永远等不到「就绪」，
+        // 报出来的却是「wrangler 30 秒没起来」——看起来像环境问题，其实是自己的尾巴。
+        const res = await fetch(BASE + '/api/reviews');
       if (res.ok) { console.log('  服务就绪（' + BASE + '）\n'); return { stop: () => child.kill('SIGTERM') }; }
     } catch { /* 还没起来 */ }
   }
   child.kill('SIGTERM');
-  throw new Error('wrangler pages dev 30 秒内没起来');
+  throw new Error('wrangler pages dev 60 秒内没起来');
 }
 
 async function main() {
@@ -101,98 +104,62 @@ async function main() {
   if (!BASE) server = await startServer();
   else console.log('  用已存在的服务：' + BASE + '\n');
 
-  const created = { listingId: null, listingToken: null, commentId: null, commentToken: null };
+  const created = { reviewId: null, reviewToken: null };
   try {
-    // ── 1. 列表接口（读路径）──
-    const list0 = await api('/api/listings');
-    check('GET /api/listings 返回 200', list0.status === 200, 'HTTP ' + list0.status);
+    // ── 1. 读路径 ──
+    const list0 = await api('/api/reviews');
+    check('GET /api/reviews 返回 200', list0.status === 200, 'HTTP ' + list0.status);
     check('响应里有 items 数组', Array.isArray(list0.json?.items));
     const before = list0.json?.items?.length ?? 0;
 
-    // ── 2. 发帖（写路径：INSERT 的列数/占位符就靠这一步挡住）──
-    const post = await api('/api/listings', {
-      title: '冒烟测试 · 请忽略', price: 1, size: 'M', contact: 'wx: smoke', note: 'smoke', image: sampleImage(),
+    // ── 2. 写一条测评（INSERT 的列数/占位符就靠这一步挡住）──
+    const post = await api('/api/reviews', {
+      productCode: 'u0000000072656', code: '488089', name: '抽褶裙',
+      body: '冒烟测试：面料挺软的，这个价我觉得值', image: sampleImage(),
     });
-    check('POST /api/listings 返回 200', post.status === 200, 'HTTP ' + post.status + (post.json?.error ? ' ' + post.json.error : ''));
-    check('返回了 id 与 token', Boolean(post.json?.id && post.json?.token));
-    created.listingId = post.json?.id || null;
-    created.listingToken = post.json?.token || null;
-    if (!created.listingId) throw new Error('发帖没成功，后面几步没法继续：' + JSON.stringify(post.json));
+    check('POST /api/reviews 返回 200', post.status === 200, 'HTTP ' + post.status + (post.json?.error ? ' ' + post.json.error : ''));
+    created.reviewId = post.json?.id || null;
+    created.reviewToken = post.json?.token || null;
+    check('返回了 id 与 token', Boolean(created.reviewId && created.reviewToken));
 
-    // ── 3. 列表里能看到它 ──
-    const list1 = await api('/api/listings');
-    const mine = list1.json?.items?.find((x) => x.id === created.listingId);
-    check('新帖出现在列表里', Boolean(mine), '列表 ' + before + ' → ' + (list1.json?.items?.length ?? '?'));
+    // ── 3. 按商品查得到 ──
+    const byProduct = await api('/api/reviews?productCode=u0000000072656');
+    const mine = byProduct.json?.items?.find((x) => x.id === created.reviewId);
+    check('按商品号能查到这条', Boolean(mine), '之前 ' + before + ' 条，这件共 ' + (byProduct.json?.items?.length ?? '?') + ' 条');
+    check('带上了商品名与心得', mine?.name === '抽褶裙' && /冒烟测试/.test(mine?.body || ''));
+    check('有图时 hasImage = 1', Number(mine?.hasImage) === 1);
 
-    // ── 4. 评论（写路径）──
-    const cmt = await api('/api/comments', { listingId: created.listingId, body: '冒烟测试的评论' });
-    check('POST /api/comments 返回 200', cmt.status === 200, 'HTTP ' + cmt.status + (cmt.json?.error ? ' ' + cmt.json.error : ''));
-    created.commentId = cmt.json?.id || null;
-    created.commentToken = cmt.json?.token || null;
-    check('评论返回了 id 与 token', Boolean(created.commentId && created.commentToken));
+    // ── 4. counts：报告卡片上那个角标靠它 ──
+    const counts = await api('/api/reviews?counts=1');
+    check('counts 里数得到这件', Number(counts.json?.counts?.['u0000000072656']) >= 1);
 
-    const cmts = await api('/api/comments?listingId=' + created.listingId);
-    const cmtList = cmts.json?.items || cmts.json?.comments || [];
-    check('评论能读回来', cmts.status === 200 && cmtList.length >= 1, '读到 ' + cmtList.length + ' 条');
+    // ── 5. 图真的能出来（D1 把 BLOB 回成普通数组，不过 Uint8Array 那一关图就废了）──
+    const img = await fetch(BASE + '/api/img/' + created.reviewId);
+    const buf = new Uint8Array(await img.arrayBuffer());
+    check('GET /api/img/<id> 返回 200 且有内容', img.status === 200 && buf.length > 100, 'HTTP ' + img.status + '  ' + buf.length + 'B');
 
-    // ── 5. 编辑（写路径，**不带新图**：这一条曾经被写死成必须有图，改不动）──
-    const edit = await api('/api/edit', {
-      id: created.listingId, token: created.listingToken,
-      title: '冒烟测试 · 改过了', price: 2, size: 'L', contact: 'wx: smoke2', note: 'edited',
-    });
-    check('POST /api/edit 不带新图也能改', edit.status === 200, 'HTTP ' + edit.status + (edit.json?.error ? ' ' + edit.json.error : ''));
-
-    const list2 = await api('/api/listings');
-    const after = list2.json?.items?.find((x) => x.id === created.listingId);
-    check('改动生效了', after?.title === '冒烟测试 · 改过了' && Number(after?.price) === 2,
-      '标题=' + after?.title + ' 价格=' + after?.price);
-
-    // ── 5b. 点赞：切换语义 + 计数 + 「我点过没」──
-    const like1 = await api('/api/react', { listingId: created.listingId, kind: 'like' });
-    check('点赞成功（on=true、计数 1）', like1.status === 200 && like1.json?.on === true && like1.json?.likes === 1,
-      'HTTP ' + like1.status + ' ' + JSON.stringify(like1.json));
-
-    const like2 = await api('/api/react', { listingId: created.listingId, kind: 'like' });
-    check('再点一次＝取消（on=false、计数 0）', like2.status === 200 && like2.json?.on === false && like2.json?.likes === 0,
-      'HTTP ' + like2.status + ' ' + JSON.stringify(like2.json));
-
-      // （收藏 2026-10-01 已彻底删掉：UI 与后端都清了，这里只测点赞）
-
-    const listR = await api('/api/listings');
-    const mineR = listR.json?.items?.find((x) => x.id === created.listingId);
-      check('列表里带上计数与我点过没（只剩点赞）', Number(mineR?.likes) === 0 && Number(mineR?.liked) === 0 && mineR?.saves === undefined,
-        'likes=' + mineR?.likes + ' liked=' + mineR?.liked + ' saves=' + mineR?.saves);
-
-    const badKind = await api('/api/react', { listingId: created.listingId, kind: 'whatever' });
-    check('kind 不对被挡（400）', badKind.status === 400, 'HTTP ' + badKind.status);
-
-    const noTarget = await api('/api/react', { listingId: 'nope-nope-nope', kind: 'like' });
-    check('点一条不存在的（404）', noTarget.status === 404, 'HTTP ' + noTarget.status);
-
-    // ── 6. 权限：错凭据必须被拒（403），别把「谁都能改」放出去 ──
-    const badEdit = await api('/api/edit', { id: created.listingId, token: 'wrong-token', title: 'x' });
-    check('错的凭据改不动（403）', badEdit.status === 403, 'HTTP ' + badEdit.status);
-    const badDel = await api('/api/delete', { id: created.listingId, token: 'wrong-token' });
+    // ── 6. 校验与凭据 ──
+    const noProduct = await api('/api/reviews', { body: '没有商品号的一条' });
+    check('缺商品号被挡（400）', noProduct.status === 400, 'HTTP ' + noProduct.status);
+    const tooShort = await api('/api/reviews', { productCode: 'u1', body: '好' });
+    check('心得太短被挡（400）', tooShort.status === 400, 'HTTP ' + tooShort.status);
+    const badDel = await api('/api/review-delete', { id: created.reviewId, token: 'wrong-token' });
     check('错的凭据删不掉（403）', badDel.status === 403, 'HTTP ' + badDel.status);
 
-    // ── 7. 校验：没图的帖子应该被挡住 ──
-    const noImg = await api('/api/listings', { title: 'x', price: 1, contact: 'wx: x' });
-    check('缺图的帖子被挡（400）', noImg.status === 400, 'HTTP ' + noImg.status);
+    // ── 7. 删自己的（只置 hidden，列表里立刻看不到）──
+    const del = await api('/api/review-delete', { id: created.reviewId, token: created.reviewToken });
+    check('删自己的测评', del.status === 200, 'HTTP ' + del.status);
+    const list3 = await api('/api/reviews?productCode=u0000000072656');
+    check('删完之后列表里没有它了', !list3.json?.items?.some((x) => x.id === created.reviewId));
+    created.reviewId = null; // 已删，不用再收尾
 
-    // ── 8. 删评论 + 删帖（写路径，收尾）──
-    if (created.commentId) {
-      const cd = await api('/api/comment-delete', { id: created.commentId, token: created.commentToken });
-      check('删自己的评论', cd.status === 200, 'HTTP ' + cd.status);
-    }
-    const del = await api('/api/delete', { id: created.listingId, token: created.listingToken });
-    check('删自己的帖子', del.status === 200, 'HTTP ' + del.status);
-    const list3 = await api('/api/listings');
-    check('删完之后列表里没有它了', !list3.json?.items?.some((x) => x.id === created.listingId));
-    created.listingId = null; // 已删，不用再收尾
+    // ── 8. 管理接口：不带口令必须被挡（本地没配 ADMIN_TOKEN 时是 503，也算挡住了）──
+    const admin = await api('/api/admin/list');
+    check('GET /api/admin/list 不带口令会被挡', [401, 403, 503].includes(admin.status), 'HTTP ' + admin.status);
   } finally {
     // 中途失败也要收尾，别在库里留垃圾
-    if (created.listingId && created.listingToken) {
-      await api('/api/delete', { id: created.listingId, token: created.listingToken }).catch(() => {});
+    if (created.reviewId && created.reviewToken) {
+      await api('/api/review-delete', { id: created.reviewId, token: created.reviewToken }).catch(() => {});
       console.log('  （已清理中途留下的那条测试数据）');
     }
     if (server) { server.stop(); console.log('  （已停掉 wrangler）'); }

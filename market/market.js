@@ -216,14 +216,57 @@
     code: params.get('code') || '',
     name: params.get('name') || '',
   };
-  const canWrite = Boolean(subject.productCode);
-
-  if (canWrite) {
-    $('postToggle').hidden = false;
-    $('subject').textContent = (subject.name || subject.code || '这件商品') + (subject.code ? '　' + subject.code : '');
-    // 从卡片点进来就是要写，直接把表单打开（少一次点击）
-    setForm(true);
+  /** 把「正在评的那件」写到表单上（选完或带着 ?productCode= 进来时都走这里） */
+  function showSubject() {
+    const on = Boolean(subject.productCode);
+    $('subject').hidden = !on;
+    $('subject').textContent = on
+      ? (subject.name || subject.code || '这件商品') + (subject.code ? '　' + subject.code : '')
+      : '';
   }
+  showSubject();
+  // 带着 ?productCode= 进来（比如从别处分享的链接）就直接开表单；否则停在列表页
+  if (subject.productCode) setForm(true);
+
+  // ── 搜商品：只搜优衣库全站，选中一件才让发 ──
+  let searchTimer = null;
+  async function doSearch() {
+    const q = $('psearch').value.trim();
+    const box = $('presults');
+    if (q.length < 2) { box.hidden = true; box.innerHTML = ''; return; }
+    box.hidden = false;
+    box.innerHTML = '<p class="presults__hint">搜着呢…</p>';
+    let data;
+    try {
+      data = await (await fetch('/api/search?q=' + encodeURIComponent(q))).json();
+    } catch {
+      box.innerHTML = '<p class="presults__hint">搜不动，过会儿再试</p>';
+      return;
+    }
+    if (!data.ok) { box.innerHTML = '<p class="presults__hint">' + esc(data.error || '搜不动') + '</p>'; return; }
+    const items = data.items || [];
+    if (!items.length) { box.innerHTML = '<p class="presults__hint">没搜到，换个词试试</p>'; return; }
+    box.innerHTML = '';
+    for (const it of items.slice(0, 12)) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'presult';
+      b.innerHTML =
+        (it.image ? '<img class="presult__img" src="' + esc(it.image) + '" alt="" loading="lazy">' : '') +
+        '<span class="presult__body"><span class="presult__name">' + esc(it.name) + '</span>' +
+        '<span class="presult__meta">' + esc(it.code || '') + (it.price != null ? '　¥' + esc(it.price) : '') + '</span></span>';
+      b.addEventListener('click', () => {
+        subject.productCode = it.productCode;
+        subject.code = it.code || '';
+        subject.name = it.name || '';
+        showSubject();
+        box.hidden = true;
+        $('body').focus();
+      });
+      box.appendChild(b);
+    }
+  }
+  $('psearch').addEventListener('input', () => { clearTimeout(searchTimer); searchTimer = setTimeout(doSearch, 280); });
 
   /** 一条测评的 DOM */
   function reviewEl(it) {
@@ -292,7 +335,7 @@
   $('form').addEventListener('submit', async (e) => {
     e.preventDefault();
     if (posting) return;
-    if (!canWrite) return ($('msg').textContent = '得从商品卡片进来才知道你在评哪件');
+    if (!subject.productCode) return ($('msg').textContent = '先在上面搜一下、选一件你要评的');
     const body = $('body').value.trim();
     if ([...body].length < 4) return ($('msg').textContent = '多写两句吧（至少 4 个字）');
     posting = true;
