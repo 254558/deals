@@ -142,21 +142,28 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    平铺用内联 SVG（data URI）而不是堆两层渐变：方块的边界精确，缩放时也不会糊。
    颜色写死十六进制而不是 var()：这个项目栽过两次「var() 解析不到 → 整条声明失效」，
    品牌色这一处不值得再赌一次（--red 也是同一个值）。 */
-/* 品牌标记：**用小方块拼的像素图案** —— 一个向下的箭头（这个站就是看降价）。
-   2026-10-06 用户给了一个参考：Nous 落地页那张 `features…svg`。读了那个文件，
-   它是个 1.3 KB 的 24×24 图标，由 25 个 2×2 小方块拼成 —— 那是 **Nous 自己的
-   品牌标记**，不拿（和之前那个字体是同一类问题）。但它的**手法**和我们原本这个
-   点阵是同一路：小方块 + 直角。所以照着这个手法，画一个属于本站的图案。
+/* 品牌标记：**ai-view** —— Pixelarticons 图标库里的一个（24×24 的像素画，
+   由一堆 2×2 的小方块拼成）。
+   ⚠️ 我上一版看错了：看到这图标出现在 Nous 的落地页上，就当成他们的品牌资产、
+   自己另画了一个箭头。用户指出真正的出处是 pixelarticons.com/icon/ai-view/ ——
+   那是 **开源图标库**（MIT），本来就是给大家用的。
 
-   原来是 9×9 的 3×3 点阵（也就是下面那个平铺的 data URI）。现在换成
-   12×12 的整幅箭头 —— 一共 4 个矩形，比平铺更容易看出是个图形。
-   `shape-rendering='crispEdges'` 是必要的：默认的抗锯齿会把 2px 的边糊掉。 */
+   来源：Pixelarticons by Gerrit Halfmann — https://github.com/halfmage/pixelarticons
+   授权：MIT（可商用、可改，保留本声明即可）。原始文件 424 字节，取自
+        cdn.jsdelivr.net/npm/pixelarticons@latest/svg/ai-view.svg
+   改动：① fill 由 currentColor 写死成品牌红 —— CSS 里的 data URI 继承不到
+            currentColor，不写死就是黑色；
+         ② 加 shape-rendering='crispEdges'：默认抗锯齿会把 2px 的像素边糊掉。
+
+   尺寸 16px：图标本身是 24 的（1:1 的话在 30px 的报头里太大）。16/24 = 2/3，
+   在 3 倍屏上每格正好 4 个物理像素，是整的。 */
 .masthead__dot {
   flex: none;
-  width: 12px;
-  height: 12px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' shape-rendering='crispEdges'%3E%3Cg fill='%23e20c18'%3E%3Crect x='0' y='0' width='12' height='4'/%3E%3Crect x='2' y='4' width='8' height='2'/%3E%3Crect x='4' y='6' width='4' height='2'/%3E%3Crect x='5' y='8' width='2' height='4'/%3E%3C/g%3E%3C/svg%3E");
-  background-size: 12px 12px;
+  width: 16px;
+  height: 16px;
+  background-image: url("data:image/svg+xml,%3Csvg%20shape-rendering='crispEdges'%20xmlns='http://www.w3.org/2000/svg'%20width='24'%20height='24'%20fill='%23e20c18'%20viewBox='0%200%2024%2024'%3E%20%3Cpath%20d='M2%2015h2v2H2zm0%204h2v-2H2zm20-4h-2v2h2zm0%204h-2v-2h2zM4%2013h4v2H4zm0%208h4v-2H4zm16-8h-4v2h4zm0%208h-4v-2h4zM8%2011h8v2H8zm0%2012h8v-2H8zm2-8h4v4h-4zm1-6V5h2v4zM3%207V5h2v2zm2%202V7h2v2zm14-2V5h2v2zm-2%202V7h2v2zM9%205V3h2v2zM1%205V3h2v2zm16%200V3h2v2zm-6-2V1h2v2zM3%203V1h2v2zm16%200V1h2v2zm-6%202V3h2v2zM5%205V3h2v2zm16%200V3h2v2z'/%3E%20%3C/svg%3E");
+  background-size: 16px 16px;
+  background-repeat: no-repeat;
 }
 /* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
    迪卡侬 13px ink-2），而报头必须两家一模一样。 */
