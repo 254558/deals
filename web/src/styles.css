@@ -174,6 +174,16 @@ button {
   top: var(--nav-h, 40px);
   z-index: 20;
   background: var(--white);
+  /* 往上滚收起 / 往下滚放下时的那一下滑动（见 Toolbar.vue 的 onScrollDir） */
+  transition: transform .22s ease;
+}
+/* 收起来：向上移**自身的高度**。
+   因为 top 正好是报头高度（--nav-h），移这么多之后它恰好整个躲到报头背后 ——
+   不用去猜"移多少才够"，也不用给它设负的 top。 */
+.toolbar--up { transform: translateY(-100%); }
+@media (prefers-reduced-motion: reduce) {
+  /* 收放是功能（让位给内容），不能不做；但可以不要那 0.22s 的滑动 */
+  .toolbar { transition: none; }
 }
 .toolbar__row {
   display: flex;

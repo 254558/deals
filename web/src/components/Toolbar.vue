@@ -22,7 +22,7 @@
  *   · 点别处收起：useEffect 的监听器换成 onMounted/onBeforeUnmount，
  *     而且**只在打开时才挂**（打开状态一变的 watch）。
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { META } from '../lib/site.js';
 import JellyChips from './JellyChips.vue';
 
@@ -36,6 +36,29 @@ const props = defineProps({
 
 const open = ref(false);
 const boxRef = ref(null);
+
+/**
+ * 往下滚（内容往上走）时把工具条收起来，往上滚时放下来。
+ * 用户 2026-10-06：「我希望上滑的时候，搜索框和尺码也会滑上去，
+ * 但我往下一滑动，搜索框和尺码又能滑下来」—— 就是经典的 hide-on-scroll。
+ *
+ * 两个阈值都是为了**别太神经质**：
+ *   · 每次滚动位移小于 6px 不算 —— 手指的微小抖动、惯性回弹、iOS 地址栏收起
+ *     都会产生一两像素的来回，不管它；
+ *   · 页面顶部 60px 以内永远露着 —— 在顶上还藏起来会让人以为工具条没了。
+ * （144 那条线是"要滚得足够深才值得收"，比 b 站那种一滚就收的手感稳。）
+ */
+const hidden = ref(false);
+let lastY = 0;
+function onScrollDir() {
+  const y = window.scrollY || document.documentElement.scrollTop || 0;
+  const dy = y - lastY;
+  if (Math.abs(dy) < 6) return;
+  if (y < 60) hidden.value = false;
+  else if (dy > 0 && y > 144) hidden.value = true;
+  else if (dy < 0) hidden.value = false;
+  lastY = y;
+}
 
 /**
  * 尺码那一排：「不限」+ 五个尺码。
@@ -56,7 +79,14 @@ watch(open, (isOpen) => {
   else document.removeEventListener('click', onDocClick);
 });
 
-onBeforeUnmount(() => document.removeEventListener('click', onDocClick));
+onMounted(() => {
+  lastY = window.scrollY || 0;
+  window.addEventListener('scroll', onScrollDir, { passive: true });
+});
+onBeforeUnmount(() => {
+  document.removeEventListener('click', onDocClick);
+  window.removeEventListener('scroll', onScrollDir);
+});
 
 /**
  * 挑尺码。**延迟 320ms 再收起面板** —— 果冻动画大约 300ms，立刻关掉就白做了。
@@ -69,7 +99,7 @@ function pickSize(v) {
 </script>
 
 <template>
-  <div class="toolbar">
+  <div class="toolbar" :class="{ 'toolbar--up': hidden }">
     <div class="wrap">
       <div class="toolbar__row">
         <input
