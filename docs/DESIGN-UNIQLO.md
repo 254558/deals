@@ -399,7 +399,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 用户原话：「我不希望我换个页面导航栏就变一个样子」。之前两家报告的报头是各写一份的
 （优衣库 11px + 细线 + 6px 方块 + 14px 间距；迪卡侬 15px、没细线、10px 方块、4/18 间距），
-市集页又是第三套（20px 粗标题）。现在规格只有一处（styles.css 的 `.masthead` 那段）：
+现在规格只有一处（styles.css 的 `.masthead` 那段）：
 
 | 项 | 值 |
 | --- | --- |

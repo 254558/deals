@@ -16,7 +16,7 @@
 ```
 
 - 全局变量名固定 `window.__DEALS_DATA__`（旧的两个仓库分别是 `__UNIQL_DATA__` / `__DECA_DATA__`，合并后用这一个）。
-- `<html>` 上的 `data-site` 由 `renderHtml` 写入；React 侧也要在 `main.jsx` 里
+- `<html>` 上的 `data-site` 由 `renderHtml` 写入；前端也要在 `main.js` 里
   `document.documentElement.dataset.site = DATA.site`，这样 `uniql dev` 的开发页也对得上。
 - `data-site` 是**版面差异的唯一开关**：两家共用一个 `styles.css`，
   站点特有的几何（图片比例、网格列宽、标尺配色…）全部挂在 `[data-site="…"]` 下。
@@ -163,7 +163,7 @@
 
 ## 六、构建与开发
 
-`vite.config.js` 由仓库根提供（不要改）：IIFE 输出、入口 `web/src/main.jsx`、
+`vite.config.js` 由仓库根提供（不要改）：IIFE 输出、入口 `web/src/main.js`、
 产物固定 `.build/app.js` + `.build/app.css`。`publicDir` 只在 build 时关掉。
 
 - `web/index.html` 只给 `deals <site> dev`（Vite 开发服务器）用，它

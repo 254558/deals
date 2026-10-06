@@ -92,8 +92,7 @@ function toDeal(row, images, remote, site, vocab) {
  *
  * **只注入部署产物**：这份报告是单文件、能双击离线打开的（`file://`），本地和 CI 生成的
  * reports/*.html 里不该出现任何外部请求，所以 beacon 由部署那条路径显式传进来
- * （见 cli.mjs 的 cmdDeployCloudflare）。市集页是手写的，由 writeDeployRoot 拷贝时插入；
- * 管理页不加——那是私人的。
+ * （见 cli.mjs 的 cmdDeployCloudflare）。
  *
  * 用的是 Cloudflare 的 beacon（不用 cookie、不跟踪个人、也不用改 DNS），只需在面板里
  * 打开 Web Analytics 并拿到这个 token。
@@ -139,10 +138,7 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
   const meta = { ...site.report };
   if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
 
-  /**
-   * 报头行尾的入口摆「另一家的报告」（有兄弟站点时才有）。
-   * 市集那个链接是**全站共用的**（不属于哪一家），所以由核心补进来，适配器不用管。
-   */
+  /** 报头行尾的入口摆「另一家的报告」（有兄弟站点时才有；只有一家时是空数组）。 */
   meta.links = [
     ...(meta.crossLink ? [meta.crossLink] : []),
   ];
@@ -388,14 +384,6 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   mkdirSync(dir, { recursive: true });
 
 
-  // 只有 /api/* 需要走 Functions——其余（两份报告、图片、落地页）让 Pages 直接发静态文件，
-  // 不为了市集给整站加一层函数调用。
-  writeFileSync(
-    join(dir, '_routes.json'),
-    JSON.stringify({ version: 1, include: ['/api/*'], exclude: [] }) + '\n',
-    'utf8'
-  );
-
   /**
    * 缓存头。Pages 的默认策略是 `max-age=0, must-revalidate`——**连那两千多张商品图也是**，
    * 于是每次打开报告，浏览器都要为每一张图跑一趟 304 校验：手机上 10 张图就是 10 个来回，
@@ -404,7 +392,6 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
    * 分档：
    *   图片   —— 文件名里带 id 和档位，内容极少变 → 30 天 + 后台慢慢刷
    *   报告页 —— 每小时更新一次，但同一个人可能连着开好几次 → 5 分钟新鲜 + 其余时间先给旧的（最多 1 小时）
-   *   API    —— 市集是活的，一律不缓存（Functions 自己也会带 no-store）
    */
   // ⚠️ 别用 `/*` 兜底：_headers 的规则是**叠加**的——图片会同时命中 `/uniqlo/img/*` 和 `/*`，
   // 响应里就出现两条 Cache-Control（实测 `max-age=2592000…, max-age=300…`），浏览器按哪条
@@ -465,7 +452,7 @@ export function writeDeployRoot(root, { defaultSite, sites }) {
   const notFound = join(dir, '404.html');
   writeFileSync(notFound, renderNotFound({ sites }), 'utf8');
 
-  return [index, redirects, notFound, join(dir, '_routes.json'), join(dir, '_headers'), join(dir, 'robots.txt'), join(dir, 'sitemap.xml')];
+  return [index, redirects, notFound, join(dir, '_headers'), join(dir, 'robots.txt'), join(dir, 'sitemap.xml')];
 }
 
 /**

@@ -148,8 +148,7 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 ## 目录结构
 
 ```
-functions/           市集的 Pages Functions（/api/*，跑在同一个 Pages 项目里）
-wrangler.toml        Pages/D1 配置（本地 dev 与部署都用它）
+wrangler.toml        Cloudflare Pages 配置（纯静态部署）
 src/cli.mjs          命令行入口：解析「站点 + 命令」，调度下面两层
 src/core/            两个站点共用的核心
   db.mjs             历史库（SQLite，一张库靠 site 列装两家）
@@ -282,8 +281,7 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 传输走 Cloudflare 的 Brotli（877KB → 306KB），卡片图带 `loading="lazy"`（390px 视口只有 3 张可见图会加载），
 列表按 10 张递增渲染（DOM 节点 24705 → 402），`font-display: swap` 也写着。
 
-**没做、也不打算做的**：市集页是手写的 400 行单文件，没做压缩（21KB，Brotli 后约 5KB，不值得加一道构建）；
-payload 400KB 在启动时整体解析（单文件报告要在 `file://` 下能跑，没法拆包按需取）。
+**没做、也不打算做的**：payload 400KB 在启动时整体解析（单文件报告要在 `file://` 下能跑，没法拆包按需取）。
 
 几个记下来的坑：
 

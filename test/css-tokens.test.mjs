@@ -8,8 +8,8 @@
  * 而 CSS 的表现是：`var()` 解析不到 → **整条声明在计算期失效**（不是退化成某个颜色），
  * 所以肉眼看到的是「边框没了」「条不见了」「边距没了」，很难反推到变量上。
  *
- * 这条测试就在源头堵住它：扫一遍所有 CSS（报告的 web/src/styles.css、
- * 市集页与管理页内联的 <style>），把「用到的变量」和「定义过的变量」对一遍。
+ * 这条测试就在源头堵住它：扫一遍所有 CSS（web/src/shell.css + web/src/styles.css），
+ * 把「用到的变量」和「定义过的变量」对一遍。
  */
 import assert from 'node:assert/strict';
 import test from 'node:test';
@@ -71,7 +71,7 @@ for (const file of FILES) {
       css = [...css.matchAll(/<style>([\s\S]*?)<\/style>/g)].map((m) => m[1]).join('\n');
     }
     // 外壳（令牌 + .wrap + 报头）是唯一出处 web/src/shell.css：报告的 styles.css 用
-    // @import 拿，市集页与管理页在部署时注入。扫任何页面都要把它算上，否则误报「没定义」。
+    // @import 拿。扫任何页面都要把它算上，否则误报「没定义」。
     css = readFileSync(ROOT + 'web/src/shell.css', 'utf8') + '\n' + css;
 
     const used = usedTokens(css);

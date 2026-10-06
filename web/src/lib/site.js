@@ -24,7 +24,7 @@ export const DEALS = DATA.deals ?? [];
  * `[data-site="…"]` 那些专有作用域的挂钩。
  *
  * **组件里不许拿站点名做版面判断** —— 契约第三节：`data-site` 是版面差异的唯一开关，
- * 而组件里的差异一律走 `META.features.*`。`DATA.site` 只在 main.jsx 里落一次
+ * 而组件里的差异一律走 `META.features.*`。`DATA.site` 只在 main.js 里落一次
  * `<html data-site>`；任何 `site === 'uniqlo' ? … : …` 都是错的。
  */
 // （原先这里还导出一个 SITE = DATA.site，全仓库没人引用，2026-09-30 删掉）
