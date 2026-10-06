@@ -94,7 +94,7 @@ html { overflow-anchor: none; }
 .boot__dots i {
   width: 7px;
   height: 7px;
-  background: var(--blue);
+  background: var(--ink, #000f17);
   opacity: 0.14;
   animation: boot-wave 1.5s linear infinite;
   animation-delay: calc(var(--i, 0) * 55ms);
@@ -122,7 +122,7 @@ body {
 
 a { color: inherit; text-decoration: none; }
 /* 链接的 hover 一律走品牌蓝：商品名、榜单里的名称、兄弟报告入口都吃这一条 */
-a:hover { color: var(--blue); }
+a:hover { color: var(--ink, #000f17); }
 
 button {
   /* `font: inherit` 这条简写是必须的，不能拆成长写：简写会把**父级算出来的**
@@ -212,9 +212,9 @@ button {
     background: var(--white); border: 1px solid var(--rule);
     padding: 7px 12px; cursor: pointer; white-space: nowrap;
   }
-  .sizefilter__btn:hover { color: var(--blue); }
-  .sizefilter__btn[aria-pressed="true"] { border-color: var(--blue); color: var(--blue); }
-  .sizefilter__btn:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+  .sizefilter__btn:hover { color: var(--ink, #000f17); }
+  .sizefilter__btn[aria-pressed="true"] { border-color: var(--ink, #000f17); color: var(--ink, #000f17); }
+  .sizefilter__btn:focus-visible { outline: 2px solid var(--ink, #000f17); outline-offset: -2px; }
   /* 展开的尺码面板：贴着按钮下面，可滚（优衣库有 66 种标签，童装 cm 那些都在里面） */
   /* 尺码区：**整行展开**，不是浮层。
      2026-10-06 用户：「我点尺码的时候，我希望搜索框下面能空出一些空间，
@@ -257,7 +257,7 @@ button {
       border: 1px solid var(--rule);
       transition: background-color .2s ease, color .2s ease, border-color .2s ease;
     }
-    .jellychip:hover .jellychip__in { color: var(--blue); border-color: var(--blue); }
+    .jellychip:hover .jellychip__in { color: var(--ink, #000f17); border-color: var(--ink, #000f17); }
     .jellychip[aria-checked='true'] .jellychip__in {
       background: var(--ink); border-color: var(--ink); color: var(--white);
     }
@@ -280,7 +280,7 @@ button {
 .piclink { display: block; cursor: pointer; }
 .piclink img { transition: opacity .15s ease; }
 .piclink:hover img { opacity: .86; }
-.piclink:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+.piclink:focus-visible { outline: 2px solid var(--ink, #000f17); outline-offset: 2px; }
 
 /* ---------------- 收藏 / 不再出现 ----------------
    不带底色和边框：一排数字旁边再加两个方块太重了。
@@ -306,9 +306,9 @@ button {
   transition: color .12s;
 }
 .dealact:hover { color: var(--ink); }
-.dealact:focus-visible { outline: 2px solid var(--blue); outline-offset: -2px; }
+.dealact:focus-visible { outline: 2px solid var(--ink, #000f17); outline-offset: -2px; }
 /* 爱心一律实心，形状不再表示状态，收没收由颜色说：淡灰 → 品牌蓝 */
-.dealact--on { color: var(--blue); }
+.dealact--on { color: var(--ink, #000f17); }
 
 /* ---------------- 大图浏览（PLP 卡片网格） ----------------
    两家的网格几何完全不同（优衣库 auto-fill 258px、卡片间距 24px；
@@ -342,7 +342,7 @@ button {
   letter-spacing: 0.04em;
   color: var(--ink);
 }
-.card__name:hover { color: var(--blue); }
+.card__name:hover { color: var(--ink, #000f17); }
 
 /* 价格与降幅数字走「价格数字字体」栈。
  *
@@ -451,7 +451,7 @@ button {
   border: 0;
   cursor: pointer;
 }
-.empty__reset:hover { background: var(--blue); }
+.empty__reset:hover { background: var(--ink, #000f17); }
 
 /* 「继续下滑加载更多」那行：要安静——它不是内容，是给
    「往下滑还有东西吗」这个问题一个答复。所以最淡的灰、居中、不占太多高度 */
@@ -682,7 +682,7 @@ body {
   color: var(--ink-2);
   border: 1px solid var(--rule);
 }
-.chip--tracked { color: var(--blue); border-color: var(--blue); }
+.chip--tracked { color: var(--ink, #000f17); border-color: var(--ink, #000f17); }
 
 @media print {
   .toolbar { position: static; }
@@ -784,7 +784,7 @@ body {
   border-bottom: 1px solid var(--rule-soft);
 }
 .fav__link { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1 1 auto; }
-.fav__link:hover .fav__name { color: var(--blue); }
+.fav__link:hover .fav__name { color: var(--ink, #000f17); }
 .fav__img { flex: none; width: 52px; height: 52px; object-fit: cover; background: var(--surface-2); }
 .fav__body { min-width: 0; }
 .fav__name {

@@ -20,7 +20,12 @@
   --rule-soft: #eff1f3;
   --surface: #f5f4f5;
   --surface-2: #fafafa;
-  --blue: #3643ba;
+  /* ⚠️ 这里原来有个 --blue (#3643ba)。2026-10-06 用户：「我不希望我的网站出现蓝色，
+     所有蓝色的地方……都改成黑色，就和降多少钱的字体一个颜色」—— 于是全站去蓝：
+     15 处引用（「我的」「优衣库」、尺码按钮的按下态、收藏后的爱心、待拔草标签、
+     各种 hover 与 focus 描边、空状态的重置按钮）统统改成 var(--ink, #000f17)，
+     也就是「降 N 元」那个墨色。这个令牌一并删掉。
+     （那条「定义了却没人用」的测试会替我们确认没有漏网之鱼。） */
   --red: #e20c18;
   /* 页面外壳的左右内边距。基准值 40px 丢了之后 `padding: 0 var(--pad)` 整条失效，
      左右边距直接算成 0（用户 2026-10-01 报的「整体左右边距没有了」）。
@@ -212,7 +217,7 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    「Uniqlo Pro」，不是内嵌的思源黑体 —— 它有没有 700 这个槽位我没查。
    我上一版注释里写「走思源黑体、是真的换字重」，那是想当然，已改正。 */
 .masthead__cross {
-  color: var(--blue);
+  color: var(--ink, #000f17);
   font-weight: 700;
   text-decoration: none;
 }
