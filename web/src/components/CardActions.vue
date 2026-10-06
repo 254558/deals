@@ -54,12 +54,13 @@ const props = defineProps({
       :title="props.watched ? '移出「待拔草」' : '加进「待拔草」'"
       @click="props.onPick?.()"
     >
-      <!-- **描边，不是实心**（2026-10-06 用户：「整个网站是纤细轻盈的感觉」）。
-           它原来是 fill="currentColor" 的实心块 —— 一张卡上最重的一块，
-           而旁边那颗闭眼是细描边，两个图标并排像两种语言。
-           实心原本的作用是「压得住旁边那排数字」；现在把压场面的活儿交回给价格，
-           爱心只留一条 1.75 的描边，「收没收」改由**颜色**说（.dealact--on 转品牌蓝）。 -->
-      <Heart :size="16" :stroke-width="1.75" fill="none" aria-hidden="true" />
+      <!-- **实心**（fill="currentColor"）。
+           2026-10-06 一度改成描边（那轮在做"纤细轻盈"），同一天用户要求改回来：
+           「收藏和删除商品的图标，改回以前那种实心的」。
+           实心的作用见文件顶上那段：它和现价、角标、划线上市价排在同一行，
+           实心的分量才压得住旁边那排数字。收没收仍然由**颜色**说
+           （.dealact--on 转品牌蓝），形状不表示状态。 -->
+      <Heart :size="16" :stroke-width="1.75" fill="currentColor" aria-hidden="true" />
       <span class="sr-only">{{ props.watched ? '取消收藏' : '收藏' }}</span>
     </button>
 
@@ -69,8 +70,12 @@ const props = defineProps({
       title="永久隐藏这件：不再出现在榜上，也无法放回"
       @click="props.onHide?.()"
     >
-      <!-- 同 size 即可：EyeClosed 跟爱心一样铺满 24 格，量到同样的墨迹跨度 -->
-      <EyeClosed :size="16" :stroke-width="2" aria-hidden="true" />
+      <!-- 同 size 即可：EyeClosed 跟爱心一样铺满 24 格，量到同样的墨迹跨度。
+           **2026-10-06 也填成实心**（用户：「收藏和删除商品的图标，改回以前那种实心的」）——
+           它此前一直是描边。注意 lucide 的 EyeClosed 是**一条开口的弧线**（闭着的眼睑），
+           填色填出来的是弧线两端的弦所围的那一小片，不是"实心眼"；
+           所以这里同时把描边加粗到 2.4，让它和实心爱心是一个分量。 -->
+      <EyeClosed :size="16" :stroke-width="2.4" fill="currentColor" aria-hidden="true" />
       <span class="sr-only">永久隐藏</span>
     </button>
   </div>
