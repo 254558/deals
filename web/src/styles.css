@@ -597,6 +597,10 @@ body {
    色值写死而不是 var(--ink)：这个文件里 var() 已经栽过两次（见下面 .card__now 那段注释），
    这里不值得再赌一次。 */
 .card__off {
+  /* 图标 + 金额排一行（2026-10-06：图标挪到这里，「降」字去掉） */
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 12px;
   /* 600 → 500（2026-10-06，同上） */
   font-weight: 500;

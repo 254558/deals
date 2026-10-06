@@ -26,6 +26,7 @@
  *   · `style={{ '--w': … }}` → `:style`，自定义属性照样能绑。
  */
 import { computed } from 'vue';
+import { BanknoteArrowDown } from 'lucide-vue-next';
 import { chips, goneNote, num, priceParts, tagLabel } from '../lib/format.js';
 import { META } from '../lib/site.js';
 import CardActions from './CardActions.vue';
@@ -88,12 +89,9 @@ const text = computed(() => chips(props.deal.tags));
  */
 // 12 → 24（2026-10-06）：参照图里是 ~32 根**细**条，12 根在卡片宽度下太胖，
 // 像积木不像刻度。24 根配 4px 上限，密度和细度都贴近参照图。
-// 24 → 27 → **25**。中间那两步是同一件事的两个极端：
-//   · 24 格时盒子右边空 19px，看着是条和字之间一道明显的缝（用户提过一次）；
-//   · 加到 27 格之后条一直贴到「降 N 元」跟前，只剩 2px —— 用户说「你上次改过头了」。
-// 25 格 = 25×3 + 24×2 = 123px，盒子（缩进 4px 之后）是 133px，右边留 **10px**。
-// 结论：那道空来自"盒子比内容宽"，格子数就是它的刻度 —— 10px 是既不空也不挤的位置。
-const BAR_SEGMENTS = 25;
+// 25 → **23**：文字前面加了一个 13px 的图标（钞票+箭头），而条是 flex:1 撑满的 ——
+// 条会被挤窄，格子跟着被压缩。23 格 = 23×3 + 22×2 = 113px，正好塞得进新的宽度。
+const BAR_SEGMENTS = 23;
 const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(props.deal.rate * BAR_SEGMENTS))));
 
 // 名字**原样显示**，不再按斜杠截断。
@@ -154,7 +152,15 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
          直接说「降 190 元」——省下的钱是实打实的数，百分比还得自己换算 -->
     <div v-else-if="props.deal.rate > 0 && feats.dealBarNumber" class="card__deal">
       <span class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
-      <span class="card__off n">降 {{ num(Math.round(props.deal.saving)) }} 元</span>
+      <!-- 2026-10-06 用户：「把那个图标放到降多少钱前面，降字不要了，换成那个图标」。
+           所以这里是 [图标] 190 元，不再写「降」。
+           图标和数字**同色**（都用 .card__off 的颜色，图标是 stroke=currentColor），
+           而「降」这个意思留给读屏器 —— sr-only 里还留着它，视觉上才是纯图标。 -->
+      <span class="card__off n">
+        <span class="sr-only">降</span>
+        <BanknoteArrowDown :size="13" :stroke-width="2" aria-hidden="true" />
+        {{ num(Math.round(props.deal.saving)) }} 元
+      </span>
     </div>
     <!-- 迪卡侬：只有一根条，长度同样等于降幅 -->
     <span v-else-if="props.deal.rate > 0" class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>

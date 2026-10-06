@@ -147,22 +147,8 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    平铺用内联 SVG（data URI）而不是堆两层渐变：方块的边界精确，缩放时也不会糊。
    颜色写死十六进制而不是 var()：这个项目栽过两次「var() 解析不到 → 整条声明失效」，
    品牌色这一处不值得再赌一次（--red 也是同一个值）。 */
-/* 品牌标记：lucide 的 banknote-arrow-down（2026-10-06 用户指定）。
-   它自己是 stroke="currentColor" 的线性图标，所以这里只做两件事：
-     · 定**颜色** —— 品牌红，图标就跟着红（不用像像素图那样把颜色写进 data URI）；
-     · 定**盒子** —— 16×16 的 flex 项，和旁边站名的基线由 .masthead__eyebrow 的
-       align-items 管。
-   （这里原先放过一个像素机器人，是 data URI 贴图；换成组件之后那些
-     background-image / background-size / crispEdges 的讲究都不需要了。） */
-.masthead__dot {
-  flex: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  color: var(--red, #e20c18);
-}
+/* .masthead__dot 于 2026-10-06 删除：用户说「goodprices 前面不要图标了」，
+   那个钞票图标挪去商品卡片的「降多少钱」前面了（见 ProductCard.vue）。 */
 /* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
    迪卡侬 13px ink-2），而报头必须两家一模一样。 */
 .masthead__text {
