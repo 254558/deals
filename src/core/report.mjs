@@ -12,7 +12,7 @@
 import { readFileSync, writeFileSync, mkdirSync, existsSync, statSync, readdirSync, copyFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { spawnSync } from 'node:child_process';
-import { listDeals, listTracked, listBlocked, loadSizeVocab, stats, discountRate } from './db.mjs';
+import { listDeals, listTracked, listBlocked, loadSizeVocab, loadCategoryVocab, stats, discountRate } from './db.mjs';
 
 const rateOf = discountRate;
 
@@ -41,7 +41,12 @@ function toDeal(row, images, remote, site, vocab) {
     code: row.code || row.product_code,
     name: row.name,
     brand: row.brand || '',
-    // 2026-10-06 清理：这里原来还有 sports / season / sizeRange 三个字段（约 43 KB 原始），
+    // 顶层分类码（1111WOMEN 这种）。**这是 2026-10-06 特意加回来的**：
+    // 下面那段注释说 sports 曾因"UI 一次都不读"被移出 payload —— 现在 UI 要按分类
+    // 筛选了，所以它回来了，但换了名字（category），而且只传**顶层码**
+    //（稳定、每件恰好一个），不传接口给的那一串混杂的码。
+    category: row.sports || '',
+    // 2026-10-06 清理：这里原来还有 sports / season / sizeRange 三个字段（约 43 KB 原始），⚠️ 当晚 sports 又以 category 的名字回来了（见上），因为 UI 开始按分类筛选。
     // 都是「算出来、写进 payload、UI 一次都不读」。它们仍然存在库里（适配器的尺码逻辑
     // 要用 size_range，db.mjs 的注释也说明了列的设计），只是**不再往报告里塞**。
     // 「还剩什么尺码」。这是**站点自己的知识**（内部码怎么翻译成 S / 110cm），
@@ -132,6 +137,12 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
    */
   // 尺码词表读一次，整趟共用（「还剩什么尺码」靠它把内部码翻成人话）
   const sizeVocab = loadSizeVocab(db, site.id);
+  /**
+   * 分类词表（菜单用）。**只带前两层**：接口一共给了 1141 条，三层及以下占 1087 条，
+   * 全塞进单文件报告要多约 45KB，而菜单只展开到第二层 —— 50 条约 2KB。
+   * 层级靠 level/parent 表达，界面按 parent 挂枝杈。
+   */
+  const categories = loadCategoryVocab(db, site.id).filter((c) => c.level <= 1);
   const blocked = new Set(listBlocked(db, site.id).map((b) => b.code));
   const shown = rows.filter((r) => !blocked.has(r.code) && (!images || images.get(r.product_code)));
 
@@ -148,6 +159,7 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
     generatedAt: new Date().toISOString(),
     recorded: stats(db, site.id).total,
     meta,
+    categories,
     deals: shown.map((r) => toDeal(r, images, remote, site, sizeVocab)),
   };
 }

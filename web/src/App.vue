@@ -20,11 +20,13 @@ import Neko from './components/Neko.vue';
 import Toolbar from './components/Toolbar.vue';
 import ProductCard from './components/ProductCard.vue';
 import MinePanel from './components/MinePanel.vue';
+import CategoryMenu from './components/CategoryMenu.vue';
 import { num } from './lib/format.js';
 import { useWatch, FAVORITES_KEY } from './lib/use-watch.js';
 import { useIncremental } from './lib/use-incremental.js';
 import { loadProgress, saveProgress, clearProgress } from './lib/browse-memory.js';
 import { ourSizes, sizeRank } from './lib/sizes.js';
+import { CATEGORIES } from './lib/site.js';
 import { DATA, DEALS, META } from './lib/site.js';
 
 /**
@@ -62,6 +64,21 @@ const saved = loadProgress(DATA.site, DATA.generatedAt);
 // **URL 优先于「上次读到哪儿」** —— 你点的是一条明确的深链，就该看那一条。
 const query = ref(new URLSearchParams(location.search).get('q') || saved?.query || '');
 const size = ref(saved?.size ?? '');
+/** 分类筛选：空串 = 全部。值是分类码（顶层 1111WOMEN 这种，或二层的子类码） */
+const cat = ref('');
+/** 站名下面的分类菜单开没开 */
+const catsOpen = ref(false);
+/**
+ * 选了分类：记下来，并**收起整块菜单**（用户 2026-10-06：「当我选了之后，这个树
+ * 自动收起来，回到没有点 goodprices 的样式」）。筛选结果留着，只是把面板关掉。
+ */
+function pickCat(code) {
+  cat.value = code;
+  // 选定了就收起面板 + 退出「我的」（用户：「在我的里点分类没反应」——
+  // 「我的」盖着榜单，只改 cat 看不见）。组件里点顶层只展开、不触发 pick。
+  catsOpen.value = false;
+  mineOpen.value = false;
+}
 // 「我的」：一块视图，只有 收藏 / 转移码 两块（用户 2026-10-06）
 const mineOpen = ref(false);
 
@@ -104,6 +121,30 @@ function hideDeal(d) {
   hide(d.id, d.code);
 }
 
+/**
+ * 这件商品属不属于某个分类。
+ * 顶层码存在 d.category 上（每件恰好一个）；二层码存在 d.tags 里 ——
+ * ⚠️ 二层**会重复命中**（一件衬衫同时挂在「衬衫·POLO衫」「衬衫」「长款」…），
+ *    所以筛选以顶层为主，二层是给菜单看的枝杈。
+ */
+function matchesCat(d, code) {
+  if (!code) return true;
+  if (d.category === code) return true;
+  return (d.tags ?? []).includes(code);
+}
+
+/** 菜单上每个分类的件数（跟着当前榜单算，不是全库） */
+const catCounts = computed(() => {
+  const out = {};
+  for (const c of CATEGORIES) {
+    const top = c.level === 0;
+    out[c.code] = deals.value.filter((d) => (top ? d.category === c.code : (d.tags ?? []).includes(c.code))).length;
+  }
+  // 「未分类」：整棵树都没认出来的那些（接口确实没给 1111xxxx 码的）
+  out.__none = deals.value.filter((d) => !d.category).length;
+  return out;
+});
+
 const rows = computed(() => {
   const q = query.value.trim().toLowerCase();
   // 搜索认哪几个字段也是站点差异，只能从 searchLabel 反推（契约里没有单独的开关）。
@@ -112,6 +153,7 @@ const rows = computed(() => {
   return deals.value
     .filter((d) => !q || hay(d).includes(q))
     .filter((d) => !size.value || ourSizes(d.sizes?.labels ?? []).includes(size.value))
+    .filter((d) => matchesCat(d, cat.value))
     /**
      * 只按降幅从大到小排。比的是 payload 里的精确 `rate`，不是四舍五入后的整数 ——
      * 三件都显示 `-74%` 时顺序仍由真实值决定。Array.prototype.sort 是稳定的，
@@ -122,7 +164,7 @@ const rows = computed(() => {
 
 // 首屏只建前 INITIAL 张卡片，往下滑再一批批补（理由见 lib/use-incremental.js）
 const rowsCount = computed(() => rows.value.length);
-const resetKey = computed(() => `${size.value}|q|${query.value}`);
+const resetKey = computed(() => `${size.value}|${cat.value}|q|${query.value}`);
 const { visible, sentinelRef } = useIncremental(rowsCount, resetKey, saved?.visible);
 
 /**
@@ -290,6 +332,17 @@ function reset() {
     :mine-open="mineOpen"
     :hidden="navHidden"
     :on-mine="openMine"
+    :cats-open="catsOpen"
+  @categories="catsOpen = !catsOpen"
+/>
+  <!-- 站名下面展开的分类菜单：**在正常文档流里**（把榜单往下推），不是浮层。
+       关掉时整块不渲染，所以报告里那 50 条分类不占运行时的力气。 -->
+  <CategoryMenu
+    v-if="catsOpen"
+    :categories="CATEGORIES"
+    :counts="catCounts"
+    :value="cat"
+    @pick="pickCat"
   />
 
   <!-- 「我的」是**一块视图**，不是盖住全屏的浮层 —— 导航栏必须一直在

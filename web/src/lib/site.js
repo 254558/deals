@@ -19,6 +19,9 @@ export const META = DATA.meta ?? {};
 /** 全部商品，未经筛选/排序/隐藏。App 里再按 localStorage 那两本账过一遍 */
 export const DEALS = DATA.deals ?? [];
 
+/** 分类树（只带前两层：顶层 4 支 + 二层 50 个），站名下面那个枝杈菜单用 */
+export const CATEGORIES = DATA.categories ?? [];
+
 /**
  * 站点标识。它只做一件事：写进 `<html data-site>`，也就是 styles.css 里
  * `[data-site="…"]` 那些专有作用域的挂钩。

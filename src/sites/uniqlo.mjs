@@ -181,6 +181,9 @@ function normalize(p) {
     // 这样以后映射表改了不用重新抓一遍。
     sizeCodes: (p.size || []).slice(),
     identities: p.identity || [],
+    // 接口给的一串分类码（混着营销标，如 LIMITED_K / NEW_ARR）。**先原样带过来**，
+    // 到 sync() 里再拿词表去对 —— normalize 这层看不见词表。
+    categoryCodes: p.categoryCode || [],
     originPrice: num(p.originPrice), // 官方原价。优衣库原价不会上调，所以历史最高原价 ≈ 上市价
     minPrice: num(p.minPrice), // 现价（多色/多码中的最低价）
     maxPrice: num(p.maxPrice),
@@ -423,6 +426,38 @@ async function fetchSizeVocab() {
   });
   return out;
 }
+/**
+ * 抓分类词表。和 fetchSizeVocab 是**同一个接口、同一份响应**，只是读「品类」那一段。
+ *
+ * ⚠️ 顶层的 UNIQLOTOP 是营销桶（周周新品 / 旗舰店专享 / 组合优惠购买…），
+ *    实测**每件商品都带它**，当筛选用等于没筛 —— 所以整支跳过（连同它的子树）。
+ *    剩下 4 支是真分类：女装 1111WOMEN / 男装 1111MEN / 童装 1111KIDS / 婴幼儿 1111BABY，
+ *    每件商品恰好命中其中之一（实测 5 件样本全中）。
+ */
+async function fetchCategoryVocab() {
+  const json = await post({
+    url: '/search.html?searchType=1',
+    pageInfo: { page: 1, pageSize: 1, withSideBar: 'Y' },
+    belongTo: 'pc',
+    rank: 'overall',
+    priceRange: { low: 0, high: 0 },
+    color: [], size: [], season: [], material: [], sex: [],
+    categoryFilter: {}, identity: [], insiteDescription: '', exist: [],
+    searchFlag: true, description: '',
+  });
+  const seg = (json.resp?.[0] || []).find((s2) => s2?.name === '品类');
+  const SKIP = new Set(['UNIQLOTOP']);
+  const out = [];
+  const walk = (items, parent, level) => {
+    (items || []).forEach((it, i) => {
+      if (!it?.categoryCode || SKIP.has(it.categoryCode)) return;   // 整支跳过
+      out.push({ code: it.categoryCode, name: it.categoryName || '', parent, level, ord: i });
+      walk(it.childs, it.categoryCode, level + 1);
+    });
+  };
+  walk(seg?.item, '', 0);
+  return out;
+}
 
 /** 取在售尺码码。库里存的是 JSON 文本，db.mjs 的 hydrate 会顺手解成数组（sizeCodes），
     两条路都认——适配器不该关心调用方有没有 hydrate 过 */
@@ -512,7 +547,7 @@ function codesOf(row) {
     return { full, labels, count: kept.length };
   }
 
-export { sizeInfo, fetchSizeVocab };
+export { sizeInfo, fetchSizeVocab, fetchCategoryVocab };
 
 
 export default {
@@ -541,7 +576,31 @@ export default {
     }
     // 顺带刷一次尺码词表（一次请求，与搜索条件无关）
     const sizeVocab = await fetchSizeVocab().catch(() => []);
+    // 分类词表：同一个接口的另一段（也是每个站点一次请求）
+    const categoryVocab = await fetchCategoryVocab().catch(() => []);
     const products = dedupe(all).filter((p) => p.minPrice > 0).map(toCanonical);
+    /**
+     * 把商品挂到分类上。
+     *
+     * ⚠️ 分类码用一张 Map 单独带着，**不依赖中间函数保留字段** —— dedupe / filter /
+     *    toCanonical 任何一个换实现都可能把新字段丢掉，那样这里的映射会静悄悄地全空。
+     *    Map 按 productCode 建，绕开这个问题。
+     *
+     * sports 存**顶层**分类码（1111WOMEN 这种，稳定、可用于筛选）；
+     * tags 存**子类**码（如 3wfleece），留给以后做二级筛选。
+     * 对不上的码（接口那串里的营销标）直接丢掉。
+     */
+    const codesByProduct = new Map(all.map((p) => [p.productCode, p.categoryCodes || []]));
+    const topCodes = new Set(categoryVocab.filter((c) => c.level === 0).map((c) => c.code));
+    const subCodes = new Set(categoryVocab.filter((c) => c.level > 0).map((c) => c.code));
+    let matched = 0;
+    for (const p of products) {
+      const codes = codesByProduct.get(p.productCode) || [];
+      p.sports = codes.find((c) => topCodes.has(c)) || '';
+      p.tags = codes.filter((c) => subCodes.has(c));
+      if (p.sports) matched++;
+    }
+    console.log('  认出顶层分类 ' + matched + '/' + products.length + ' 件');
     // 核实「可疑」商品：min==max（范围退化成一个码）却带着多个码，
     // 说明搜索接口的 size 数组在撒谎（它是 SKU 清单不是库存）。这类商品才值得
     // 花 2 个请求去问详情页的真实库存。
@@ -560,6 +619,7 @@ export default {
       fetched: all.length,
       products,
       sizeVocab,
+    categoryVocab,
     };
   },
 

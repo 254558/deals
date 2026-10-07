@@ -56,6 +56,7 @@ import {
 import {
   openDb,
   saveSizeVocab,
+  saveCategoryVocab,
   saveSnapshot,
   listDeals,
   listTracked,
@@ -250,7 +251,7 @@ async function cmdSync(site) {
 
   const clearLine = () => process.stdout.write('\r' + ' '.repeat(60) + '\r');
 
-  const { fetched, products, sizeVocab } = await site.sync({
+  const { fetched, products, sizeVocab, categoryVocab } = await site.sync({
     onPage: ({ label, page, have, total }) =>
       process.stdout.write(`\r  ${label ? `${label}：` : ''}${have}/${total}（第 ${page} 页）        `),
     onTagDone: ({ label, count }) => {
@@ -262,6 +263,8 @@ async function cmdSync(site) {
 
   // 尺码词表（优衣库才有）：存起来，供生成报告时把在售内部码翻成人话
   if (sizeVocab?.length) saveSizeVocab(db, site.id, sizeVocab);
+    // 分类词表（优衣库才有）：菜单用它按层展开
+    if (categoryVocab?.length) saveCategoryVocab(db, site.id, categoryVocab);
 
   const diff = saveSnapshot(db, site.id, products, { full: true });
   finishRun(db, runId, { fetched, discounted: products.length });

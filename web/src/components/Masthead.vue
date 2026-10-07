@@ -24,6 +24,7 @@
  */
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { num } from '../lib/format.js';
+import { META } from '../lib/site.js';
 /**
  * 「我的」那一格里的一排像素小人（2026-10-06 用户给的 11 张 40×40 图，
  * 已清掉网格和背景）。每张都只有几百字节 —— Vite 对 4KB 以内的资源直接转成
@@ -53,7 +54,9 @@ for (let i = shuffled.length - 1; i > 0; i--) {
 }
 // 只取一个（2026-10-06 用户：「每次随机从里面取一个，后面加上我的两个字」）
 const shownPal = shuffled[0];
-import { META } from '../lib/site.js';
+
+/** 点站名 = 展开/收起分类菜单（不再是回首页） */
+const emit = defineEmits(['categories']);
 
 const props = defineProps({
   recorded: { type: Number, default: 0 },
@@ -63,6 +66,8 @@ const props = defineProps({
   onMine: { type: Function, default: null },
   /** 现在是不是在「我的」那块（决定右边那条是「我的」还是「优衣库」） */
   mineOpen: { type: Boolean, default: false },
+  /** 站名下面的分类菜单是不是开着（决定站名要不要标成"已展开"） */
+  catsOpen: { type: Boolean, default: false },
 });
 
 // 报头自己量高度，写成 --nav-h：下面那条工具条也是粘性的，它的 top 得正好接在报头下沿。
@@ -103,7 +108,7 @@ const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink
              ⚠️ Alt+「Good」「Prices」和 img 之间**不能有换行/空格**，
                 否则模板会渲染出一个空白，那就有缝了。
              ⚠️ 它是装饰，alt=""；站名本身（GoodPrices）才是可读的文字。 -->
-        <a class="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">Good<img class="masthead__pal" :src="shownPal" alt="" />Prices</a>
+        <button class="masthead__text masthead__home" type="button" :class="{ 'is-open': props.catsOpen }" title="按分类看（点这里展开）" :aria-expanded="props.catsOpen ? 'true' : 'false'" @click="emit('categories')">Good<img class="masthead__pal" :src="shownPal" alt="" />Prices</button>
         <span v-if="META.showRecorded" class="label">共记录 {{ num(props.recorded) }} 件</span>
 
         <!-- 行尾固定那一条，**跟着视图换**（用户 2026-10-06）：

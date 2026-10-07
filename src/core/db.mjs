@@ -113,6 +113,26 @@ CREATE TABLE IF NOT EXISTS size_vocab (
   PRIMARY KEY (site, code)
 );
 
+---
+--- 分类词表。来源和尺码词表是**同一个接口同一份响应**（搜索接口带 withSideBar: 'Y' 时
+--- 返回的侧边栏，其中有「品类」段），只是读的是另一段。
+--- 实测顶层 5 支，4 支是真分类、1 支是营销桶：
+---   女装全商品 1111WOMEN / 男装全商品 1111MEN / 童装全商品 1111KIDS /
+---   婴幼儿装全商品 1111BABY   ← 这四支是真分类，每件商品恰好命中其中之一（见适配器）
+---   UNIQLO TOP UNIQLOTOP      ← 营销桶（周周新品 / 旗舰店专享 / 组合优惠买…），
+---                               每件商品都带它，当筛选用没有意义，抓取端整支跳过
+--- 所以库里存的正好是那 4 支及其子树；parent/level/ord 保留接口给的层级与顺序，
+--- 供「枝杈菜单」按层展开。
+CREATE TABLE IF NOT EXISTS category_vocab (
+  site   TEXT NOT NULL,
+  code   TEXT NOT NULL,          -- 分类码，如 1111WOMEN / 2wmnstops
+  name   TEXT,                   -- 接口给的显示名，如 '女装全商品' / 'T恤 · 卫衣 · 摇粒绒系列'
+  parent TEXT,                   -- 上级分类码；顶层为 ''
+  level  INTEGER,                -- 第几层（顶层 0）
+  ord    INTEGER,                -- 同层内的次序
+  PRIMARY KEY (site, code)
+);
+
 CREATE TABLE IF NOT EXISTS blocked (
   site        TEXT NOT NULL,
   code        TEXT NOT NULL,          -- 吊牌号
@@ -369,6 +389,33 @@ export function saveSizeVocab(db, site, entries) {
 export function loadSizeVocab(db, site) {
   const rows = db.prepare('SELECT code, label, grp, ord FROM size_vocab WHERE site = ?').all(site);
   return new Map(rows.map((r) => [r.code, r]));
+}
+
+/** 存分类词表。和 saveSizeVocab 一样：整站替换，不做增量合并。 */
+export function saveCategoryVocab(db, site, entries) {
+  const ins = db.prepare(
+    'INSERT OR REPLACE INTO category_vocab (site, code, name, parent, level, ord) VALUES (?,?,?,?,?,?)'
+  );
+  db.exec('BEGIN');
+  try {
+    db.prepare('DELETE FROM category_vocab WHERE site = ?').run(site);
+    for (const e of entries) ins.run(site, e.code, e.name, e.parent || '', e.level ?? 0, e.ord ?? 0);
+    db.exec('COMMIT');
+  } catch (err) {
+    db.exec('ROLLBACK');
+    throw err;
+  }
+  return entries.length;
+}
+
+/**
+ * 读分类词表，按层与次序排好返回（**数组**，不是 Map —— 菜单要的就是有序的树序，
+ * 而且层级关系靠 parent 表达，调用方按 level 分组即可）。
+ */
+export function loadCategoryVocab(db, site) {
+  return db
+    .prepare('SELECT code, name, parent, level, ord FROM category_vocab WHERE site = ? ORDER BY level, ord, code')
+    .all(site);
 }
 
 /** 把一个款加进谢绝名单（幂等） */
