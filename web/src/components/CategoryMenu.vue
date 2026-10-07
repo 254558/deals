@@ -84,13 +84,13 @@ let tClose = 0;
 function pick(code) {
   // 筛选立刻生效（榜单先变，面板还开着）
   emit('pick', props.value === code ? '' : code);
-  // 400ms 一笔画完 → 停一拍 → 淡出 → 收起
+  // 240ms 一笔画完 → 淡出 → 收起（用户 2026-10-06：「动画快一点，别顿一下才出结果」）
   anim.value = true;
   fading.value = false;
   clearTimeout(tFade);
   clearTimeout(tClose);
-  tFade = setTimeout(() => { fading.value = true; }, 600);
-  tClose = setTimeout(() => { emit('close'); }, 1050);
+  tFade = setTimeout(() => { fading.value = true; }, 340);
+  tClose = setTimeout(() => { emit('close'); }, 620);
 }
 </script>
 
@@ -242,8 +242,8 @@ function pick(code) {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: stroke-dashoffset 400ms cubic-bezier(0.23, 1, 0.32, 1),
-              opacity 300ms ease 600ms;
+  transition: stroke-dashoffset 240ms cubic-bezier(0.23, 1, 0.32, 1),
+              opacity 240ms ease 340ms;
   opacity: 1;
 }
 .kids__reach.fading { opacity: 0; }

@@ -586,8 +586,8 @@ export default {
      *    toCanonical 任何一个换实现都可能把新字段丢掉，那样这里的映射会静悄悄地全空。
      *    Map 按 productCode 建，绕开这个问题。
      *
-     * sports 存**顶层**分类码（1111WOMEN 这种，稳定、可用于筛选）；
-     * tags 存**子类**码（如 3wfleece），留给以后做二级筛选。
+     * sports 存**主**顶层分类码（1111WOMEN 这种，稳定、可用于筛选）；
+     * tags 存**子类**码（如 3wfleece），并且**男女同款**带到的其余顶层码也塞进去 —— 同一件在两个性别都能被筛到（用户 2026-10-06 要求）。
      * 对不上的码（接口那串里的营销标）直接丢掉。
      */
     const codesByProduct = new Map(all.map((p) => [p.productCode, p.categoryCodes || []]));
@@ -596,9 +596,12 @@ export default {
     let matched = 0;
     for (const p of products) {
       const codes = codesByProduct.get(p.productCode) || [];
-      p.sports = codes.find((c) => topCodes.has(c)) || '';
-      p.tags = codes.filter((c) => subCodes.has(c));
-      if (p.sports) matched++;
+      const tops = codes.filter((c) => topCodes.has(c));
+      const primary = tops[0] || '';
+      // 主码存 sports，其余顶层码（男女同款的另一个性别）也塞进 tags
+      p.sports = primary;
+      p.tags = codes.filter((c) => subCodes.has(c) || (topCodes.has(c) && c !== primary));
+      if (primary) matched++;
     }
     console.log('  认出顶层分类 ' + matched + '/' + products.length + ' 件');
     // 核实「可疑」商品：min==max（范围退化成一个码）却带着多个码，

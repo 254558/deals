@@ -142,8 +142,9 @@ function matchesCat(d, code) {
 const catCounts = computed(() => {
   const out = {};
   for (const c of CATEGORIES) {
-    const top = c.level === 0;
-    out[c.code] = deals.value.filter((d) => (top ? d.category === c.code : (d.tags ?? []).includes(c.code))).length;
+    // 顶层/子类都用 matchesCat 数：男女同款带两个顶层码（一个在 category、一个在 tags），
+    // 这样它在男女两个分类的件数都算得进去（用户 2026-10-06 要求）。
+    out[c.code] = deals.value.filter((d) => matchesCat(d, c.code)).length;
   }
   // 「未分类」：整棵树都没认出来的那些（接口确实没给 1111xxxx 码的）
   out.__none = deals.value.filter((d) => !d.category).length;
