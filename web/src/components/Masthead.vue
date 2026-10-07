@@ -24,6 +24,35 @@
  */
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { num } from '../lib/format.js';
+/**
+ * 「我的」那一格里的一排像素小人（2026-10-06 用户给的 11 张 40×40 图，
+ * 已清掉网格和背景）。每张都只有几百字节 —— Vite 对 4KB 以内的资源直接转成
+ * data URI，所以报告仍是单文件、一个请求都不多。
+ * 用 glob 而不是写 11 行 import：文件名是 pal-01…pal-11，glob 天然按名排序。
+ */
+const palIcons = Object.entries(
+  import.meta.glob('../assets/pal-*.png', { eager: true, import: 'default' })
+)
+  .sort(([a], [b]) => a.localeCompare(b))
+  .map(([, url]) => url);
+
+/**
+ * 每次打开**随机拿一个**（2026-10-06 用户先要两个、后改成一个：「每次随机从里面取一个」）。
+ *
+ * 随机发生在浏览器里（报告是静态页、Vue 在客户端渲染），所以每个访客、每次刷新
+ * 抽到的组合都不一样。
+ *
+ * ⚠️ 用 Fisher–Yates，不要写成 sort(() => Math.random() - 0.5)：
+ *    那个看着像打乱，实际每种排列的概率并不相等（引擎不同结果还不同）。
+ *    这里只有 11 个元素，写正规的也就几行。
+ */
+const shuffled = [...palIcons];
+for (let i = shuffled.length - 1; i > 0; i--) {
+  const j = Math.floor(Math.random() * (i + 1));
+  [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+}
+// 只取一个（2026-10-06 用户：「每次随机从里面取一个，后面加上我的两个字」）
+const shownPal = shuffled[0];
 import { META } from '../lib/site.js';
 
 const props = defineProps({
@@ -68,10 +97,13 @@ const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink
   <header ref="navRef" class="masthead" :class="{ 'masthead--up': props.hidden }">
     <div class="wrap">
       <div class="masthead__eyebrow">
-        <!-- 品牌标记：**细密的方块点阵**（2026-10-06 用户：「改回前面是方块点阵，
-             后面是普通字体那种」）。图案和颜色都在 styles.css 的 .masthead__dot 里。 -->
-        <span class="masthead__dot" aria-hidden="true" />
-        <a class="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">GoodPrices</a>
+        <!-- 站名**中间**那格：Good[小人]Prices（2026-10-06 用户：
+             「图片放在 good 和 prices 中间，和文字几乎不要有间距」）。
+             更早这里放的是 9×9 的方块点阵，先是挪到站名前面，现在挪进站名里。
+             ⚠️ Alt+「Good」「Prices」和 img 之间**不能有换行/空格**，
+                否则模板会渲染出一个空白，那就有缝了。
+             ⚠️ 它是装饰，alt=""；站名本身（GoodPrices）才是可读的文字。 -->
+        <a class="masthead__text masthead__home" href="/" title="GoodPrices 首页（优衣库捡漏榜）">Good<img class="masthead__pal" :src="shownPal" alt="" />Prices</a>
         <span v-if="META.showRecorded" class="label">共记录 {{ num(props.recorded) }} 件</span>
 
         <!-- 行尾固定那一条，**跟着视图换**（用户 2026-10-06）：
@@ -79,6 +111,13 @@ const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink
               进了「我的」→「优衣库」（回榜单）。
             于是在「我的」里，导航栏是「左 GoodPrices，右 优衣库」。 -->
         <a v-if="props.mineOpen" class="masthead__text masthead__cross" href="./">优衣库</a>
+        <!-- 2026-10-06 用户：「我希望用这个替换导航栏中的我的两个字」——
+             换成一张 40×40 的像素小人（图由用户提供，已清掉网格和背景）。
+             40×40 只有 721 字节，走 Vite 的 4KB 内联阈值 → 直接变成 data URI，
+             报告仍是单文件、不多一个请求。
+             ⚠️ 文字没了，所以补了 aria-label="我的"：
+             否则读屏器念到这个按钮只会说"按钮"。
+             （隔壁「优衣库」那条按用户要求**保持文字**，没动。） -->
         <button
           v-else-if="props.onMine"
           class="masthead__text masthead__cross"

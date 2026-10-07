@@ -76,11 +76,25 @@
  *     （市集页的输入框仍可滚动）。
  * ------------------------------------------------------------------------- */
 html {
+  /* 同一个原因，根元素上也放一份（见下面 * 块里的说明） */
+  -webkit-tap-highlight-color: transparent;
   scrollbar-width: none;   /* Firefox */
   -ms-overflow-style: none; /* 老 Edge / IE */
 }
 html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safari */
-* { touch-action: pan-x pan-y; }
+* {
+  touch-action: pan-x pan-y;
+  /* ⚠️ 手机上点任何链接/按钮，浏览器会往它的**边框盒**上刷一层半透明矩形
+     （WebKit/Blink 的 tap highlight），按下出现、抬手淡掉 —— 就是"闪一下"。
+     2026-10-06 用户：「我在手机上点 goodprices 或者我的，或者收藏，都会有一个
+     矩形背景闪一下」。查过：全项目**从没设过**这一条（0 处），所以看到的一直是
+     浏览器默认值；也**一个 :active 规则都没有**，不是我们自己写的底色反馈。
+     设成 transparent 就是明说"别画这层"。
+     ⚠️ 这不等于"去掉反馈"：键盘的 :focus-visible、桌面端的 :hover 都不受影响。
+     真要"按下去有反应"，得我们主动写 :active（现在项目里一个都没有）。
+     写在 * 上，不指望继承 —— 各家引擎对它的继承行为并不一致。 */
+  -webkit-tap-highlight-color: transparent;
+}
 
 /* ---------------- 报头 ---------------- */
 
@@ -161,20 +175,11 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    平铺用内联 SVG（data URI）而不是堆两层渐变：方块的边界精确，缩放时也不会糊。
    颜色写死十六进制而不是 var()：这个项目栽过两次「var() 解析不到 → 整条声明失效」，
    品牌色这一处不值得再赌一次（--red 也是同一个值）。 */
-/* 品牌标记：**细密的方块点阵**（2026-10-06 用户：「改回前面是方块点阵，
-   后面是普通字体那种」）。
-   中间换过三版：Pixelarticons 的 ai-view（像素机器人）→ 它的实心版 →
-   lucide 的 banknote-arrow-down（钞票 + 箭头）。用户最终要回到**最早这一版**：
-   9×9 里铺 3×3 个「2px 方块 + 1px 空隙」。
-   平铺用内联 SVG（data URI）—— 颜色写死十六进制，因为 data URI 继承不到
-   currentColor，而 --red 也是同一个值。 */
-.masthead__dot {
-  flex: none;
-  width: 9px;
-  height: 9px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='3' height='3'%3E%3Crect width='2' height='2' fill='%23e20c18'/%3E%3C/svg%3E");
-  background-size: 3px 3px;
-}
+/* 品牌标记：**每次随机一个小人**（2026-10-06 用户给图：「这些图片替换 goodprices
+   前面的方块点阵，还是每次随机取一个」）。
+   这里原来是 9×9 的方块点阵（3×3 个「2px 方块 + 1px 空隙」，内联 SVG 平铺）——
+   已经删掉，改成 Masthead.vue 里那张 40×40 的像素画；随机逻辑也在那个组件里。
+   尺寸见下面的 .masthead__pal。 */
 /* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
    迪卡侬 13px ink-2），而报头必须两家一模一样。 */
 .masthead__text {
@@ -183,15 +188,24 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
   letter-spacing: 0.12em;
   color: var(--ink-4);
 }
-/* 左上角那格是品牌名，也是回首页的入口：用了品牌红，比右侧入口深一点。
-   2026-10-06 用户：「goodprices 不要加粗，字号和右边的我的保持一致」——
-   所以字号和字重**都不再单独指定**，全部继承 .masthead__text（10px / 400），
-   和右边那条入口一模一样；只留"品牌红"这一处不同。
-   （再往前它单独设过 12px + 700：那是更早一次"放大 / 加粗"的要求，现在撤销。）
+/* 左上角那格是品牌名，也是回首页的入口。
+   2026-10-06 的来回，按时间顺序：
+     ① "不要加粗、字号和「我的」保持一致" → ② "good 和 prices 加粗"
+     → ③ "goodprices 几个字变成和我的一样的黑色"（就是现在这条：颜色也统一了）。
+   所以它现在和右侧入口 .masthead__cross 一致：同样 10px、同样 var(--ink, #000f17)，
+   只有字重不同（站名 700，入口 400）。
+   ⚠️ 字号 / 字重 / 颜色是**三件独立的事**，别再笼统写成"都不再单独指定" ——
+      上一版注释就是这么过时的。
    color 的 var() 带字面兜底 —— 这个项目里栽过两次「var() 解析不到 → 整条声明失效」
    （降幅条灰底、页签边框）。 */
 .masthead__text.masthead__home {
-  color: var(--red, #e20c18);
+  /* 2026-10-06 用户：「goodprices 几个字变成和我的一样的黑色」——
+     所以这里用了和 .masthead__cross（「我的」）**完全相同**的值，不是"差不多的黑"。 */
+  color: var(--ink, #000f17);
+  /* 2026-10-06 用户：「good 和 prices 加粗」—— **只加粗站名**。
+     （「我的」没有一起加粗：这次只点了 good/prices。）
+     系统字体栈下有真正的 700 字重，不是浏览器合成的粗体。 */
+  font-weight: 700;
   text-decoration: none;
 }
 /* ⚠️ 报头这几个入口**刻意不做 hover 下划线**（2026-10-06 用户：「点导航栏的内容的时候，
@@ -207,6 +221,22 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
 .masthead__cross {
   color: var(--ink, #000f17);
   text-decoration: none;
+}
+/* 站名**中间**那格的随机小人：Good[小人]Prices（2026-10-06 用户给的 11 张 40×40，
+   已清掉网格和背景；每次打开随机取一张，随机逻辑在 Masthead.vue 里）。
+   ⚠️ display 必须是 inline-block，不能是 block —— 它现在夹在文字中间，
+   block 会把「Good」和「Prices」拆成两行。
+   ⚠️ 站名有 letter-spacing: 0.12em（10px 下约 1.2px），图两侧会各多出一点字距，
+   所以用 -1px 的负边距把它抵掉 —— 用户要的就是「和文字几乎不要有间距」。
+   vertical-align: -4px 让图压在字的基线上，既连成一体、又不把行撑得太高。
+   image-rendering: pixelated 保证缩放后还是硬边方块。 */
+.masthead__pal {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  margin: 0 -1px;
+  vertical-align: -4px;
+  image-rendering: pixelated;
 }
 /* GoodPrices 留在左边，其余（各页入口）由它推到右边。
    ⚠️ 原来写的是 `.masthead__cross:first-of-type { margin-left: auto }`——那个
