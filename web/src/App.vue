@@ -84,6 +84,14 @@ function closeCat() {
   catsOpen.value = false;
   mineOpen.value = false;
 }
+
+function toggleCats() {
+  catsOpen.value = !catsOpen.value;
+  // 菜单在**文档流顶部**（报头下面）。深滚时点开它落在视口上方、看不见 ——
+  // 用户 2026-10-07 报「滑到很下面点 GoodPrices 弹不出来，要滑到最顶才看到」。
+  // 于是点开就滚回顶部：报头 sticky 归位，菜单正好露在下面。
+  if (catsOpen.value) window.scrollTo({ top: 0, behavior: 'smooth' });
+}
 // 「我的」：一块视图，只有 收藏 / 转移码 两块（用户 2026-10-06）
 const mineOpen = ref(false);
 
@@ -339,7 +347,7 @@ function reset() {
     :hidden="navHidden"
     :on-mine="openMine"
     :cats-open="catsOpen"
-  @categories="catsOpen = !catsOpen"
+  @categories="toggleCats"
 />
   <!-- 站名下面展开的分类菜单：**在正常文档流里**（把榜单往下推），不是浮层。
        关掉时整块不渲染，所以报告里那 50 条分类不占运行时的力气。 -->
