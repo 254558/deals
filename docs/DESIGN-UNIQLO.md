@@ -27,12 +27,12 @@
 | --- | --- |
 | `uniql sync` / `uniql report` … | `deals uniqlo sync` / `deals uniqlo report`（站点在前；`u` / `uniql` 也认，`--site uniqlo` 也认） |
 | `data/uniql.db` | `data/deals.db`，一张库靠 `site` 列分区，主键 `(site, product_code)` |
-| `productCode` 与迪卡侬的 `dsm_code` 各自为政 | 统一成 `product_code`（站点内唯一号）；报告 payload 里叫 `id`，给人看的编号叫 `code` |
+| `productCode` 各自为政 | 统一成 `product_code`（站点内唯一号）；报告 payload 里叫 `id`，给人看的编号叫 `code` |
 | `reports/index.html` | `reports/uniqlo/index.html` |
-| 自己一套 React 组件和 CSS | 与迪卡侬**共用**一套组件、一张 `styles.css`；优衣库专有的几何挂在 `<html data-site="uniqlo">` 下 |
+| 自己一套 React 组件和 CSS | 一套组件、一张 `styles.css`；优衣库专有的几何挂在 `<html data-site="uniqlo">` 下 |
 | 页面里的中文写死在组件里 | 所有会随站点变的字样与开关都从 payload 的 `meta` 读（见契约第三节），组件里没有一处 `site === 'uniqlo'` |
-| 无 `history` 命令 | `history <编号>` 现在两家都有（这一条原来只属于迪卡侬那半） |
-| `reports/index.html` 是**唯一**报告 | 两份报告互有入口：报头行尾那行小字可跳到迪卡侬报告（优衣库这份原来就有这个链接；迪卡侬那份是新增的） |
+| 无 `history` 命令 | `history <编号>` 现在有了 |
+| `reports/index.html` 是**唯一**报告 | 报头行尾那行小字是报告入口 |
 
 三件事没有变，是有意的：
 
@@ -58,7 +58,7 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 `d.uniqlo.cn` 前面是腾讯云 EdgeOne 的 WAF，会按 UA 拦明显的爬虫。适配器固定发一个真实浏览器（Chrome/120）的 `User-Agent`，并带上 `Origin: https://www.uniqlo.cn` 和 `Referer: https://www.uniqlo.cn/`——这三样一起才过得去。
 
-请求侧的其他防护：单次 `AbortSignal.timeout(30_000)`；失败重试 3 次，退避 `800ms × (i+1)`；翻页之间 `sleep(250)` 别把人家接口打太狠。重试与节流写在适配器自己这一层（迪卡侬那份有它自己的一份），而那个 UA 和两个头更是**这一站独有的**。
+请求侧的其他防护：单次 `AbortSignal.timeout(30_000)`；失败重试 3 次，退避 `800ms × (i+1)`；翻页之间 `sleep(250)` 别把人家接口打太狠。重试与节流写在适配器自己这一层，而那个 UA 和两个头更是**这一站独有的**。
 
 ### 2.3 抓什么：两个标签，不是全站
 
@@ -108,7 +108,7 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 ### 3.1 报头只剩一行
 
-报头只有一行站点信息：站点名（`meta.label`），然后是可选的「共记录 N 件」和行尾那组入口（另一家的报告）。**「抓取于 2026/9/30 21:37」那一格 2026-10-01 删了**——页面上多一行时间对「这件要不要买」没有帮助，而且每天都在变、看着像过期提示；数据层照记（`payload.generatedAt`），浏览器标签页标题里继续带着日期，翻书签时才知道这份是哪天的。这一格现在两家都不开（`showRecorded: false`）：2026-09-30 之前只有迪卡侬显示，后来应要求去掉了。
+报头只有一行站点信息：站点名（`meta.label`），然后是可选的「共记录 N 件」和行尾那组入口（另一家的报告）。**「抓取于 2026/9/30 21:37」那一格 2026-10-01 删了**——页面上多一行时间对「这件要不要买」没有帮助，而且每天都在变、看着像过期提示；数据层照记（`payload.generatedAt`），浏览器标签页标题里继续带着日期，翻书签时才知道这份是哪天的。这一格现在不开（`showRecorded: false`）。
 
 报头原来还有一排**总账数字**（在售降价 N 件 / 全部买下可省 ¥X / 降幅 ≥ 50% N 件 / 处于历史最低 N 件），现在删了。它们的问题不是不准确，是**对「这一件要不要买」没有任何帮助**——「全部买下可省多少」尤其如此，没人会全买。
 
@@ -130,7 +130,7 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 榜单上那个降幅角标是**黄底**的（`.rank__off`）——整份报告里黄角标只剩这一处，卡片上的降幅是红字。
 
-**这一整块是优衣库独有的**（`features.rankBoard: true`）。迪卡侬那份没有，是选择不是少了什么：迪卡侬的商品名下面是「品牌 + 编号」，榜单里再念一遍品牌很啰嗦，而优衣库的商品名本身就够短，摆得下一张榜。
+**这一整块是优衣库独有的**（`features.rankBoard: true`）。
 
 ### 3.3 粘性工具栏
 
@@ -150,7 +150,7 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 **0.5px 的坑**：工具栏真实高度是小数（900 宽下 `91.5px`），和下边内容之间会留下 0.5px 没有白底盖住——滚动时从这条缝里会透出行内容，2x 屏上正好是一个物理像素宽的闪烁细线。修法是让工具栏自己的白底往下多铺 1px（`box-shadow: 0 1px 0 #fff`），它不参与布局、也就不会改高度。
 
-> 合并时这一档曾经两家不一样：优衣库钉住、迪卡侬滚走（依据是迪卡侬那时有两行 104px，常驻太占地）。后来应要求把迪卡侬也收成一行并钉住，于是两家在这一档完全一致（见 [DESIGN-DECATHLON.md](DESIGN-DECATHLON.md) 4.5）。
+> 报头钉住：用户要求往下滑也要看到 GoodPrices 和入口。
 
 ### 3.4 只有大图一种视图
 
@@ -173,11 +173,11 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 ---
 
-## 四、视觉：版面量自官网，配色和价格排版跟迪卡侬那份统一
+## 四、视觉：版面量自官网
 
-**版面尺寸**不是「看着像」，是把 uniqlo.cn 的**计算样式**读出来照抄的（字号、缩略图 3:4、列宽、卡片网格）；**配色、价格排版、动作图标**则统一用迪卡侬那份报告的一套，两份报告来回切换不用重新认颜色。这条分工在合并后由 `data-site` 与 `meta` 实现：几何挂在 `[data-site="uniqlo"]` 下，配色是两家共用的一层。
+**版面尺寸**不是「看着像」，是把 uniqlo.cn 的**计算样式**读出来照抄的（字号、缩略图 3:4、列宽、卡片网格）；**配色、价格排版、动作图标**是统一的一套。这条分工在合并后由 `data-site` 与 `meta` 实现：几何挂在 `[data-site="uniqlo"]` 下，配色是两家共用的一层。
 
-### 4.1 配色与价格排版（跟迪卡侬一致）
+### 4.1 配色与价格排版
 
 | 项 | 值 | 用在哪 |
 | --- | --- | --- |
@@ -191,10 +191,10 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 | 降幅 | 黄底直角角标（`12px` / 高 `16px` / 内衬 `0 4px`） | 只剩榜单那一处（合并后卡片和列表的降幅都改成了红色 `12px` 数字） |
 | 零值 | 官网写 `¥ 0`，**不带小数** | 标尺右端刻度（由 `meta.currency.zero` 给） |
 
-两处刻意与 uniqlo.cn 不同、跟着迪卡侬走：
+两处刻意与 uniqlo.cn 不同：
 
-1. **上市价划删除线（且不再缩得很小）。** 优衣库官网只用「变小 + 变灰」弱化原价，迪卡侬官网是划线的；既然视觉统一走迪卡侬，划线也一起跟过来。字号则连同迪卡侬那份一起放大到 15px（官网是 12px）——理由见上表：看不见的原价没有意义。划线只在**真降了**的时候才画（`row__was--cut` / 卡片上的 `cut`），没降的原价等于现价，划它没意义。
-2. **现价的红色倒是刻意从官网留下的**（迪卡侬那份用的是墨色）：价格本来就是这页的主角，红是它的冲击力所在；没降价的价格退成次级灰，红色只属于降了的价。
+1. **上市价划删除线（且不再缩得很小）。** 优衣库官网只用「变小 + 变灰」弱化原价，既然视觉统一走划线，就一起跟过来。字号则一起放大到 15px（官网是 12px）——理由见上表：看不见的原价没有意义。划线只在**真降了**的时候才画（`row__was--cut` / 卡片上的 `cut`），没降的原价等于现价，划它没意义。
+2. **现价的红色倒是刻意从官网留下的**：价格本来就是这页的主角，红是它的冲击力所在；没降价的价格退成次级灰，红色只属于降了的价。
 
 ### 4.2 大图视图：照官网分类页实测的网格
 
@@ -218,7 +218,7 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
 
 ## 五、图片：为什么是 561 档
 
-> 顺带一条两家共用的规则（2026-09-30 加）：**没图的商品不上榜**。抓不到图、或者官网自己就没图，卡片上只剩一个灰框，看不到是什么东西也就没法买，所以生成时就剔掉（见 [DESIGN-DECATHLON.md](DESIGN-DECATHLON.md) 第五节）。这一站目前没有这种商品——878 件全部有图。
+> 顺带一条两家共用的规则（2026-09-30 加）：**没图的商品不上榜**。抓不到图、或者官网自己就没图，卡片上只剩一个灰框，看不到是什么东西也就没法买，所以生成时就剔掉。这一站目前没有这种商品——878 件全部有图。
 
 官方只提供两档能用的尺寸（中间档如 160 / 320 一律 404）：
 
@@ -235,7 +235,7 @@ POST https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndCondi
    老缓存里的 JPEG 会被**就地转换**再删掉，所以本机和 CI 的缓存都能平滑升级；没装 sharp
    （`npm ci --omit=dev`）就退回 JPEG，扩展名跟着变，上游拿到的路径永远是对的。
 
-优衣库只需要**一张**图，所以它的候选链长度是 1；共享核心统一按「候选链」处理（一张一张试，第一张下来了就停），逻辑完全一样。这一站没有迪卡侬那种「主图 410、副图还在」的问题，但共用这套代码不损失任何东西。
+优衣库只需要**一张**图，所以它的候选链长度是 1；共享核心统一按「候选链」处理（一张一张试，第一张下来了就停），逻辑完全一样。这一站没有「主图 410、副图还在」的问题，但共用这套代码不损失任何东西。
 
 4xx 与 5xx 区别对待：4xx 是「这张图不存在」，重试没意义，直接换候选；5xx 或超时是网络抖动，同一张图再试一次。
 
@@ -260,7 +260,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 取两档就够：正文 Regular（400）、强调 Medium。优衣库中文的强调用的是 Medium，**不是 Bold**——官网的标题规则是 `b,h1..h5,th{font-family:LTMedium;font-weight:400}`，汉字从不压重黑。所以这里把 Medium 挂到 `700` 这个槽位上，让 `font-weight: 700` 的汉字落在 Medium 上，正好是官网的观感。
 
-这两条「用哪个字体、挂到哪个字重槽位上」是**站点自己的观感问题**，所以在适配器的 `fonts.faces` 里声明；共享核心只负责下载、子集化、拼 `@font-face`。`fonts: null` 就是这一站不内嵌（迪卡侬那半就是这样）。
+这两条「用哪个字体、挂到哪个字重槽位上」是**站点自己的观感问题**，所以在适配器的 `fonts.faces` 里声明；共享核心只负责下载、子集化、拼 `@font-face`。`fonts: null` 就是这一站不内嵌。
 
 ### 6.3 许可与署名
 
@@ -383,7 +383,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 优衣库那份的列（`tableColumns`，由站点声明、共享核心只负责画）：`编号 | 商品 | 上市价 | 现价 | 降幅 | 省 | 标签`。
 
-没有品牌列也没有销量列，第 7 列就是标签——这是和迪卡侬那份最直观的差别（迪卡侬第 7 列是品牌）。标签列滤掉 `pickUp`，其余按 `TAGS` 译名。（原先第 7 列的「月销」已按上面查证的结论撤掉。）
+没有品牌列也没有销量列，第 7 列就是标签——标签列滤掉 `pickUp`，其余按 `TAGS` 译名。（原先第 7 列的「月销」已按上面查证的结论撤掉。）
 
 `list` 的排序口径：`--sort rate|saving|newest`；`--tag time_doptimal|concessional_rate`；默认门槛降幅 ≥30%。`track <编号>` 的编号可以输吊牌 6 位数，也可以直接贴商品页地址（`parseCode` 从里面抠 `\d{6}`）；手动盯的商品会按第一个命中的标签解释「这是什么性质的降价」——超值精选＝清仓，限时特优＝下周可能涨回原价。
 
@@ -398,7 +398,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 ### 8.2b 报头的皮是**一套**（2026-10-01 统一）
 
 用户原话：「我不希望我换个页面导航栏就变一个样子」。之前两家报告的报头是各写一份的
-（优衣库 11px + 细线 + 6px 方块 + 14px 间距；迪卡侬 15px、没细线、10px 方块、4/18 间距），
+（优衣库 11px + 细线 + 6px 方块 + 14px 间距），
 现在规格只有一处（styles.css 的 `.masthead` 那段）：
 
 | 项 | 值 |
@@ -410,7 +410,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 | 上间距 | 44px（≤760px 收到 26px） |
 | 行尾入口 | 桌面版：只有第一个吃 `margin-left: auto`，其余紧跟（用户 2026-09-30 要的「右对齐、间距不要太大」）。**手机版（≤760px）不推**：入口紧跟站点名排——推到行尾的话，中文标签 + 两个入口一旦超出可用宽度，flex 就折到第二行 |
 
-⚠️ 报头里**不能用 `.label`**：那条是按站点定义的（优衣库 10px、迪卡侬 13px ink-2），
+⚠️ 报头里**不能用 `.label`**：那条是按站点定义的（优衣库 10px），
 用上就又不一致了。所以站点名和入口走 `.masthead__text`。
 另外页面外壳（`--pad` 40/24/16 与 `.wrap` 的 1560）也统一了——否则发丝线长度和左边距
 还是会不一样。
@@ -419,8 +419,8 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 `meta.links`（数组）排的就是行尾那一组：
 
-1. **另一家的报告**（来自适配器的 `report.crossLink`）——两份报告互认是一家工具做的，
-   指向 <https://goodprices.online/decathlon/> 与 <https://goodprices.online/uniqlo/>。
+1. 报告入口（来自适配器的 `report.links`）——
+   指向 <https://goodprices.online/uniqlo/>。
 
 ⚠️ **只有第一个入口**能写 `margin-left: auto`。两个都写的话，flex 会把剩余空白**平分**给它们，
 两个链接之间就空出一大块——2026-09-30 加了第二个入口之后露出来的，改成
@@ -449,6 +449,6 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 ## 九、这份文档为什么不写的东西
 
-历史库怎么攒上市价、报告为什么必须打成 IIFE 单文件、`file://` 下 ES module 为什么被拦、图片为什么要本地缓存、`reports/<站点>/` 怎么发到 Vercel、两个站点共用的 `data/deals.db` 怎么分区——这些两家一样，都在 [README.md](../README.md) 与 [docs/REPORT-CONTRACT.md](REPORT-CONTRACT.md) 里，本文不重复。
+历史库怎么攒上市价、报告为什么必须打成 IIFE 单文件、`file://` 下 ES module 为什么被拦、图片为什么要本地缓存、`reports/<站点>/` 怎么发到 Vercel、`data/deals.db` 怎么分区——这些，都在 [README.md](../README.md) 与 [docs/REPORT-CONTRACT.md](REPORT-CONTRACT.md) 里，本文不重复。
 
-迪卡侬那一半的取舍（匿名令牌、两个图床、主图 410 的候选链、方图卡片、图上角标、黄底降幅角标、墨色标尺、不内嵌字体）见 [docs/DESIGN-DECATHLON.md](DESIGN-DECATHLON.md)。
+

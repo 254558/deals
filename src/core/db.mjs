@@ -6,20 +6,17 @@
  * 这件东西的上市价。同理「历史最低现价」也要靠攒。攒得越久越准，所以升级时
  * **绝不能因为表少了一列就崩**，也绝不重建表。
  *
- * ── 合并两个仓库时做的三件事 ────────────────────────────────────────────
+ * ── 为什么有两列编号、`extra` 是干嘛的、`in_stock` 是什么 ───────────────
  *
- * 1. **一张库装两个站点**，靠 `site` 列分区，主键是 `(site, product_code)`。
- *    两个旧库（deca.db 的 `dsm_code` / uniql.db 的 `product_code`）说的是同
- *    一件事：站点内唯一的商品号，所以统一成 `product_code`；`code` 那列留给
- *    「给人看的编号」（优衣库是吊牌上那 6 位数，迪卡侬就是 dsm_code 本身）。
- *    表头分别叫「编号」的那一列，读的就是 `code`。
+ * 1. **`product_code` 是站点内唯一号，`code` 是给人看的编号**，靠 `site` 列
+ *    分区，主键是 `(site, product_code)`。优衣库里 `product_code` 是
+ *    `u0000000072656` 这种接口号，`code` 是吊牌上那 6 位数；表头叫「编号」的
+ *    那一列读的就是 `code`。
  *
- * 2. **字段取并集，站点私有的塞进 `extra`（JSON）**。两个旧库的
- *    `origin_price` / `last_price` / `launch_price` / `min_price_ever` /
- *    `max_discount` 语义本来一致，直接留；差异在商品属性上：
- *    优衣库要 season / sex / size_range / colors，迪卡侬要 brand / sports /
- *    nature / family / catch_line / model_code。都进独立列，其余的进 `extra`
- *    —— 报告的数据是从列里组的，`extra` 不会流进 payload。
+ * 2. **字段分两档：列里的和 `extra`（JSON）里的**。`origin_price` /
+ *    `last_price` / `launch_price` / `min_price_ever` / `max_discount` 语义
+ *    本来一致，直接留列；商品属性（season / sex / size_range / colors）进独立列，
+ *    其余的进 `extra` —— 报告的数据是从列里组的，`extra` 不会流进 payload。
  *
  *    ⚠️ 2026-10-06 清理：这段话原来写着「报告真正会渲染的（brand / sports /
  *    season / size_range）给独立列」，把「存哪儿」和「报不报」混成了一句。
@@ -28,9 +25,8 @@
  *    尺码推断的输入），**不再往报告里塞** —— 878 件 × 三个字段 ≈ 43 KB 原始，
  *    而 UI 一次都没读过。
  *
- * 3. **`in_stock` 成了两站共用的「还在售」开关**。优衣库那边是 `stock === 'Y'`，
- *    迪卡侬那边是 `price.on_sale !== false`，语义都是「这件现在能买」，
- *    榜上都只放能买的。
+ * 3. **`in_stock` 是「还在售」开关**。优衣库那边是 `stock === 'Y'`，
+ *    语义是「这件现在能买」，榜上都只放能买的。
  */
 
 import { DatabaseSync } from 'node:sqlite';
@@ -39,13 +35,13 @@ import { dirname } from 'node:path';
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS products (
-  site              TEXT NOT NULL,      -- 'uniqlo' | 'decathlon'
-  product_code      TEXT NOT NULL,      -- 站点内唯一的商品号（优衣库 productCode / ZARA 商品号）
-  code              TEXT,               -- 给人看的编号（优衣库吊牌 6 位数 / ZARA 商品页 -p 后面那串）
+  site              TEXT NOT NULL,      -- 'uniqlo'
+  product_code      TEXT NOT NULL,      -- 站点内唯一的商品号（优衣库 productCode）
+  code              TEXT,               -- 给人看的编号（优衣库吊牌 6 位数）
   name              TEXT,
-  brand             TEXT,               -- ZARA 有；优衣库空
-  sports            TEXT,               -- ZARA 的商品分类；优衣库空
-  season            TEXT,               -- 优衣库有；ZARA 空
+  brand             TEXT,               -- 品牌（优衣库空）
+  sports            TEXT,               -- 商品分类（优衣库空）
+  season            TEXT,               -- 优衣库的季节
   size_range        TEXT,
   size_codes        TEXT,   -- 在售尺码的内部码（JSON 数组）——「还剩什么尺码」靠它
   image             TEXT,               -- 主图（远程 CDN 地址）
@@ -60,7 +56,7 @@ CREATE TABLE IF NOT EXISTS products (
   last_price        REAL,               -- 上次抓到的现价（用来判断"又降了"）
   prev_price        REAL,               -- 上上次的现价
   max_discount      REAL,               -- 见过的最深降幅（0.6 = 降过 60%）
-  monthly_sales     INTEGER,            -- 优衣库的月销；ZARA 没有，存 0
+  monthly_sales     INTEGER,            -- 优衣库的月销
   in_stock          INTEGER,
   first_seen_at     TEXT,
   last_seen_at      TEXT,
@@ -157,7 +153,7 @@ export function openDb(path) {
  *
  * 这个工具的价值全在「攒了很久的历史」上，所以升级时**绝不能因为表少了一列就崩**，
  * 也绝不重建表。`CREATE TABLE IF NOT EXISTS` 对已存在的表是空操作，加列得自己来。
- * （合并前的迪卡侬那份有这个机制，合并时因为新库是空的就先省了；现在加 `missed`
+ * （合并前的旧代码有这个机制，合并时因为新库是空的就先省了；现在加 `missed`
  * 就必须把它补回来——用户的库里已经有一整天的数据了。）
  */
 function migrate(db) {
@@ -485,12 +481,12 @@ export function finishRun(db, id, { fetched, discounted }) {
 /**
  * 捡漏榜：默认按降幅排序，只保留真的比原价便宜的、还在售的。
  *
- * 排序键是两家的并集：`rate`（降幅）、`saving`（省多少）、`price`（现价，
- * 迪卡侬用）、`sales`（月销，优衣库用）、`newest`（新出现）。
+ * 排序键：`rate`（降幅）、`saving`（省多少）、`price`（现价）、
+ * `sales`（月销）、`newest`（新出现）。
  *
  * @param {object} opts
  * @param {'rate'|'saving'|'price'|'sales'|'newest'} [opts.sort]
- * @param {string} [opts.tag] 只看某个标签（优衣库 concessional_rate / 迪卡侬 endlife）
+ * @param {string} [opts.tag] 只看某个标签（优衣库 concessional_rate）
  */
 export function listDeals(db, site, { sort = 'rate', limit = 40, minRate = 0.2, trackedOnly = false, tag = '' } = {}) {
   const order =
@@ -562,8 +558,8 @@ export function listJustDropped(db, site, limit = 60) {
 /**
  * 某件商品的价格历史，一天一条（只读本地快照，不去接口核对）。
  *
- * 参数是用户手里的那个**显示编号**（优衣库是吊牌 6 位数、迪卡侬是 dsm_code），
- * 而历史表记的是 `product_code`。两家在迪卡侬那边两者恰好相同，优衣库那边不同
+ * 参数是用户手里的那个**显示编号**（优衣库是吊牌 6 位数），
+ * 而历史表记的是 `product_code`。两者在优衣库那边不同
  * （`488089` vs `u0000000072656`），所以这里先按两种编号都试着定位一次。
  */
 export function historyOf(db, site, code) {
@@ -581,8 +577,7 @@ export function historyOf(db, site, code) {
 
 /**
  * 本地数据概览。
- * @param {Array<{label:string, tag:string}>} extraStats 站点私有的统计行
- *   （迪卡侬要「其中尾货清仓」，优衣库没有）
+ * @param {Array<{label:string, tag:string}>} extraStats 站点私有的统计行（优衣库当前没有）
  */
 export function stats(db, site, { extraStats = [] } = {}) {
   const row = db

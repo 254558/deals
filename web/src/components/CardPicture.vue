@@ -1,10 +1,10 @@
 <script setup>
 /**
- * 卡片的图片那一块：图 + 压在左下角的断码尺码。
+ * 卡片的图片那一块：图。
  *
- * 为什么要单独一个组件：卡片有两种外壳 —— 迪卡侬那份要在图上再叠角标，
- * 得先包一层定位父盒 `.card__picwrap`；优衣库那份不要角标，**必须保持
- * 一个光秃秃的 `.picframe`**（多包一层会让原本挂在 .picframe 上的对齐规则失效）。
+ * 为什么要单独一个组件：卡片有两种外壳 —— 叠角标的那种要先包一层定位父盒
+ * `.card__picwrap`；优衣库这份不要角标，**必须保持一个光秃秃的 `.picframe`**
+ * （多包一层会让原本挂在 .picframe 上的对齐规则失效）。
  * React 那边用一个 `pic` 变量把这段渲染结果共用给两个分支；Vue 的模板没法这么干，
  * 而把这段抄两遍是最糟的选项（20 行，改动时必然只改一处）。所以抽成这个组件。
  *
@@ -13,7 +13,6 @@
 defineProps({
   image: { type: String, default: '' },
   url: { type: String, default: '' },
-  sizeLine: { type: Object, default: null },
 });
 </script>
 
@@ -37,19 +36,6 @@ defineProps({
       />
     </a>
 
-    <!-- 断码的剩余尺码压在**图片左下角**（用户 2026-10-01：「弄到图片左下角，
-         和图片重叠在一起，不要占标题的位置」）。它排在 <a> 外面，不改变链接的
-         点击范围；CSS 里再补 pointer-events: none，点它等于点图片。
-         「剩余」这两个字不显示（用户 2026-10-01：「删掉剩余两个字」），
-         但仍留在 aria-label 里，读屏听到的是「商品名　剩余：S M L」。 -->
-    <span v-if="sizeLine" class="card__sizes">
-      <!-- 每一档包一个 <kbd>：方形、细边、浅底，像键盘键帽。
-           语义上 <kbd> 本来是「用户输入」，这里纯粹借它的方块外观 -->
-      <template v-if="sizeLine.labels">
-        <kbd v-for="l in sizeLine.labels" :key="l" class="sizekey">{{ l }}</kbd>
-      </template>
-      <span v-else class="cardsizes__list">{{ sizeLine.text }}</span>
-    </span>
   </div>
 
   <!-- 兜底，正常情况下用不到：payload 里不会有没图的商品（生成时就剔掉了，

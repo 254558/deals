@@ -6,7 +6,7 @@
 ## 一句话结构
 
 ```
-抓取            src/sites/uniqlo.mjs / decathlon.mjs     （各自一个描述符 + 适配器）
+抓取            src/sites/uniqlo.mjs     （站点描述符 + 适配器）
 写库            src/core/db.mjs  →  data/deals.db         （node:sqlite，进 git 当备份）
 生成报告        src/core/report.mjs + web/                （React → Vite → 单文件 HTML）
 推送            src/cli.mjs deploy --target cloudflare    （Cloudflare Pages: deals-pinouts）
@@ -28,13 +28,13 @@
 
 ## 站点差异怎么写（这轮栽得最多的地方）
 
-两站的差异一律走**描述符**，不要动共用代码，也不要把某一站的值写死：
+站点的差异一律走**描述符**，不要动共用代码，也不要把某一站的值写死：
 
 ```js
-// src/sites/decathlon.mjs
+// src/sites/uniqlo.mjs
 report: {
-  cardMin: '300px',        // 一列最小宽度 → 决定几列（优衣库 258px = 5 列，迪卡侬 300px = 4 列）
-  imageAspect: '1/1',      // 图框比例（迪卡侬官图是方的；优衣库 3/4）
+  cardMin: '258px',        // 一列最小宽度 → 决定几列（258px = 5 列）
+  imageAspect: '3/4',      // 图框比例（优衣库官图 3:4）
   chipTags: ['endlife', 'new_arrival'],
   features: { cardChips: true, ... },
 }
@@ -79,8 +79,8 @@ report: {
 
 | 项 | 提交 | 说明 |
 | --- | --- | --- |
-| 两条「保险」测试 | `6ad4fb4` | `test/css-tokens.test.mjs`（用到的变量必须有定义）+ `test/sites-parity.test.mjs`（两站描述符同一套键）。前者一上来就查出 **5 个线上一直失效的声明** |
-| 删死代码分支 | `0ce1ac8` | `ProductCard` 的「品牌内联 / 整行链接」两套分支合成一套（两站 `brandMark` 都是 false，那一支是死代码，害我插错两次） |
+| 两条「保险」测试 | `6ad4fb4` | `test/css-tokens.test.mjs`（用到的变量必须有定义）+ `test/sites-parity.test.mjs`（站点描述符同一套键）。前者一上来就查出 **5 个线上一直失效的声明** |
+| 删死代码分支 | `0ce1ac8` | `ProductCard` 的「品牌内联 / 整行链接」两套分支合成一套（`brandMark` 是 false，那一支是死代码，害我插错两次） |
 | `data/deals.db` 标为二进制 | `0ce1ac8` | 不再每次推送都来一次「无法合并二进制文件」 |
 | 外壳 CSS 收敛到一处 | `2527b7c` `a367d98` `bd7a0f7` | `web/src/shell.css` 是令牌 + .wrap + 报头的唯一出处 |
 | 手机端两列 | `a465cc5` | 一屏能看的件数 1.4 → 2.4（≤560px） |

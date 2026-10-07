@@ -2,12 +2,11 @@
 
 一个命令行工具 + 一份自包含网页报告。抓零售商的公开接口，**记录每件商品的上市价（历史最高原价）与现价**，算出精确降幅，把正在降价的商品排成一张捡漏榜。
 
-目前支持两个站点：
+目前支持的站点：
 
 | 站点 | 抓什么 | 报告 |
 | --- | --- | --- |
 | `uniqlo` 优衣库 | 全站特价（限时特优 + 超值精选） | `reports/uniqlo/index.html` |
-| `decathlon` 迪卡侬 | 特惠专区 | `reports/decathlon/index.html` |
 
 ```
 编号      商品                              上市价      现价     降幅       省  标签
@@ -20,8 +19,6 @@
 ```bash
 npm install                  # 只装 React + Vite + lucide（图标）与 subset-font，用于生成网页报告
 node src/cli.mjs uniqlo sync      # 抓优衣库，建立本地历史（第一次约 1 分钟）
-node src/cli.mjs decathlon sync   # 抓迪卡侬
-node src/cli.mjs all sync         # 两家一起抓
 node src/cli.mjs uniqlo list      # 看捡漏榜
 node src/cli.mjs uniqlo report    # 生成网页报告并打开
 ```
@@ -30,7 +27,7 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 
 ## 命令
 
-两个位置参数：**站点**、**命令**。站点也可以是 `all`（`sync` / `report` / `deploy` 支持一次做两家）。
+两个位置参数：**站点**、**命令**。站点也可以是 `all`（`sync` / `report` / `deploy` 支持一次对全部站点做）。
 
 | 命令 | 说明 |
 | --- | --- |
@@ -45,33 +42,32 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 | `deals <站点> report` | 生成 HTML 报告并打开。`--no-images` 跳过图片缓存、`--no-open` 只生成不打开、`--rebuild` 强制重建页面、`--no-font` 不内嵌字体 |
 | `deals <站点> stats` | 本地数据概览 |
 | `deals <站点> dev` | 起 Vite 开发服务器调报告页面（热更新），数据来自当前数据库 |
-| `deals <站点> deploy` | 生成最新报告并推上去。默认 Vercel（每站一个项目）；`--target cloudflare` 改推 Cloudflare Pages（一个项目装两份） |
+| `deals <站点> deploy` | 生成最新报告并推上去。默认 Vercel；`--target cloudflare` 改推 Cloudflare Pages |
 | `deals sites` | 有哪些站点、各攒了多少 |
 | `deals backup` | 给价格库做一份一致性快照（`VACUUM INTO`，默认留最近 14 份）。有 iCloud / Dropbox 就同时写一份到机器之外 |
 | `deals alert` | 盯着的商品降价了、或数据超过 36 小时没抓成功，就弹 macOS 通知（每日任务跑完会自己调它） |
 
-站点别名：`uniqlo` / `uniql` / `u`，`decathlon` / `deca` / `d`。也认 `--site uniqlo`。
+站点别名：`uniqlo` / `uniql` / `u`。也认 `--site uniqlo`。
 
 `package.json` 里有对应的 npm scripts（`npm run sync`、`npm run report:uniqlo`…），以及 **`npm test`**——跑 `node --test`，零依赖，覆盖那些「光看代码看不出对错」的规则：下架判定与安全阀、谢绝名单、payload 契约（没有空图、没有被屏蔽的商品、meta 里没有页脚）、尺码映射（字母码 / 腰围码换厘米 / 英寸换算 / 认不出来就不猜）。测试全在 `test/`，用临时库跑，不碰 `data/deals.db`。
 
 ## 网页报告
 
-两份报告都是**一个自包含的单文件**：CSS、JS、数据、字体全部内联，双击就能打开，不需要起服务器。React 源码在 `web/`，改完跑 `deals <站点> report --rebuild` 或 `deals <站点> dev`。
+报告是一个**自包含的单文件**：CSS、JS、数据、字体全部内联，双击就能打开，不需要起服务器。React 源码在 `web/`，改完跑 `deals <站点> report --rebuild` 或 `deals <站点> dev`。
 
-**两家共用同一套 React 组件和同一张 `styles.css`**，版面差异挂在 `<html data-site="uniqlo|decathlon">` 上；所有会随站点变的文案与开关（页签名、列名、货币符号、卡片上有哪些元素、标尺怎么排）都来自 payload 里的 `meta`。这份契约写在 **[docs/REPORT-CONTRACT.md](docs/REPORT-CONTRACT.md)**，它也是 `src/core/report.mjs` 与 `web/` 之间唯一的接口。
+**一套组件和一张 `styles.css`**，版面差异挂在 `<html data-site="uniqlo">` 上；所有会随站点变的文案与开关（页签名、列名、货币符号、卡片上有哪些元素、标尺怎么排）都来自 payload 里的 `meta`。这份契约写在 **[docs/REPORT-CONTRACT.md](docs/REPORT-CONTRACT.md)**，它也是 `src/core/report.mjs` 与 `web/` 之间唯一的接口。
 
-两家各自的设计取舍（为什么这么排、删掉了什么、量了哪些实测值）分别写在：
+设计取舍（为什么这么排、删掉了什么、量了哪些实测值）写在：
 
-- **[docs/DESIGN-UNIQLO.md](docs/DESIGN-UNIQLO.md)** —— 优衣库这一半：3:4 网格、页顶榜单、红色标尺、内嵌思源黑体
-- **[docs/DESIGN-DECATHLON.md](docs/DESIGN-DECATHLON.md)** —— 迪卡侬这一半：方图卡片、图上角标、黄底降幅角标、墨色标尺
+- **[docs/DESIGN-UNIQLO.md](docs/DESIGN-UNIQLO.md)** —— 3:4 网格、页顶榜单、红色标尺、内嵌思源黑体
 
-两边都有的东西：
+报告的行为：
 
 **只有一种视图：大图。** 优衣库分类页那种卡片墙，图大、铺满整列，翻的时候一眼就能看清是哪件东西。卡片底部那根比例条就是「降价标尺」——横轴是价格轴，左端上市价、右端零，墨条从上市价铺到现价，所以墨条长度直接等于降了多少。筛选（页签）与搜索共用一套；**排序固定是「降幅从大到小」**（就是最该看的那个），没有排序入口。
 
 > 原先还有一个**列表视图**（一张「门店价签」式的表），2026-09-30 应要求撤掉了——大图够用。连带删掉 `DealRow` / `ColumnHeader` / `PriceScale` 三个组件、整套表格 CSS 和 payload 里的 `meta.columns`（先换成 `meta.sorts`；后来排序入口也撤了，那份声明一并删掉）。
 
-**窄屏（≤760）工具栏只留页签一行，并且钉在顶上。** 搜索那一档撤掉（屏幕金贵，手机上也不常用），剩下的一行 `57px` 常驻——1302 件商品，滚到中段想「只看尾货」，不该一路滚回顶部。两家行为一致。
+**窄屏（≤760）工具栏只留页签一行，并且钉在顶上。** 搜索那一档撤掉（屏幕金贵，手机上也不常用），剩下的一行 `57px` 常驻——滚到中段想「只看尾货」，不该一路滚回顶部。
 
 **打开时先给一块加载指示（纯 CSS 点阵）。** 白屏其实是两段，得分开看（390 宽 + 4 倍 CPU 降速，线上实测）：
 
@@ -89,11 +85,11 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 
 **首屏只渲染 10 件，下滑再一批批补上。** 数据一开始就全在内存里（自包含单文件，没有服务端），但**卡片是整批建的**。手机上实测（390 宽 + 4 倍 CPU 降速）：
 
-| | 优衣库 878 件 | 迪卡侬 1307 件 |
-| --- | --- | --- |
-| DOM 节点 | 24,705 → **402** | 40,916 → **364** |
-| 首屏主线程长任务 | 1250ms → **157ms** | 1515ms → **136ms** |
-| 页面处理耗时（DCL − TTFB） | 912ms → **154ms** | 1296ms → **118ms** |
+| | 优衣库 878 件 |
+| --- | --- |
+| DOM 节点 | 24,705 → **402** |
+| 首屏主线程长任务 | 1250ms → **157ms** |
+| 页面处理耗时（DCL − TTFB） | 912ms → **154ms** |
 
 图片本来就是懒加载的（首屏只请求 3～4 张），网络也不是瓶颈（gzip 后 380KB / 125KB）——慢的就是一次建出几万个 DOM 节点。本地双击打开（无网络）测得的长任务和线上几乎一样，正好说明这一点。
 
@@ -104,14 +100,12 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 > ② 距**文档**底部不足 400px 也补一批——页脚还在的时候，哨兵后面还跟着一屏页脚，拖滚动条直接到底会**一步跨过哨兵**（实测就卡住不再往下补）；页脚撤掉之后哨兵就在文档末尾，这一条成了保险，留着不碍事；
 > ③ `html { overflow-anchor: none }` 关掉滚动锚定——锚定开着时，补进来的内容会被浏览器把视口重新钉回底部，条件一直成立，实测一次「直达底部」连补 12 批（10 → 130 张），把省下来的渲染成本又花回去。
 
-**商品图都是本地缓存。** 优衣库的图片 CDN 返回 `application/octet-stream`，Chrome 的 ORB 会拦掉跨域引用，报告里会是一片空白；两家的商品下架后图也会 404/410。所以图一律下到 `reports/<站点>/img/`，文件名带档位与格式（优衣库 `u0000000072656@561.webp`、
-   迪卡侬 `346498@800.webp`）。落盘前统一转 **WebP q82**——同样清晰度下官网给的 JPEG 大一半，
+**商品图都是本地缓存。** 优衣库的图片 CDN 返回 `application/octet-stream`，Chrome 的 ORB 会拦掉跨域引用，报告里会是一片空白；商品下架后图也会 404/410。所以图一律下到 `reports/<站点>/img/`，文件名带档位与格式（优衣库 `u0000000072656@561.webp`）。
+   落盘前统一转 **WebP q82**——同样清晰度下官网给的 JPEG 大一半，
    而首屏那十来张图是整页最大一笔流量（`reports/` 也从 168MB 降到 87MB）。老缓存里的 JPEG
    会被就地转换再删掉，本机与 CI 缓存都能平滑升级。
 
-**优衣库卡片上，断码的商品不显示名字、改显示「还剩什么尺码」**（2026-09-30 定：码全显示名字，断码显示尺码，同一行二选一）。捡漏时真正决定买不买的是「我的码还在不在」：图片已经看得够清楚，而尺码接口里有——每个商品带一个**有货的内部码**数组，再配上侧边栏那份码 → 显示名的词表（`SMA002=XS`、`CMA080=80cm`、`CMD070=W28/28英寸/28码`…，每次 sync 刷进库里的 `size_vocab` 表），于是断码的卡片上写 `剩余：` + 几个 **`<kbd>` 小方块**（`XS` `3XL`；裤子按腰围卖的显示 `53cm` `58cm`——**一律厘米或字母码**，`W28` 这种美制腰围码没人读得出来；最多列 5 档，再多就只写「剩 12 档」——列太长会挤到第二行、顶歪同排卡片的价格线），名字挂在 `title` 上（鼠标停一下能看到）。同一处还把商品名截短了：优衣库的名字是「主名/一堆形容词」拼的，只留斜线前面那一段。实测覆盖 97.7%，剩下的 2.3% 是睡衣/帽子/手套那类**接口连尺码范围都没给**的商品，它们照旧显示名字。做法与踩过的坑见 [docs/DESIGN-UNIQLO.md](docs/DESIGN-UNIQLO.md) 第七节。
-
-**没图的商品不上榜。** 有的是官网自己就没图（迪卡侬的冷门备件常见，实测 32 件），有的是图在 CDN 上挂了。两种情况对用户是同一件事：卡片上只剩一个灰框，不知道是什么东西，也就没法决定买不买——所以生成报告时直接把它们剔掉（迪卡侬 1310 → 1278 件）。这不是「下架」：商品仍留在库里、终端 `deals <站点> list` 里仍看得到；`ensureImages` 只补缺的图，所以哪天图下到了，下一轮它自动回到榜上。
+**没图的商品不上榜。** 有的是官网自己就没图，有的是图在 CDN 上挂了。两种情况对用户是同一件事：卡片上只剩一个灰框，不知道是什么东西，也就没法决定买不买——所以生成报告时直接把它们剔掉。这不是「下架」：商品仍留在库里、终端 `deals <站点> list` 里仍看得到；`ensureImages` 只补缺的图，所以哪天图下到了，下一轮它自动回到榜上。
 
 **两本账存在浏览器里。** 卡片行尾两个图标：爱心＝收进「待拔草」（实心，靠颜色表示收没收），闭眼＝这个款**永久**从榜上消失——有些东西就是不想见第二次，所以没有放回，`hidden` 只增不减。
 
@@ -121,7 +115,7 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 
 **要把屏蔽带到所有地方，用谢绝名单**（存在价格库里，生成报告时直接不发出去）：`deals <站点> block <编号>`，随时 `deals <站点> blocked` 看名单、`unblock` 撤回。它按吊牌号生效，所以同款所有颜色一起走。
 
-> **键名沿用旧的两个报告**（`uniql.picks` / `deca.picks` 等），商品 id 也沿用旧值，所以在合并前那两份报告里点过的收藏和「不再出现」，在这份新报告里原样还在。
+> **键名沿用旧的报告**（`uniql.picks` 等），商品 id 也沿用旧值，所以在合并前那份报告里点过的收藏和「不再出现」，在这份新报告里原样还在。
 
 ## 关键概念
 
@@ -141,7 +135,6 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 
 - **限时特优**（优衣库 `time_doptimal`）：每周轮换的活动价，下周会涨回去。看到尺码齐、价格合适就可以下手。
 - **超值精选**（优衣库 `concessional_rate`）：换季清仓，会一路降到底，但降到最后往往开始断码。可以多等几轮再出手。
-- **尾货**（迪卡侬 `endlife`）／**新品**（`new_arrival`）：前者同上，后者是刚上架就在打折。
 
 `sync` 还会单独标出**官方永久降价**（原价本身被下调）——这种比限时活动更值得出手。
 
@@ -150,8 +143,8 @@ node src/cli.mjs uniqlo report    # 生成网页报告并打开
 ```
 wrangler.toml        Cloudflare Pages 配置（纯静态部署）
 src/cli.mjs          命令行入口：解析「站点 + 命令」，调度下面两层
-src/core/            两个站点共用的核心
-  db.mjs             历史库（SQLite，一张库靠 site 列装两家）
+src/core/            核心（与站点无关的部分）
+  db.mjs             历史库（SQLite，一张库靠 site 列分区）
   images.mjs         商品图本地缓存（候选图链 + 站点自定义档位规则）
   report.mjs         组装 payload + 把 CSS/JS/数据/字体内联成单文件 HTML
   fonts.mjs          下载中文字体并按实际用字子集化（声明了 fonts 的站点才用）
@@ -159,71 +152,66 @@ src/core/            两个站点共用的核心
   cf-wrangler.mjs    Cloudflare Pages 部署（含「大请求体被掐时改用小批次」的兜底）
 src/sites/           站点适配器：只有「这家才这样」的东西
   uniqlo.mjs         优衣库：搜索接口、字段映射、标签文案、图片档位、字体、报告开关
-  decathlon.mjs      迪卡侬：匿名令牌 + BFF 接口、model 选价、两个图床的缩放写法
 web/                 一套 React 报告源码（组件、样式、格式化）
 .github/workflows/   每天定时跑的那一轮（抓价 → 报告 → 部署 → 提交库 → 提醒）
 scripts/             daily.sh（本机手动跑一轮）+ install-launchd.sh（本机定时的装/卸/改时间）
-docs/                REPORT-CONTRACT.md（报告契约）+ 两份站点设计说明
+docs/                REPORT-CONTRACT.md（报告契约）+ 站点设计说明
 data/deals.db        本地数据库（自动生成，不进版本管理）
 data/fonts/          思源黑体原件（首次自动下载，约 16MB）
 reports/<站点>/       生成的报告与图片缓存
-.build/              Vite 构建产物（app.js / app.css，自动生成、两家共用）
+.build/              Vite 构建产物（app.js / app.css，自动生成）
 ```
 
 **为什么报告要打成 IIFE 单文件。** 报告要能双击直接打开（`file://`），这里有两个坑：`file://` 的源是 opaque origin，**ES module 一律被 CORS 拦掉**，所以 Vite 必须输出 IIFE 而不是默认的 ESM；同理 `fetch('data.js')` 也拿不到数据，数据只能用 `<script>` 内联注入。构建时 `publicDir` 是关掉的（报告用不到 `web/public/`），开发服务器反过来离不开它，所以只在 `build` 时关。
 
 ## 关于合并
 
-这个仓库是**两个几乎同源的项目合并成的**：
+这个仓库源自一个命令行 + 报告工具：
 
 | 旧仓库 | 现在 |
 | --- | --- |
 | `~/Desktop/uniql`（优衣库，`uniql <命令>`） | 本站点 `uniqlo` |
-| `~/Desktop/decathlon`（迪卡侬，`deca <命令>`） | 本站点 `decathlon` |
 
 两个旧目录**原样留着**，当作备份与对照。合并时做的事：
 
-1. **抽出共享核心。** 两个仓库的 `db.mjs` / `images.mjs` / `report.mjs` / 终端输出工具几乎逐字相同，只是字段名不同（`dsm_code` vs `product_code`、`listPrice/activePrice` vs `originPrice/minPrice`）。这些统一进 `src/core/`，字段名也统一（`product_code` 是站点内唯一号，报告里叫 `id`；给人看的编号统一叫 `code`）。
+1. **抽出共享核心。** 抓取、写库、生成报告、终端输出这些与站点无关的部分统一进 `src/core/`，字段名统一（`product_code` 是站点内唯一号，报告里叫 `id`；给人看的编号统一叫 `code`）。
 2. **站点差异收进适配器。** 「抓哪、怎么抓、字段怎么映射、标签叫什么、图怎么缩放、报告上显示哪些元素」全部落在 `src/sites/<站点>.mjs`。所以 `cli.mjs` 与 `web/` 里**没有一处 `if (站点 === …)`**。
-3. **一张库装两家。** `data/deals.db`，主键 `(site, product_code)`，同一件商品在两个站点下互不干扰。
+3. **一张库。** `data/deals.db`，主键 `(site, product_code)`，同一件商品在两个站点下互不干扰。
 4. **一套界面两个皮肤。** 组件与样式表只有一份，靠 `data-site` 与 `meta` 分岔（见上）。
-5. **旧的浏览器账本照旧有效。** localStorage 前缀沿用 `uniql` / `deca`，`deals[].id` 沿用旧值。
+5. **旧的浏览器账本照旧有效。** localStorage 前缀沿用 `uniql`，`deals[].id` 沿用旧值。
 
-合并后**功能上只增不减**：两份报告互相有入口、`history` 命令两家都能用、`deals all sync` 一次抓两家。（迪卡侬那份当时还多了一行页脚——2026-09-30 又整块撤了，见下。）两家的版面与交互没有做任何合并简化——各自的实测尺寸、配色、卡片信息层级、标尺排法都按原样保留。
+合并后**功能上只增不减**：`history` 命令都能用、`deals all sync` 一次抓全站。版面与交互按实测保留。
 
 逐像素对照过新旧四份报告（1440 / 900 / 760 / 700 / 390 五档宽度），当时只有两处**有意的**差别：
 
-1. ~~迪卡侬列表视图的现价数字从 16px 变成 18px~~ —— 列表视图 2026-09-30 已撤，这条不再适用（当时的结论是：迪卡侬样式表里那条早就写着、却一直没真正生效的 `--row-price-size: 18px`，合并后第一次落到了数字上）。
-2. ~~迪卡侬页脚多了一行~~ —— 页脚 2026-09-30 已整块撤掉，这条不再适用。
+1. ~~列表视图的现价数字从 16px 变成 18px~~ —— 列表视图 2026-09-30 已撤，这条不再适用（当时的结论是：样式表里那条早就写着、却一直没真正生效的 `--row-price-size: 18px`）。
+2. ~~页脚多了一行~~ —— 页脚 2026-09-30 已整块撤掉，这条不再适用。
 
-顺带修掉一个只在合并后才会暴露的坑：迪卡侬那条 `.picframe { max-width: 72px }` 原本是全局的，旧版卡片用的是另一个类名所以没被它砸到，合并后卡片共用 `.picframe`，会把 288px 的方图压成 72px 的缩略图。当时的修法是把它收进列表行作用域；列表视图撤掉后这条约束已经不在了。
-
-**新库是空库重新抓的**，没有迁移旧的 `uniql.db` / `deca.db`。所以开头几天「上市价」等于当前原价，降幅看着会偏小；等快照攒到几周，这个判断才真正准。想立刻要旧库的历史，见下面的「注意」。
+**新库是空库重新抓的**，没有迁移旧的 `uniql.db`。所以开头几天「上市价」等于当前原价，降幅看着会偏小；等快照攒到几周，这个判断才真正准。想立刻要旧库的历史，见下面的「注意」。
 
 ## 部署
 
-两份报告都是静态文件（一个自包含 HTML + 一目录本地商品图），随便往哪个静态托管上发都行。仓库里接好了两个目标，`--target` 切：
+报告是静态文件（一个自包含 HTML + 一目录本地商品图），随便往哪个静态托管上发都行。仓库里接好了两个目标，`--target` 切：
 
 ### Vercel（默认，每站一个项目）
 
 ```bash
 vercel login                        # 只需一次
 node src/cli.mjs uniqlo deploy      # 生成最新报告，再 vercel deploy reports/uniqlo --project uniql --prod --yes
-node src/cli.mjs decathlon deploy   # 同理，项目 decathlon-deals
 ```
 
 这两个 Vercel 项目是合并前后留下来的旧入口，**早就不是线上地址了**：正式入口是 Cloudflare 上的 <https://goodprices.online>（见下面那节）。留着这段是因为 `deploy` 命令还能用，真要重新捡起来也就一条命令。
 
 挑 `reports/<站点>/` 而不是仓库根目录来部署是刻意的：那个目录里没有 `package.json`，**不会跑依赖安装、也没有 `build` 脚本可跑**——Vercel 只负责原样收下这些文件。生成报告时会顺手在目录里放一份三行的 `vercel.json`（`framework` / `installCommand` / `buildCommand` 全置空），把「这是静态文件」这件事写死，免得被识别成 Vite 预设白跑一遍构建；生成器从不清 `reports/`，所以这份配置不会被下次生成冲掉。
 
-### Cloudflare Pages（一个项目装两份）
+### Cloudflare Pages
 
 ```bash
 npx wrangler login                  # 只需一次（浏览器点一下 Allow）
 node src/cli.mjs all deploy --target cloudflare
 ```
 
-线上地址：**<https://goodprices.online/uniqlo/>** 与 **<https://goodprices.online/decathlon/>**（域名与项目名在 `src/sites/index.mjs` 的 `CLOUDFLARE` 里；`deals.goodprices.online` 与 `deals-pinouts.pages.dev` 是同一份部署的别名，也一直有效）。
+线上地址：**<https://goodprices.online/uniqlo/>** （域名与项目名在 `src/sites/index.mjs` 的 `CLOUDFLARE` 里；`deals.goodprices.online` 与 `deals-pinouts.pages.dev` 是同一份部署的别名，也一直有效）。
 
 > **三个地址各是一本收藏账。** 收藏/不再出现存在 localStorage 里、按 origin 隔离，所以上面三个域名（加本地 `file://`）是四本互不相通的账。对外只提裸域那一个，别的当备用。
 
@@ -240,7 +228,7 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 >
 > 另外 Cloudflare 的文档写「裸域必须是 Cloudflare 上的 zone」，实测**不是硬要求**：用 API 直接挂裸域会被接受，验证方式走 HTTP、照样签发证书。这条是踩过之后记下来的——别照文档那句话就下结论（我一开始就下错了）。
 
-**根路径 `/` 默认进优衣库。** 部署上去的是整个 `reports/`，两份各占一个子目录，所以 `/` 本来什么都没有、打开是 404。生成报告时会顺手写三个小文件到部署根：
+**根路径 `/` 默认进优衣库。** 部署上去的是整个 `reports/`，一份占一个子目录，所以 `/` 本来什么都没有、打开是 404。生成报告时会顺手写三个小文件到部署根：
 
 - `reports/_redirects` → `/  /uniqlo/  302`（Cloudflare 给真 302，`curl -I /` 能看到 `location: /uniqlo/`）
 - `reports/index.html` → 一份 meta refresh 落地页，**相对路径** `uniqlo/`。相对路径的好处是网页上解析成 `/uniqlo/`、本地双击解析成旁边的 `reports/uniqlo/`，两边都对；而且不依赖托管方特性，将来搬到阿里云 OSS 也一样用
@@ -252,7 +240,7 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 
 
 
-和 Vercel 那边不一样，这里是**一个项目装两份报告**：命令会把两份都重新生成，再把整个 `reports/` 目录发上去，站点各占一个子目录。所以报头那个「另一家的报告」入口在 Cloudflare 上改成了**同域的相对路径**（`../decathlon/`、`../uniqlo/`），换域名、甚至本地双击都对。这个命令与「对哪个站点做」无关，从哪一站触发都一样。
+和 Vercel 那边不一样，这里是**一个项目装一份报告**：命令把整个 `reports/` 目录发上去，这个命令与「对哪个站点做」无关，从哪一站触发都一样。
 
 > **这台机器上必须知道的一件事。** `wrangler pages deploy` 是按 **40MB 一批**打包上传的（bundle 里写死的 `MAX_BUCKET_SIZE`），而这条网络（Clash Verge 的 TUN）传大请求体会断流：实测 1MB×10 并发全过、2MB×3 全过、5MB 起开始掉、40MB×3 就必挂，报 `write EPIPE` / `ERR_HTTP2_STREAM_ERROR`。同一个 13MB 请求体换 `node:https`（HTTP/1.1）或 curl 都 100% 成功，所以是 HTTP/2 大请求体在这条路上不稳，不是网络不通。
 >
@@ -273,7 +261,7 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 | --- | --- | --- |
 | 每次打开都要为每张图跑一趟 304 校验 | 第二次打开首绘 **1320ms → 108ms** | 写一份 `_headers`：图片 30 天、报告页 5 分钟新鲜 + 其余时间先给旧的。Pages 默认是 `max-age=0, must-revalidate`，**连两千多张商品图也是** |
 | 图片是官网给的 JPEG（首屏 3 张就 223KB） | **同 3 张 109KB**（−51%） | 落盘前统一转 WebP q82 |
-| 两份报告 + 图片共 168MB | **87MB** | 同上 |
+| 报告 + 图片共 168MB | **87MB** | 同上 |
 | 首绘**晚于** HTML 传完 169ms（开机动画形同虚设） | 首绘**早于** HTML 传完 147ms | 关键 CSS（1KB，只有开机动画那一屏）前置，整块 CSS（300KB，含内嵌字体）挪到 body 末尾。`<style>` 是阻塞渲染的，排在前面就得先啃完才肯画第一帧 |
 | 首屏图片只能等 React 渲染完才开始下载 | 图片在 HTML **首字节到达后 9ms** 就开始下载（早 593ms） | 卡片是 React 渲染的，`<img>` 在 JS 跑完前不在文档里，浏览器自己扫不到——在 head 里给前 4 张写 `<link rel="preload" as="image">` |
 
@@ -305,8 +293,8 @@ Cloudflare 侧分别把这两条挂成 Pages 的自定义域名，自动完成�
 
 | 步骤 | 为什么在 |
 | --- | --- |
-| `all sync` | 抓两家的最新价格写进历史库——**上市价就是靠这个一天一天攒出来的**，漏一天就少一天 |
-| `all report --no-open` | 生成两份报告（`sync` 只动数据库，报告是另一个文件）；缺的商品图/字体会在这一步现下 |
+| `all sync` | 抓最新价格写进历史库——**上市价就是靠这个一天一天攒出来的**，漏一天就少一天 |
+| `all report --no-open` | 生成报告（`sync` 只动数据库，报告是另一个文件）；缺的商品图/字体会在这一步现下 |
 | `all deploy --target cloudflare` | 把 `reports/` 推到 Cloudflare，**线上跟着当天更新** |
 | 提交 `data/deals.db` | **这一步就是备份**：每次一条带日期的快照，git 历史本身就是带版本的异地备份 |
 | `alert` → 开 Issue | 盯着的商品降价了、或数据断档（>36 小时没抓成功）就开一个 Issue——GitHub 会给仓库的 watch 邮箱发信（本机那套走的是 `osascript` 弹通知，Linux runner 上没这东西） |
@@ -355,5 +343,5 @@ launchctl kickstart -k gui/$(id -u)/com.$(whoami).deals.daily   # 立刻试跑�
 ## 注意
 
 - 价格以结账页为准，接口数据仅作参考。
-- 本工具与迅销集团、优衣库官方、迪卡侬官方均无关，仅供个人比价使用。请控制抓取频率，别给人家服务器添麻烦。
+- 本工具与迅销集团、优衣库官方均无关，仅供个人比价使用。请控制抓取频率，别给人家服务器添麻烦。
 - 想让新的 `data/deals.db` 直接继承旧库的历史，可以自己写个导入脚本：旧库的 `products` / `price_history` 加上 `site` 列就能塞进来，字段名的对应关系见上面的「关于合并」一节。工具本身不再往回读旧库。

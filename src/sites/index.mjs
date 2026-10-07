@@ -3,12 +3,12 @@
  *
  * 一个站点适配器要提供什么（全部是可选的，除 id/label/sync 外）：
  *
- *   id / label / aliases      站点标识与命令行别名（u / deca / d…）
+ *   id / label / aliases      站点标识与命令行别名（u / uniql…）
  *   sync({onPage,onTagDone})  抓取 → { fetched, products }，products 用**规范形状**
  *   findByCode(code)          按编号查单件（track 用），返回规范形状或 null
  *   parseCode(input)          从用户输入里抠编号（允许直接贴商品页地址）
  *   tableColumns[]            终端那张表的列定义（head/w/align/get/trunc）
- *   sizeVariant(url,size)     图片档位怎么写（两家的规则完全不同，见各自文件）
+ *   sizeVariant(url,size)     图片档位怎么写（见站点文件）
  *   imageSize                 存哪一档的图
  *   tags / report / copy      站点口味：标签文案、报告的 meta、终端提示语
  *   fonts                     要内嵌的中文字体；null = 走系统字体栈
@@ -47,7 +47,7 @@ export const CLOUDFLARE = {
 /**
  * 部署根目录（`/`）默认跳到哪个站点。
  *
- * 部署上去的是整个 `reports/`，两份报告各占一个子目录，所以根路径本来没有东西、
+ * 部署上去的是整个 `reports/`，报告各占一个子目录，所以根路径本来没有东西、
  * 打开就是 404。生成报告时会顺手在 `reports/` 里放一个落地页，把 `/` 送到这里
  * 声明的这一站（用户要的是「打开默认看优衣库」）。
  */

@@ -20,10 +20,10 @@ const rateOf = discountRate;
  * 数据库的一行 → 前端要的一件商品。
  *
  * 这里**只放前端真的会读的字段**。榜单是上千件商品，这份结构会被原样 JSON
- * 内联进报告，多一个字段就是一千多份：实测迪卡侬的 `catchLine` 单项就占 80KB，
+ * 内联进报告，多一个字段就是一千多份，
  * 所以 `extra` 那袋站点私有字段到这里为止，一个都不往 payload 里带。
  *
- * 两家的字段名在合并时统一了：`id`（优衣库的 productCode / 迪卡侬的 dsmCode）
+ * `id` 是 productCode
  * 和 `code`（给人看的编号）。**`id` 沿用旧值是有意的** —— 报告里的收藏/隐藏
  * 存在 localStorage 里、键就是它，换成新编号等于把用户点过的账全清空。
  *
@@ -88,9 +88,6 @@ function toDeal(row, images, remote, site, vocab) {
  * @param {Map<string,string>|null} images 传 null 表示「还没下图」，配合 remote 用
  * @param {object} [opts]
  * @param {boolean} [opts.remote] 带上 CDN 候选图地址（只有下图那一趟需要）
- * @param {string|null} [opts.crossLinkHref] 覆盖报头那个「另一家的报告」的链接。
- *   Cloudflare 上两份在同一个域名的兄弟目录，改成相对路径 `../<站点>/` ——
- *   相对路径换域名、换本地双击都对。
  */
 /**
  * Cloudflare Web Analytics 的 beacon。
@@ -107,7 +104,7 @@ export const BEACON =
   '<!-- Cloudflare Web Analytics：只统计访问量，不用 cookie，也不跟踪个人 -->\n' +
   `<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${BEACON_TOKEN}"}'></script>`;
 
-export function buildPayload(db, site, images, { remote = false, crossLinkHref = null } = {}) {
+export function buildPayload(db, site, images, { remote = false } = {}) {
   const deals = listDeals(db, site.id, { limit: 5000, minRate: 0.15 });
   const tracked = listTracked(db, site.id);
 
@@ -118,7 +115,7 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
   /**
    * 没图的商品不上榜。
    *
-   * 有的站点自己就没图（迪卡侬的冷门备件常见，实测 32 件），有的是图在 CDN 上挂了。
+   * 有的站点自己就没图有的是图在 CDN 上挂了。
    * 两种情况对用户是同一件事：卡片上只剩一个灰框，不知道是什么东西，也就没法决定买不买。
    * 所以在生成阶段就剔掉，根本不进 payload。
    *
@@ -147,12 +144,6 @@ export function buildPayload(db, site, images, { remote = false, crossLinkHref =
   const shown = rows.filter((r) => !blocked.has(r.code) && (!images || images.get(r.product_code)));
 
   const meta = { ...site.report };
-  if (crossLinkHref && meta.crossLink) meta.crossLink = { ...meta.crossLink, href: crossLinkHref };
-
-  /** 报头行尾的入口摆「另一家的报告」（有兄弟站点时才有；只有一家时是空数组）。 */
-  meta.links = [
-    ...(meta.crossLink ? [meta.crossLink] : []),
-  ];
 
   return {
     site: site.id,
@@ -326,7 +317,6 @@ ${beacon ? beacon + '\n' : ''}</body>
  */
 export function renderRootRedirect({ defaultSite, sites = [] }) {
   const labelOf = (id) => sites.find((s) => s.id === id)?.label ?? id;
-  const other = sites.find((s) => s.id !== defaultSite);
   const href = `${defaultSite}/`;
   return `<!DOCTYPE html>
 <html lang="zh-CN">
@@ -342,7 +332,6 @@ main{max-width:32rem;margin:18vh auto;padding:0 24px}a{color:#3643ba}</style>
 <main>
 <p><b>GoodPrices</b> 默认打开的是<b>${labelOf(defaultSite)}</b>那一份。</p>
 <p>没有自动跳转就点这里：<a href="${href}">${labelOf(defaultSite)}捡漏榜</a></p>
-${other ? `<p style="color:#616161;font-size:14px">另一份在 <a href="${other.id}/">${other.label}</a>。</p>` : ''}
 </main>
 </body>
 </html>
@@ -504,8 +493,7 @@ const buildPaths = (root) => ({
 
 /**
  * 构建产物不存在、或 React 源码比它新时，重新构建一次。
- * **两个站点共用这一份产物**：样式与组件是同一套，站点差异靠 data-site 选择，
- * 所以抓完优衣库再生成迪卡侬报告不会触发第二次构建。
+ * **报告共用这一份构建产物**。
  */
 export function ensureBuild(root, { force = false } = {}) {
   const { js, css } = buildPaths(root);

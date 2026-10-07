@@ -345,7 +345,7 @@ const FONTS = {
     '本报告内嵌的是按实际用字裁剪后的子集（subset）。',
 };
 
-/** 报告里那张表：优衣库那份没有品牌列（迪卡侬那一列是品牌，我们这一列是标签） */
+/** 报告里那张表：优衣库没有品牌列，这一列是标签 */
 const tableColumns = [
   { head: '编号', w: 8, align: 'l', get: (r) => r.code },
   { head: '商品', w: 30, align: 'l', get: (r) => r.name, trunc: true },

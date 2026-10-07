@@ -2,12 +2,12 @@
 /**
  * 大图卡片。骨架是：图 → 名称 → 价格行 → 标尺 / 状态行 → chips。
  *
- * 两家的卡片是**同一个骨架**，但信息层级和几何都不一样，所以每一处差异都挂一个
+ * 卡片是**同一个骨架**，信息层级和几何的差异都挂一个
  * `META.features` 开关，组件里没有一处站点判断：
  *
- *   stickerTags   商品图上的角标（迪卡侬的 尾货/新品）
- *   brandMark     名称前那块品牌小字（迪卡侬）
- *   priceOffBadge 价格行里的黄底 `降 N 元` 角标（迪卡侬）。优衣库把降幅挪到了
+ *   stickerTags   商品图上的角标（尾货/新品）
+ *   brandMark     名称前那块品牌小字
+ *   priceOffBadge 价格行里的黄底 `降 N 元` 角标。优衣库把降幅挪到了
  *                 下面那根比例条的条尾（红字）
  *   dealBarNumber 比例条尾部的红色降幅数字（优衣库）。同一件事不说两遍
  *   cardChips     卡片底部的 chips 行。**没有标签也照样留着**：它的 `margin-top: auto`
@@ -17,7 +17,7 @@
  * `[data-site=…]` 作用域里，这一层只管结构。
  *
  * 2026-10-06 从 React 翻成 Vue，有三处值得记：
- *   · 原来在函数体里算的一串常量（sizeLine / now / was / cut / gone / text / delay）
+ *   · 原来在函数体里算的一串常量（now / was / cut / gone / text / delay）
  *     → computed。**必须**是 computed 而不是普通 const：它们依赖 props，
  *     props 一变就得跟着重算（React 那边每次渲染都会重跑函数体，天然如此）。
  *   · 那段 `{gone ? … : rate > 0 ? (dealBarNumber ? A : B) : C}` 的三层嵌套三元
@@ -32,15 +32,6 @@ import { META } from '../lib/site.js';
 import CardActions from './CardActions.vue';
 import CardPicture from './CardPicture.vue';
 
-/**
- * 这一行最多列几档尺码，超了就只写「剩 N 档」。
- *
- * 尺码改成 kbd 方块之后重量的（1440 宽时那行可用 322px）：方块比「 · 」分隔宽，
- * 能排一行的上限跟着降——童装厘米码只到 5 档，腰围厘米码到 6 档、字母码到 8 档。
- * 取最保守的 5。再多就折成第二行，一折就把同一行卡片的价格线顶歪。
- */
-const MAX_SIZE_LABELS = 5;
-
 const props = defineProps({
   deal: { type: Object, required: true },
   index: { type: Number, default: 0 },
@@ -49,25 +40,6 @@ const props = defineProps({
 });
 
 const feats = META.features;
-
-/**
- * 图片左下角那块「剩下哪些尺码」（2026-10-01 起压在图上，不再占名字那一行）：
- *   码全 / 没有尺码信息 → 不显示
- *   断码                → 显示剩下哪些尺码
- *   **全是 cm 的量体尺码 → 不显示**：优衣库那批「53cm / 58cm」压在图上很难看
- *                        （用户 2026-10-01：「遇到 cm 的断码的，就别显示了，很难看」）。
- *   混着的时候只去掉 cm 那几个，正常的 S / M / L 照旧显示。
- */
-const sizeLine = computed(() => {
-  const allLabels = props.deal.sizes?.labels ?? [];
-  const labels = allLabels.filter((l) => !/cm/i.test(String(l)));
-  const sizes = props.deal.sizes;
-  if (!sizes || sizes.full) return null;
-  if (allLabels.length > 0 && labels.length === 0) return null; // 全是 cm：整条不显示
-  if (labels.length > MAX_SIZE_LABELS) return { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` };
-  if (labels.length) return { lead: '剩余：', labels, plain: labels.join(' · ') };
-  return { lead: '', text: `剩 ${sizes.count} 档`, plain: `剩 ${sizes.count} 档` };
-});
 
 // 动效错开只给前几行，否则滚到下面时动画早跑完了
 const now = computed(() => priceParts(props.deal.price));
@@ -109,17 +81,17 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
   <!-- data-id：浏览进度按**商品 id** 锚定（见 lib/browse-memory.js）。
        回来时靠它找到「上次压着工具条下沿的那一件」。只是属性，不影响渲染。 -->
   <article class="card" role="listitem" :data-id="props.deal.id">
-    <!-- 角标只有在 stickerTags 打开时才需要一个定位父盒（迪卡侬），
+    <!-- 角标只有在 stickerTags 打开时才需要一个定位父盒，
          否则就保持「一个光秃秃的 .picframe」——多包一层会让原本挂在
          .picframe 上的对齐规则失效。
          图片那一块本身抽成了 CardPicture：两种外壳要渲染同样的内容，
          而模板不能像 React 那样用一个变量把渲染结果共用出去。 -->
     <div v-if="feats.stickerTags" class="card__picwrap">
-      <CardPicture :image="props.deal.image" :url="props.deal.url" :size-line="sizeLine" />
+      <CardPicture :image="props.deal.image" :url="props.deal.url" />
       <!-- 角标贴在图上：红＝尾货清仓、灰＝新品 -->
       <span v-for="t in text" :key="t" class="tagbox" :class="`tagbox--${t}`">{{ tagLabel(t) }}</span>
     </div>
-    <CardPicture v-else :image="props.deal.image" :url="props.deal.url" :size-line="sizeLine" />
+    <CardPicture v-else :image="props.deal.image" :url="props.deal.url" />
 
     <!-- 名称那一行：**整行是链接**（两行截断由 CSS 兜住） -->
     <a
@@ -128,7 +100,7 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
       target="_blank"
       rel="noreferrer"
       :title="props.deal.name"
-      :aria-label="sizeLine ? `${props.deal.name}　${sizeLine.lead}${sizeLine.plain}` : props.deal.name"
+      :aria-label="props.deal.name"
     >
       {{ props.deal.name }}
     </a>
@@ -150,7 +122,7 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
         <span class="now__int">{{ now.int }}</span>
         <span class="now__dec">{{ now.dec }}</span>
       </span>
-      <!-- 迪卡侬：官网把折扣写成「6.0折」，这里写降幅，和榜单、排序的口径一致 -->
+      <!-- 黄底角标（priceOffBadge）：写降幅，和榜单、排序的口径一致 -->
       <span v-if="feats.priceOffBadge && props.deal.rate > 0 && !gone" class="offbadge n">
         降 {{ num(Math.round(props.deal.saving)) }} 元
       </span>
@@ -170,7 +142,7 @@ const barFilled = computed(() => Math.max(0, Math.min(BAR_SEGMENTS, Math.round(p
       <span class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
       <span class="card__off n">降 {{ num(Math.round(props.deal.saving)) }} 元</span>
     </div>
-    <!-- 迪卡侬：只有一根条，长度同样等于降幅 -->
+    <!-- 只有一根条、没有尾随红字的情况：条长度同样等于降幅 -->
     <span v-else-if="props.deal.rate > 0" class="card__bar" aria-hidden="true"><i v-for="s in BAR_SEGMENTS" :key="s" :class="{ 'is-on': s <= barFilled }" /></span>
     <div v-else class="card__deal--flat" :class="{ 'card__deal': feats.dealBarNumber }">尚未降价，正在替你盯着</div>
 

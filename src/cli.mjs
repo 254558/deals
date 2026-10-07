@@ -314,7 +314,7 @@ async function cmdSync(site) {
   console.log(C.dim(`提示：跑 deals ${site.id} list 看完整捡漏榜，deals ${site.id} report 生成网页版。\n`));
 }
 
-async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, crossLinkHref = null, beacon = null, origin = null } = {}) {
+async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, beacon = null, origin = null } = {}) {
   const db = openDb(DB_PATH);
 
   const build = ensureBuild(ROOT, { force: rebuild });
@@ -361,7 +361,7 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     // **线上才拆**（有 origin = 会挂到 CDN 上）：那时页面能被缓存、字体也能永久缓存。
     // 本地/离线那份继续内联 —— 报告要能双击打开，不能依赖旁边有没有文件。
     const external = origin ? dirname(reportPath(site)) : null;
-    const payloadText = JSON.stringify(buildPayload(db, site, images, { crossLinkHref }));
+    const payloadText = JSON.stringify(buildPayload(db, site, images));
     const fontDir = join(ROOT, 'data', 'fonts');
     const dim = (m) => console.log(C.dim(`\n${m}`));
 
@@ -392,7 +392,7 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     }
   }
 
-  const payload = buildPayload(db, site, images, { crossLinkHref });
+  const payload = buildPayload(db, site, images);
   writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, fontFiles, payload, beacon, origin }), 'utf8');
 
   // 避免被识别成 Vite 预设、在部署机上白跑一遍 vite build。生成器从不清 reports/ 目录，
@@ -478,15 +478,6 @@ async function cmdDev(site) {
 }
 
 /**
- * 两份报告互相指路的链接：Cloudflare 上它们是同一个域名的兄弟目录，
- * 所以用相对路径 `../<另一个站点>/` —— 换域名、换本地双击都对。
- */
-const cfCrossLink = (site) => {
-  const other = SITES.find((s) => s.id !== site.id);
-  return other ? `../${other.id}/` : null;
-};
-
-/**
  * Cloudflare Pages。
  *
  * 一个 Pages 项目装若干份报告。所以这个命令与「对哪个站点做」
@@ -501,10 +492,10 @@ async function cmdDeployCloudflare() {
 
   console.log(C.bold(`\nCloudflare Pages · 项目 ${project}`));
   console.log(C.dim(`  一个项目装一份：${host}/uniqlo/`));
-  console.log(C.dim('  所以两份报告都会重新生成一遍，报头那个交叉入口改成同域的相对路径。\n'));
+  console.log(C.dim('  生成报告并发布到 Pages。\n'));
 
   for (const site of SITES)
-    await cmdReport(site, { open: false, crossLinkHref: cfCrossLink(site), beacon: BEACON, origin: 'https://goodprices.online' });
+    await cmdReport(site, { open: false, beacon: BEACON, origin: 'https://goodprices.online' });
 
   // 第一次部署时项目还不存在，而 `pages deploy` 遇到不存在的项目会反过来问你一句
   // （非交互环境下就卡住了），所以先确保项目在。已经存在时这条会失败，属正常。
@@ -659,7 +650,7 @@ try {
        * 逐个站点跑，而且**互相隔离**：一个站点失败不该让另一个也做不成。
        *
        * 之前这里只是一个 for 循环外套一个 try，两处会连带：
-       *  1. 抛错（比如优衣库接口抖一下）会直接跳出循环 —— 迪卡侬当天就不抓了；
+       *  1. 抛错（比如优衣库接口抖一下）会直接跳出循环 —— 当天剩下的站点就不抓了；
        *  2. 命令内部的 `process.exit` 更狠：`all deploy`（默认 Vercel 目标）里
        *     第一个站点部署完就 exit，第二个站点**根本没跑**。
        * 所以现在逐站捕获、继续跑完剩下的，最后统一报一次并给出非零退出码

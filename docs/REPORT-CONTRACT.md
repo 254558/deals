@@ -15,20 +15,20 @@
   <script>/* app.js 内联 */</script>
 ```
 
-- 全局变量名固定 `window.__DEALS_DATA__`（旧的两个仓库分别是 `__UNIQL_DATA__` / `__DECA_DATA__`，合并后用这一个）。
+- 全局变量名固定 `window.__DEALS_DATA__`（旧仓库叫 `__UNIQL_DATA__`，合并后用这一个）。
 - `<html>` 上的 `data-site` 由 `renderHtml` 写入；前端也要在 `main.js` 里
   `document.documentElement.dataset.site = DATA.site`，这样 `uniql dev` 的开发页也对得上。
-- `data-site` 是**版面差异的唯一开关**：两家共用一个 `styles.css`，
+- `data-site` 是**版面差异的唯一开关**：共用一个 `styles.css`，
   站点特有的几何（图片比例、网格列宽、标尺配色…）全部挂在 `[data-site="…"]` 下。
-- 一次构建只有**一个站点**的数据。不存在「一份页面里两家切换」这回事。
+- 一次构建只有**一个站点**的数据。不存在「一份页面里多站切换」这回事。
 
 ## 二、payload 结构
 
 ```jsonc
 {
-  "site": "uniqlo",                       // 'uniqlo' | 'decathlon'
+  "site": "uniqlo",                      
   "generatedAt": "2026-09-27T10:00:00.000Z",
-  "recorded": 1234,                       // 数据库里的累计记录数。当前两家都不显示它
+  "recorded": 1234,                       // 数据库里的累计记录数。当前不显示它
                                           // （`meta.showRecorded` 都是 false），留着是数据
   "meta": { /* 见下节，站点描述符 */ },
   // deals 已经过两道过滤（都在生成阶段，页面不做判断）：
@@ -47,25 +47,21 @@
 {
   "label": "优衣库",                    // 站点名，报头 eyebrow
   "pageTitle": "优衣库捡漏榜",           // <title> 与 aria-label 用
-  "currency": { "sym": "¥", "zero": "¥ 0" },   // 货币符号；零值的写法（两家不同，见下）
+  "currency": { "sym": "¥", "zero": "¥ 0" },   // 货币符号；零值的写法
   "imageAspect": "3/4",                 // '3/4' | '1/1'，商品图画框比例
   "searchPlaceholder": "搜商品名或吊牌编号",
   "searchLabel": "名称或编号",           // 空结果提示里的措辞："没有「名称或编号」包含…"
   "storagePrefix": "uniql",             // localStorage 键前缀，见第五节
   "showRecorded": false,                // 报头是否显示「共记录 N 件」
-  // 报头行尾那组入口。核心拼好：先是「另一家的报告」（来自适配器的 report.crossLink），
-  // 数组为空就一个都不渲染。**老字段 meta.crossLink 仍然保留**，组件优先读 links。
-  "links": [
-    { "href": "https://goodprices.online/decathlon/", "label": "迪卡侬", "title": "迪卡侬比价报告（新标签打开）" }
-  ],
+  // 报头行尾那组入口（数组为空就一个都不渲染）。
   "features": {                         // 界面开关，全部是布尔；缺省即 false
     "rankBoard": true,          // 页顶「本期降得最狠的 N 件」榜单（uniqlo）
-    "stickerTags": false,       // 商品图上的角标（deca 的 尾货/新品）
-    "brandMark": false,         // 名称前那块品牌小字（deca）
-    "priceOffBadge": false,     // 价格行里的黄底「-xx%」角标（deca）
+    "stickerTags": false,       // 商品图上的角标（尾货/新品）
+    "brandMark": false,         // 名称前那块品牌小字
+    "priceOffBadge": false,     // 价格行里的黄底「-xx%」角标
     "dealBarNumber": true,      // 卡片横条尾部的红色降幅数字（uniqlo）
-    "cardChips": false,         // 卡片底部的 chips 行（deca；托住底边对齐）
-    "trackChip": false          // ★ 待拔草 chip（deca 的卡片）
+    "cardChips": false,         // 卡片底部的 chips 行
+    "trackChip": false          // ★ 待拔草 chip
   },
 
   "tagLabels": { "time_doptimal": "限时特优", "concessional_rate": "超值精选" },
@@ -79,14 +75,14 @@
 }
 ```
 
-### 两家的 meta 差异（照抄用，别自己发明）
+### meta 差异（照抄用，别自己发明）
 
-| 字段 | uniqlo | decathlon |
+| 字段 | uniqlo |
 | --- | --- | --- |
-| `currency` | `{sym:'¥', zero:'¥ 0'}` | `{sym:'￥', zero:'￥0'}` |
-| `imageAspect` | `3/4` | `1/1` |
-| `storagePrefix` | `uniql` | `deca` |
-| `features` | `rankBoard`、`dealBarNumber` | `stickerTags`、`brandMark`、`priceOffBadge`、`cardChips`、`trackChip` |
+| `currency` | `{sym:'¥', zero:'¥ 0'}` |
+| `imageAspect` | `3/4` |
+| `storagePrefix` | `uniql` |
+| `features` | `rankBoard`、`dealBarNumber` |
 
 ## 四、deals — 每件商品
 
@@ -97,11 +93,11 @@
 ```jsonc
 {
   "id": "u0000000072656",   // 站点内唯一；也是 localStorage 里存的那个键
-  "code": "488089",         // 显示用编号（uniqlo = 吊牌号；deca = dsm_code）
+  "code": "488089",         // 显示用编号（吊牌号）
   "name": "抽褶裙",   // 优衣库：**已经截断过**——官网名字是「主名/一堆形容词」拼的
                        // （「高性能修身防皱衬衫/长袖衬衣商务通勤」），只留斜线前面那截。
                        // 完整名字在库里的 extra.fullName，不进 payload
-  "brand": "",              // deca 有；uniqlo 空串
+  "brand": "",              // 品牌（这一站空串）
   // 「还剩什么尺码」。优衣库卡片**用它代替商品名**（码全则照旧显示名字，2026-09-30 定）。
   // 三种值：
   //   null                     尺码翻译不出来（睡衣/帽子/手套那类接口连范围都没给）
@@ -112,7 +108,7 @@
   // src/sites/uniqlo.mjs 的 shortLabel。组件把它们渲染成一个个 `<kbd>` 方块，
   // 最多列 5 档（超过 5 档那行会折行、顶歪同排卡片的价格线），再多只显示 count。
   // 怎么算出来的见 src/sites/uniqlo.mjs 的 sizeInfo：词表存在库里（size_vocab 表），
-  // 「都有」用「同家族内在售的码是否连成一段」判。迪卡侬没有这个钩子，恒为 null。
+  // 「都有」用「同家族内在售的码是否连成一段」判。
   "sizes": { "full": false, "labels": ["P21", "W23"], "count": 2 },
   "url": "https://www.uniqlo.cn/product-detail.html?productCode=…",
   "image": "img/u0000000072656@561.webp",  // 本地缓存相对路径（统一 WebP，见 docs/DESIGN-UNIQLO.md）。不会为 null ——
@@ -130,7 +126,7 @@
 
 ### `gone`：已不在特价的商品
 
-抓取池（优衣库那两个标签池 / 迪卡侬的特惠专区）里消失的商品，**不能继续留在榜上**：
+抓取池（优衣库那两个标签池）里消失的商品，**不能继续留在榜上**：
 `in_stock` 只在商品被抓到时才写，于是一件下架的商品会带着「在售」这个旧标记一直挂着，
 用户点进去才发现官网早没了。
 
@@ -150,7 +146,7 @@
 
 ## 五、两本账：localStorage
 
-沿用两家原来的键，**不要改名**，否则用户已经点过的收藏会丢：
+沿用原来的键，**不要改名**，否则用户已经点过的收藏会丢：
 
 ```
 `${meta.storagePrefix}.picks`    在报告里点过爱心
@@ -158,8 +154,8 @@
 `${meta.storagePrefix}.hidden`   点过闭眼：**永久**不再出现，没有放回
 ```
 
-因为 `deals[].id` 沿用了旧仓库的 `productCode` / `dsmCode`，前缀也沿用
-`uniql` / `deca`，**两个旧报告里的收藏、隐藏在新报告里原样还在**。
+因为 `deals[].id` 沿用了旧仓库的 `productCode`，前缀也沿用
+`uniql`，**旧报告里的收藏、隐藏在新报告里原样还在**。
 
 ## 六、构建与开发
 

@@ -101,8 +101,8 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
 /**
  * 报头（最上面那条导航）。
  *
- * **一套皮，不分站点**：2026-10-01 之前优衣库和迪卡侬各有一套（11px vs 15px、有没有
- * 底下那条细线、小方块 6px vs 10px、间距 14 vs 4/18），换个页面导航栏就换个样子。
+ * **一套皮，不分站点**：2026-10-01 之前各页面各有一套（字号、细线、方块、间距都不一样），
+ * 换个页面导航栏就换个样子。
  * 现在这里就是唯一的规格：站点名和入口都是 10px + 0.12em 字距、方块 6px 红、
  * 一条发丝线收尾。
  */
@@ -112,29 +112,6 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
       那样写根本粘不住（原来正是这样）。所以报头自带 .wrap，外层那层去掉了。
    2. 顶部那 44px 从 padding 改成 margin：margin 不跟着粘，往下滚时它会走掉，
       钉住的只是「站点名 + 发丝线」这一条。 */
-/* 断码的剩余尺码：压在图片**左下角**（用户 2026-10-01：「弄到图片左下角，和图片重叠在一起，
-   不要占标题的位置」）。
-   **不要底色**（同日追加：「断码的这个，不要有背景的色」）—— 那块半透明黑条压在商品图上太重，
-   而两家官网的商品图基本都是白底，深色字直接放上去就够清楚。
-   因此方块也回到页面里那套默认的「浅底细边」键帽（不再反向改成白字）。
-   它挂在 .picframe（position: relative）里，所以 left/bottom 就是图片的左下角。 */
-.card__sizes {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  padding: 4px 6px;
-  background: none;
-  color: var(--ink);
-  font-size: 11px;
-  line-height: 1.45;
-  /* 让点击穿过它落到图片链接上（这里是子元素，与「压在链接自己身上」那次的坑不同） */
-  pointer-events: none;
-}
-
 .masthead {
   position: sticky;
   top: 0;
@@ -180,8 +157,8 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
    这里原来是 9×9 的方块点阵（3×3 个「2px 方块 + 1px 空隙」，内联 SVG 平铺）——
    已经删掉，改成 Masthead.vue 里那张 40×40 的像素画；随机逻辑也在那个组件里。
    尺寸见下面的 .masthead__pal。 */
-/* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px、
-   迪卡侬 13px ink-2），而报头必须两家一模一样。 */
+/* 站点名与入口的文字样式。**不用 .label**：那条是按站点定义的（优衣库 10px），
+   而报头必须保持统一。 */
 .masthead__text {
   font-size: 10px;
   font-weight: 400;
@@ -247,8 +224,8 @@ html::-webkit-scrollbar { width: 0; height: 0; display: none; } /* Chrome / Safa
 .masthead__home { margin-right: auto; }
 
   /* 手机上：入口**紧跟站点名**排，不推到行尾。
-     推到行尾（margin-left: auto）在窄屏上很脆：中文标签 + 两个入口一旦超出可用宽度，
-     flex 就会把它折到第二行（用户报的「优衣库比价、迪卡侬比价另起一行」）。
+     推到行尾（margin-left: auto）在窄屏上很脆：中文标签 + 入口一旦超出可用宽度，
+     flex 就会把它折到第二行。
      桌面版仍然推到行尾——那是用户 2026-09-30 明确要的「右对齐、间距不要太大」。 */
 
 
