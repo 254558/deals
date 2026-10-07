@@ -73,9 +73,14 @@ const catsOpen = ref(false);
  * 自动收起来，回到没有点 goodprices 的样式」）。筛选结果留着，只是把面板关掉。
  */
 function pickCat(code) {
+  // 只筛，不关面板。关闭交给 close 事件 —— 分类树要先播完「温度计」红线动画
+  // 才 emit('close')，面板这才收起（约 1.2 秒）。
   cat.value = code;
-  // 选定了就收起面板 + 退出「我的」（用户：「在我的里点分类没反应」——
-  // 「我的」盖着榜单，只改 cat 看不见）。组件里点顶层只展开、不触发 pick。
+}
+
+function closeCat() {
+  // 收起面板，并退出「我的」（用户：「在我的里点分类没反应」——
+  // 「我的」盖着榜单，只改 cat 看不见，所以选中分类后要跳回榜单）。
   catsOpen.value = false;
   mineOpen.value = false;
 }
@@ -343,6 +348,7 @@ function reset() {
     :counts="catCounts"
     :value="cat"
     @pick="pickCat"
+    @close="closeCat"
   />
 
   <!-- 「我的」是**一块视图**，不是盖住全屏的浮层 —— 导航栏必须一直在
