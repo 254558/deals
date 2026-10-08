@@ -371,7 +371,7 @@ function reset() {
     :size="size"
     :on-size="(v) => (size = v)"
     :sizes="sizeOptions"
-    :hidden="navHidden"
+    :hidden="navHidden && !catsOpen"
   />
 
   <!-- 猫（2026-10-06）。fixed 定位，在视口里跑，和页面结构无关 -->
