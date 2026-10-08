@@ -11,8 +11,7 @@
  * 用法：node scripts/font-preview.mjs   → /tmp/font-preview.html + 截图
  */
 import { writeFileSync } from 'node:fs';
-
-const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+import { UA } from '../src/core/http.mjs';
 
 const FONTS = [
   { name: 'Archivo Narrow', q: 'Archivo+Narrow:wght@600;700' },

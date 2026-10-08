@@ -10,7 +10,7 @@
 
      数据和字体走的是 web/public/ 里的两份文件，由报告生成器在每次 report 之前写好：
        data.js  = `window.__DEALS_DATA__ = {…}`（合并前两家各用各的全局变量名，见契约）
-       font.css = 思源黑体子集，只有优衣库那一站生成；迪卡侬那站是个空文件
+       font.css = 思源黑体子集，站点描述符里声明了 fonts 的那一站才生成
 
      data-site 由 main.js 从 payload 里写上去（真报告里是 renderHtml 直接写在 <html> 上），
      这样 dev 页的版面也和正式报告一致。 -->

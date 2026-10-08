@@ -194,21 +194,23 @@ const safeJs = (code) => code.replace(/<\/script/gi, '<\\/script');
  *
  * ⚠️ 这几条与 web/src/styles.css 里 #boot / .boot__dots 那几段是同一件事的两份，
  * 改那边记得改这边（数量很少，且只在首绘那一瞬生效）。
+ * 点阵是**墨色**：2026-10-06 用户要求全站去蓝，那轮改的是 styles.css，
+ * 这份前置 CSS 漏了（这里自己定义了一个 `--blue`，所以肉眼看不出来），
+ * 于是报告的开机动画一直是蓝的，而开发壳里是墨的。
+ * 令牌都写成 `var(--x, 兜底值)`：首绘时整块 CSS 还没到，先吃兜底值；到了就用真的。
  */
-function criticalCss(site) {
-  const ink = site === 'uniqlo' ? '#000f17' : '#000f17';
-  const blue = '#3643ba';
+function criticalCss() {
   return [
-    ':root{--bg:#fff;--blue:' + blue + ';--ink:' + ink + '}',
+    ':root{--bg:#fff;--ink:#000f17}',
     'html,body{margin:0;padding:0;background:var(--bg);color:var(--ink)}',
     'body{font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}',
     '#boot{position:fixed;inset:0;z-index:9;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--bg);opacity:0;animation:boot-in 120ms linear forwards}',
     '@keyframes boot-in{to{opacity:1}}',
     '#root:not(:empty)~#boot{display:none}',
     '.boot__dots{display:grid;grid-template-columns:repeat(5,7px);gap:6px}',
-    '.boot__dots i{width:7px;height:7px;background:var(--blue);opacity:.14;animation:boot-wave 1.5s linear infinite;animation-delay:calc(var(--i,0)*55ms)}',
-    '@keyframes boot-wave{0%,100%{opacity:.14}40%{opacity:1}}',
-    '.boot__note{font-size:12px;color:#616161}',
+    '.boot__dots i{width:7px;height:7px;background:var(--ink,#000f17);opacity:.14;animation:boot-wave 1.5s linear infinite;animation-delay:calc(var(--i,0)*55ms)}',
+    '@keyframes boot-wave{0%,52%,100%{opacity:.14}13%{opacity:1}}',
+    '.boot__note{font-size:13px;color:var(--ink-3,#8a8f96)}',
     '@media (prefers-reduced-motion:reduce){.boot__dots i{animation:none;opacity:.55}}',
   ].join('');
 }
@@ -281,7 +283,7 @@ export function renderHtml({ js, css, fontCss, fontFiles = [], payload, beacon =
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>GoodPrices · ${payload.meta.pageTitle} · ${when}</title>
 ${seo}
-<style>${criticalCss(payload.site)}</style>
+<style>${criticalCss()}</style>
 ${preload}
 </head>
 <body>

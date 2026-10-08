@@ -9,17 +9,17 @@
  * 站点适配器要提供什么，见 docs/REPORT-CONTRACT.md 与 src/sites/index.mjs 的说明。
  */
 
+import { UA, sleep } from '../core/http.mjs';
+
 const SEARCH_ENDPOINT =
   'https://d.uniqlo.cn/p/hmall-sc-service/search/searchWithDescriptionAndConditions/zh_CN';
-
-const UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 /**
  * 站点本身是前端渲染的 SPA，HTML 里拿不到价格，但它的搜索接口是公开的 JSON POST，
  * 无需登录、无需 token，直接调用即可拿到「原价 / 现价 / 标签 / 限时窗口」。
- * 注意：站点前面挂了腾讯云 EdgeOne 的 WAF，会拦截明显的爬虫 UA，所以这里固定发
- * 一个真实浏览器的 UA，并带上 Origin / Referer。
+ * 注意：站点前面挂了腾讯云 EdgeOne 的 WAF，会拦截明显的爬虫 UA，所以要发一个
+ * 真实浏览器的 UA（那份 UA 现在与图片/字体共用一份，见 core/http.mjs），
+ * 并带上 Origin / Referer。
  */
 async function post(body, { retries = 3 } = {}) {
   let lastErr;
@@ -49,7 +49,6 @@ async function post(body, { retries = 3 } = {}) {
   throw new Error(`请求优衣库接口失败: ${lastErr.message}`);
 }
 
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const num = (v) => (typeof v === 'number' && Number.isFinite(v) ? v : Number(v) || 0);
 const IMAGE_BASE = 'https://www.uniqlo.cn';
 
@@ -547,7 +546,7 @@ function codesOf(row) {
     return { full, labels, count: kept.length };
   }
 
-export { sizeInfo, fetchSizeVocab, fetchCategoryVocab };
+export { sizeInfo };
 
 
 export default {

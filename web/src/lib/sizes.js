@@ -15,11 +15,11 @@
  * 就是**编数据** —— 所以一件东西的尺码里如果没有这五个之一，它就不进尺码表
  * （但它**仍然留在商品列表里**，只是尺码筛选里找不到它）。
  */
-export const LETTERS = ['XS', 'S', 'M', 'L', 'XL'];
+const LETTERS = ['XS', 'S', 'M', 'L', 'XL'];
 const LETTER_SET = new Set(LETTERS);
 
 /** 这个标签算不算我们认的尺码（大小写不敏感；cm、数字、XXL/3XL/4XL 一律不算） */
-export const isOurSize = (label) => LETTER_SET.has(String(label).trim().toUpperCase());
+const isOurSize = (label) => LETTER_SET.has(String(label).trim().toUpperCase());
 
 /** 排序就按 LETTERS 的顺序 */
 export function sizeRank(s) {

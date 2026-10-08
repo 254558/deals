@@ -2,7 +2,8 @@
  * 对账（走生产路径）：用适配器自己的 sync() 抓一遍实时数据，
  * 和库里存着的 size_codes 比 —— 量的是「我们的快照有多旧」。
  */
-import { DatabaseSync } from 'node:sqlite';
+import { openDb } from '../src/core/db.mjs';
+import { DB_PATH } from '../src/cli/common.mjs';
 import site from '../src/sites/uniqlo.mjs';
 
 console.log('  正在用适配器抓实时数据（约 1 分钟）…');
@@ -11,7 +12,7 @@ const result = await site.sync({ onPage: () => { pages++; if (pages % 5 === 0) p
 const live = result.products;
 console.log('  抓到 ' + live.length + ' 件（' + pages + ' 页）        ');
 
-const db = new DatabaseSync('/Users/zhangshuai/deals/data/deals.db');
+const db = openDb(DB_PATH);
 const stored = new Map(
   db.prepare("SELECT product_code, size_codes FROM products WHERE site = 'uniqlo' AND size_codes IS NOT NULL AND size_codes != '[]'")
     .all()

@@ -24,24 +24,17 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fetchBytes, sleep } from './http.mjs';
 
-const UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
-
+/** 下载一份字体到 dest。失败重试（网络抖动），拿不到就返回 false。 */
 async function download(url, dest, retries = 2, minBytes = 1_000_000) {
   for (let i = 0; i <= retries; i++) {
     try {
-      const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(120_000) });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const buf = Buffer.from(await res.arrayBuffer());
-      // 太小说明拿到的是错误页。**中文那份是 8MB 起步，拉丁字体只有几十 KB** ——
-      // 所以下限由调用方给（2026-10-06 加 Fjalla One 时踩到：40KB 被这条挡下过）。
-      if (buf.length < minBytes) throw new Error(`返回内容异常（${buf.length} 字节）`);
-      writeFileSync(dest, buf);
+      writeFileSync(dest, await fetchBytes(url, { timeout: 120_000, minBytes }));
       return true;
-    } catch (err) {
+    } catch {
       if (i === retries) return false;
-      await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+      await sleep(800 * (i + 1));
     }
   }
   return false;

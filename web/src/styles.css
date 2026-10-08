@@ -862,26 +862,6 @@ body {
   white-space: nowrap;
 }
 .fav__price { display: block; margin-top: 2px; font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
-/* 2026-10-06 用户：「删除收藏的那个按钮，不要外面的方框」——
-   去掉 1px 边框和白底，只剩一个图标。
-   尺寸仍是 30×30（手指好点，别缩成图标那么大）；边框没了之后，
-   可点性完全靠图标自己的颜色交代：默认 --ink-4，悬停转 --red。 */
-.fav__del {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: none;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  border: 0;
-  background: none;
-  font-size: 16px;
-  line-height: 1;
-  color: var(--ink-4);
-  cursor: pointer;
-}
-.fav__del:hover { color: var(--red); }
 
 /* 「我的」现在是 <button>（原来是一条 <a> 链接），把按钮自带的样式按掉 */
 .masthead__text.masthead__cross {

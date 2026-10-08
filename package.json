@@ -1,7 +1,7 @@
 {
   "name": "deals",
   "version": "1.0.0",
-  "description": "比价与捡漏工具：记录各家零售商的上市价与现价，找出降价最狠的商品（优衣库 / 迪卡侬）",
+  "description": "比价与捡漏工具：记录各家零售商的上市价与现价，找出降价最狠的商品（当前只有优衣库）",
   "type": "module",
   "bin": {
     "deals": "./src/cli.mjs"

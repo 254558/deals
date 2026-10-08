@@ -24,7 +24,7 @@ import { META } from './site.js';
  * **只影响显示**：降幅、排序、榜单名次用的都是 payload 里的原始数值。
  */
 
-export const amount = (n) => Math.trunc(Number(n) || 0).toLocaleString('zh-CN');
+const amount = (n) => Math.trunc(Number(n) || 0).toLocaleString('zh-CN');
 
 /**
  * 把价格拆成三段交给价格行排版：`sym` / `int` / `dec`。
@@ -45,19 +45,8 @@ export function priceParts(n) {
 }
 
 /**
- * 带上货币符号的一整串价格，给标尺两端、榜单、上市价那几格用。
- *
- * 零值必须走 `currency.zero`：标尺右端就是 `¥ 0` 那一格，
- * 这里统一了才能保证标尺的读法和官网一致。
+ * 条数、销量这类计数不要小数，和价格分开
  */
-export function price(n) {
-  const cur = META.currency ?? { sym: '', zero: '' };
-  const v = Math.round((Number(n) || 0) * 100) / 100;
-  if (v === 0) return cur.zero;
-  return `${cur.sym}${amount(v)}`;
-}
-
-/** 条数、销量这类计数不要小数，和价格分开 */
 export const num = (n) => (Number(n) || 0).toLocaleString('zh-CN');
 
 /**

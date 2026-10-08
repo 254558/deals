@@ -24,6 +24,7 @@
 
 import { mkdirSync, existsSync, writeFileSync, unlinkSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fetchBytes, sleep } from './http.mjs';
 
 /**
  * 图片统一转成 WebP（实测同样清晰度下比官网给的 JPEG 小一半：6 张样本 488KB → 247KB）。
@@ -55,17 +56,6 @@ try {
 }
 const OUT_EXT = sharp ? 'webp' : 'jpg';
 
-const UA =
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-
-async function fetchImage(url) {
-  const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(25_000) });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length < 100) throw new Error('返回内容为空');
-  return buf;
-}
-
 /** 转成 WebP；没有 sharp（或本来就不是图片）就原样返回 */
 async function encode(buf) {
   if (!sharp) return buf;
@@ -92,12 +82,12 @@ async function download(urls, dest) {
   for (const url of urls) {
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
-        writeFileSync(dest, await encode(await fetchImage(url)));
+        writeFileSync(dest, await encode(await fetchBytes(url, { timeout: 25_000 })));
         return { ok: true };
       } catch (err) {
         lastError = err.message;
         if (/HTTP 4/.test(err.message)) break;
-        if (attempt === 0) await new Promise((r) => setTimeout(r, 500));
+        if (attempt === 0) await sleep(500);
       }
     }
   }

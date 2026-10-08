@@ -27,7 +27,7 @@ export const reportPath = (site) => join(reportDir(site), 'index.html');
 
 // ---------- 参数 ----------
 
-export const cliArgs = process.argv.slice(2);
+const cliArgs = process.argv.slice(2);
 
 export const flag = (name, def) => {
   const i = cliArgs.indexOf(`--${name}`);
