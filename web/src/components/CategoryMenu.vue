@@ -161,6 +161,12 @@ function pick(code) {
 
 <style scoped>
 .catmenu {
+  /* z-index 夹在工具栏(20)和报头(30)之间：往下滚时工具栏会 translateY 向上"收起"，
+     正好位移到菜单身上 —— 不设的话工具栏(20)压在菜单(auto)上面，盖住男装/童装
+     （用户 2026-10-07 报）。设了之后工具栏是从菜单**背后**滑上去的。
+     position: relative 是 z-index 生效的前提。 */
+  position: relative;
+  z-index: 25;
   padding: 6px var(--pad, 20px) 10px;
   background: var(--white);
 }
