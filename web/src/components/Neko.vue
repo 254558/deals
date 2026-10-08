@@ -34,6 +34,15 @@
  *    等待会被不断取消/重置，猫就一直在画面外，不会跟着一进一出地闪（RETURN）。
  *    ⚠️ 第一版是把整只**平移一整屏高**（transform）—— 那看着就是"瞬间消失"，
  *      用户报的就是这个：「我一上滑，猫瞬间就消失了」。
+ *
+ * ⚠️ 猫**只在「我的」里出现**了（2026-10-08 同一轮里用户先要「把猫放到我的页面」，
+ *    紧接着「优衣库榜单页面不要猫，看着烦」）。于是上面那整套 ESCAPE / RETURN ——
+ *    连同"跑出去之后 display:none 防残影"那条 —— 现在**是睡着的**：
+ *    「我的」里没有工具条（Toolbar 不渲染），报头又被要求一直露着
+ *    （navHidden 被强制 false），barsGone() 恒为 false，一帧也不会走到。
+ *    留着，是因为它逐条记着用户报过的现象；**别当活代码读**，要删就整块删
+ *    （连 `visible` 和模板上那个 v-show 一起）。
+ *    它 pointer-events:none，压不住收藏那片左右滑删的手势。
  */
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { NEKO_SPRITE, NEKO_FRAMES } from '../lib/neko-sprite.js';
