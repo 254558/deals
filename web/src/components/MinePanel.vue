@@ -1,8 +1,9 @@
 <script setup>
 /**
- * 「我的」——报告里的一个视图，**只有两块：收藏 / 转移码**。
+ * 「我的」——报告里的一个视图，**三块：收藏 / 转移码 / 许愿**。
  *
  * 用户 2026-10-06：「我的里面就放：收藏，转移码就好，别的都删掉」。
+ * 用户 2026-10-10 加回第三块「许愿」：点出去到许愿墙（wookao.icu），见 MineWish.vue。
  * 这一块原来是独立的一页（/market/?mine=1，跟着「有品」市集走），那天市集整个删了，
  * 于是把它收进报告本身：报告是双击就能打开的单文件，而收藏和转移码**本来就是纯本地的**
  * （localStorage，没有服务端），放进来自带两个好处——离线可用、少一套部署。
@@ -20,9 +21,11 @@
 import { ref } from 'vue';
 import MineFavorites from './MineFavorites.vue';
 import MineTransfer from './MineTransfer.vue';
+import MineWish from './MineWish.vue';
 
 const TAB_FAVS = 'favs';
 const TAB_TRANSFER = 'transfer';
+const TAB_WISH = 'wish';
 const tab = ref(TAB_FAVS);
 </script>
 
@@ -54,10 +57,21 @@ const tab = ref(TAB_FAVS);
         >
           转移码
         </button>
+        <button
+          class="mine-tab"
+          :class="{ 'mine-tab--on': tab === TAB_WISH }"
+          type="button"
+          role="tab"
+          :aria-selected="tab === TAB_WISH"
+          @click="tab = TAB_WISH"
+        >
+          许愿
+        </button>
       </div>
 
       <MineFavorites v-if="tab === TAB_FAVS" />
-      <MineTransfer v-else />
+      <MineTransfer v-else-if="tab === TAB_TRANSFER" />
+      <MineWish v-else />
     </div>
   </div>
 </template>

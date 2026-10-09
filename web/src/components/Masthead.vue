@@ -112,7 +112,7 @@ const links = META.links?.length ? META.links : META.crossLink ? [META.crossLink
         <span v-if="META.showRecorded" class="label">共记录 {{ num(props.recorded) }} 件</span>
 
         <!-- 行尾固定那一条，**跟着视图换**（用户 2026-10-06）：
-              在榜单上 →「我的」（进收藏 / 转移码）；
+              在榜单上 →「我的」（进收藏 / 转移码 / 许愿）；
               进了「我的」→「优衣库」（回榜单）。
             于是在「我的」里，导航栏是「左 GoodPrices，右 优衣库」。 -->
         <a v-if="props.mineOpen" class="masthead__text masthead__cross" href="./">优衣库</a>

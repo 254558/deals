@@ -790,6 +790,22 @@ body {
 
 .mine__pane { padding-top: 16px; }
 .mine__empty, .mine__hint { margin: 0 0 14px; font-size: 13px; line-height: 1.7; color: var(--ink-3); }
+/* 「我的 → 许愿」（2026-10-10 加的第 3 块 tab）：一句说明 + 一颗指向许愿墙的外链。
+   许愿墙是另一个站点，报告里只放入口，所以样式就是这两条。
+   去蓝之后没有品牌色可用（见 shell.css 里 --blue 那段），外链按钮沿用墨色，
+   和「转移码」那排按钮是同一种观感 —— 直角、发丝边、按下反白。 */
+.mine__wish-note { margin: 0 0 14px; font-size: 13px; line-height: 1.7; color: var(--ink-3); }
+.mine__wish-note b { color: var(--ink); }
+.mine__wish {
+  display: inline-block;
+  padding: 9px 18px;
+  border: 1px solid var(--ink);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.mine__wish:hover { background: var(--ink); color: var(--white); }
+.mine__wish:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 .mine__row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
 .mine__code {
   width: 100%;
