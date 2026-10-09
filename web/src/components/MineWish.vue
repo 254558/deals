@@ -11,6 +11,10 @@
  *     报告常常是 file:// 打开的，同页跳走就回不来了，所以一定要 target="_blank"。
  *   · rel="noreferrer"：和报头那组兄弟报告入口（Masthead.vue）保持一致。
  *
+ * 2026-10-10 用户改过两次：先要一句说明 + 一颗写着 wookao.icu 的链接，
+ * 随后「删除这个文字……按钮就写点击许愿」—— 于是只剩一颗按钮，文案是「点击许愿」，
+ * 域名不再出现在界面上（藏在 href 里）。
+ *
  * 地址写成一个常量而不是散在模板里：将来要换域名只改这一行。
  */
 const WISH_URL = 'https://wookao.icu';
@@ -18,9 +22,6 @@ const WISH_URL = 'https://wookao.icu';
 
 <template>
   <div class="mine__pane">
-    <p class="mine__wish-note">
-      想要哪件衣服？点下面的 wookao.icu 进<b>许愿墙</b>许个愿，让别人送你。
-    </p>
-    <a class="mine__wish" :href="WISH_URL" target="_blank" rel="noreferrer">wookao.icu</a>
+    <a class="mine__wish" :href="WISH_URL" target="_blank" rel="noreferrer">点击许愿</a>
   </div>
 </template>
