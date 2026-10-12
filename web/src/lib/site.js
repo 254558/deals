@@ -1,5 +1,5 @@
 /**
- * 唯一的取数口：从 `window.__DEALS_DATA__` 里把 payload 拆成三块。
+ * 唯一的取数口：从 `window.__DEALS_DATA__` 里把 payload 拆成几块。
  *
  * 报告是**自包含单文件**（`file://` 双击就能看），所以数据不能 fetch，
  * 只能是另一个 `<script>` 内联进来的全局变量，再由同一份 IIFE bundle 读出来
@@ -21,6 +21,16 @@ export const DEALS = DATA.deals ?? [];
 
 /** 分类树（只带前两层：顶层 4 支 + 二层 50 个），站名下面那个枝杈菜单用 */
 export const CATEGORIES = DATA.categories ?? [];
+
+/**
+ * 「我的 → 双十一指南」那块数据：人工整理的内容（`content/double11.json`）
+ * + 生成报告时探测到的入口可达性 + 抓取新鲜度，由 `core/guide.mjs` 的 buildGuide 组装。
+ *
+ * `null` 是**正常情况之一**，不是出错：内容 JSON 读不到 / 写坏了，或者压根没跑过
+ * buildGuide（老报告）都会是 null，组件那边有一块逐条能照做的兜底。
+ * 所以引用它时一律 `GUIDE?.xxx`，别当它一定在。
+ */
+export const GUIDE = DATA.guide ?? null;
 
 /**
  * 站点标识。它只做一件事：写进 `<html data-site>`，也就是 styles.css 里

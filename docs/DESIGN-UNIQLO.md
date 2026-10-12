@@ -36,7 +36,7 @@
 
 三件事没有变，是有意的：
 
-1. **localStorage 键沿用 `uniql.picks` / `uniql.dropped` / `uniql.hidden`**，`deals[].id` 也沿用旧的 `productCode` 值。所以在合并前那份报告里点过的收藏、隐藏过的商品，在新报告里原样还在（契约第五节）。
+1. **localStorage 键沿用 `uniql.picks` / `uniql.dropped` / `uniql.hidden`**，`deals[].id` 也沿用旧的 `productCode` 值。所以在合并前那份报告里点过的收藏、隐藏过的商品，在新报告里原样还在（契约第七节）。
 2. **优衣库图片 CDN 的 ORB 坑没变**：它返回的 `Content-Type` 是 `application/octet-stream`，Chrome 的 ORB 会拦掉跨域引用，报告里会是一片空白。所以商品图必须下到 `reports/uniqlo/img/`，payload 里给的是本地相对路径 `img/u…@561.webp`，**不能**回头去引 CDN。
 3. **上市价照旧是攒出来的**：抓的仍是官方原价（`originPrice`），存进 `launch_price` 时取历次快照的最大值。合并后是**空库重新抓的**（没有迁移旧的 `uniql.db`），所以头几天 `launch_price` 必然等于当前原价，降幅看着偏小；等每天 `sync` 攒到几周才是真的上市价。
 
@@ -297,7 +297,7 @@ https://www.uniqlo.cn/public/bin/Font-syht/SourceHanSansCN-Medium.otf
 
 「待拔草」是**三份来源合出来的**：终端 `deals uniqlo track` 进来的 ∪ 报告里点过「收藏」的 − 报告里点过「取消收藏」的。那个减号（`uniql.dropped`）不是多余的一层，因为命令行**只有 `track`、还没有 `untrack`**：对一件已经 `track` 的商品，取消收藏只能在报告这边记一笔把它压住，否则刷新一下它又从数据库里冒回来。
 
-**键名不许改**（契约第五节）。合并时 `deals[].id` 沿用了旧的 `productCode`，前缀也沿用 `uniql`，所以旧报告里点过的账在新报告里还在。
+**键名不许改**（契约第七节）。合并时 `deals[].id` 沿用了旧的 `productCode`，前缀也沿用 `uniql`，所以旧报告里点过的账在新报告里还在。
 
 ---
 
