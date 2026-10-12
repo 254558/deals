@@ -104,7 +104,7 @@ export const BEACON =
   '<!-- Cloudflare Web Analytics：只统计访问量，不用 cookie，也不跟踪个人 -->\n' +
   `<script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "${BEACON_TOKEN}"}'></script>`;
 
-export function buildPayload(db, site, images, { remote = false, guide = null } = {}) {
+export function buildPayload(db, site, images, { remote = false } = {}) {
   const deals = listDeals(db, site.id, { limit: 5000, minRate: 0.15 });
   const tracked = listTracked(db, site.id);
 
@@ -151,14 +151,6 @@ export function buildPayload(db, site, images, { remote = false, guide = null } 
     recorded: stats(db, site.id).total,
     meta,
     categories,
-    /**
-     * 「双十一指南」那一页的数据（人工整理的内容 + 当天探测到的入口可达性 + 抓取新鲜度）。
-     * 由 `core/guide.mjs` 的 buildGuide 组装、cli 传进来 —— **这里不自己算**，
-     * 因为组装它要联网探测，而 buildPayload 也会在下图那一趟被调用（`remote: true`），
-     * 那一趟不该为了指南多打几个请求。
-     * 没传就是 null，页面显示"内容没准备好"。见 docs/REPORT-CONTRACT.md 第六节。
-     */
-    guide,
     deals: shown.map((r) => toDeal(r, images, remote, site, sizeVocab)),
   };
 }

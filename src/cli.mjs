@@ -72,11 +72,16 @@ import {
   resolveBlockTarget,
 } from './core/db.mjs';
 import { buildPayload, writeData, ensureBuild, renderHtml, writeDeployRoot, BEACON } from './core/report.mjs';
-import { buildGuide, STALE_HOURS } from './core/guide.mjs';
 import { ensureFontFiles, buildFontCss } from './core/fonts.mjs';
 import { ensureImages } from './core/images.mjs';
 import { findWranglerBundle, smallBatchBundle, pagesDeploy } from './core/cf-wrangler.mjs';
 import { SITES, CLOUDFLARE, DEFAULT_SITE, resolveTargets, siteList } from './sites/index.mjs';
+
+/**
+ * 多少小时没抓到新数据就算**断档**（`deals alert` 用）。
+ * 这台机器是笔记本，launchd 只在开机且登录时跑；连续失败或者出差一周，历史就断了。
+ */
+const STALE_HOURS = 36;
 
 /** 一个目录下所有文本文件拼成一个大字符串（只为收集字体要用到的字符） */
 function readTree(dir, out = '') {
@@ -163,8 +168,8 @@ function notify(title, body) {
  *  2. **数据不新鲜**（超过 STALE_HOURS 小时没抓成功）。这台机器是笔记本，launchd 只在
  *     开机且登录时跑；万一抓取连续失败、或者你出差一周，历史就断档了——
  *     而断档这件事在看报告时是看不出来的，只会觉得「怎么最近没降价」。
- *     ⚠️ 这个阈值与指南页那条「数据可能不准」的提示**共用** core/guide.mjs 里的
- *     STALE_HOURS —— 两处各写一个 36 迟早会漂移。
+ *     （这个阈值曾经和已删掉的「双十一指南」页共用一个常量，现在只有这里在用，
+ *      就定义在本文件顶上。）
  */
 function cmdAlert() {
   const db = openDb(DB_PATH);
@@ -317,7 +322,7 @@ async function cmdSync(site) {
   console.log(C.dim(`提示：跑 deals ${site.id} list 看完整捡漏榜，deals ${site.id} report 生成网页版。\n`));
 }
 
-async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, beacon = null, origin = null, probe = true } = {}) {
+async function cmdReport(site, { open = true, withImages = true, rebuild = false, withFont = true, beacon = null, origin = null } = {}) {
   const db = openDb(DB_PATH);
 
   const build = ensureBuild(ROOT, { force: rebuild });
@@ -325,18 +330,6 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     if (build.reason === 'missing-deps') throw new Error('报告页面还没构建好：node_modules 里没有 vite。先跑一次 npm install');
     throw new Error('报告页面构建失败，看上面的 Vite 报错');
   }
-
-  /**
-   * 「双十一指南」那一页的数据：人工整理的内容 + 当天探测到的入口可达性 + 抓取新鲜度。
-   *
-   * 在这里算**一次**、下面两处 buildPayload 共用：探测要联网，而下面那个为了裁字体
-   * 又调了一遍 buildPayload —— 不共用的话每生成一次报告要打两轮外部请求。
-   *
-   * `--no-probe` 关掉探测（离线生成、或者只想快点出一份）：那一趟每条入口标成"没探测"，
-   * 页面上写的是"这次没探测，点这里自己去查"，而不是"抓取失败"。
-   */
-  const { guide, warn } = await buildGuide(db, site, { contentPath: join(ROOT, 'content', 'double11.json'), probe });
-  if (warn) console.log(C.yellow(`\n指南：${warn}`));
 
   const outDir = reportDir(site);
 
@@ -376,9 +369,9 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     // **线上才拆**（有 origin = 会挂到 CDN 上）：那时页面能被缓存、字体也能永久缓存。
     // 本地/离线那份继续内联 —— 报告要能双击打开，不能依赖旁边有没有文件。
     const external = origin ? dirname(reportPath(site)) : null;
-    // ⚠️ 这一趟的 payload 文本是**拿去裁字体子集的**（见上面那段注释），所以必须带上
-    //    guide —— 指南那一页的汉字不在前端包 `js` 里，漏了它页面上会掉字。
-    const payloadText = JSON.stringify(buildPayload(db, site, images, { guide }));
+    // 这一趟的 payload 文本是**拿去裁字体子集的**（见上面那段注释）：只要页面上会出现
+    // 的汉字都在里面就行（商品名都在 payload 里，UI 文案则在 js 里）。
+    const payloadText = JSON.stringify(buildPayload(db, site, images));
     const fontDir = join(ROOT, 'data', 'fonts');
     const dim = (m) => console.log(C.dim(`\n${m}`));
 
@@ -409,7 +402,7 @@ async function cmdReport(site, { open = true, withImages = true, rebuild = false
     }
   }
 
-  const payload = buildPayload(db, site, images, { guide });
+  const payload = buildPayload(db, site, images);
   writeFileSync(reportPath(site), renderHtml({ js, css: readFileSync(build.css, 'utf8'), fontCss, fontFiles, payload, beacon, origin }), 'utf8');
 
   // 避免被识别成 Vite 预设、在部署机上白跑一遍 vite build。生成器从不清 reports/ 目录，
@@ -466,12 +459,8 @@ async function cmdDev(site) {
   }
 
   const dataPath = join(ROOT, 'web', 'public', 'data.js');
-  // 开发页也带上指南那块数据（默认同样探一遍入口，好顺手调那三种成色；
-  // 不想等那几秒就加 --no-probe）。写在 buildFontCss 前面 —— 下面裁字体子集的
-  // 字符集是从 dataPath 里读的，指南的汉字只能从这儿进来。
-  const { guide, warn } = await buildGuide(db, site, { contentPath: join(ROOT, 'content', 'double11.json'), probe: !has('no-probe') });
-  if (warn) console.log(C.yellow(`\n指南：${warn}`));
-  writeData(buildPayload(db, site, images, { guide }), dataPath);
+  // 写在 buildFontCss 前面 —— 下面裁字体子集的字符集是从 dataPath 里读的。
+  writeData(buildPayload(db, site, images), dataPath);
 
   // 开发页也要看到真实字体，否则调出来的版式是用错的字量出来的。
   // 字符集取 web/src 全部源码 + 刚写的数据：组件文案和数据都在里面。
@@ -603,9 +592,6 @@ ${C.bold('deals')} —— 比价与捡漏工具（${siteList()}）
        --no-images                       不缓存商品图（更快，但报告里没图）
        --no-font                         不内嵌中文字体（用系统字体栈）
        --no-open                         只生成不打开
-       --no-probe                        不联网探测「双十一指南」里那些领券入口
-                                         （离线时用；那一趟入口会标成"没探测"，
-                                          页面上提示你自己去官方页核对）
        --rebuild                         强制重新构建 React 页面
   ${C.bold(`deals ${id} stats`)}             本地数据概览
   ${C.bold(`deals ${id} dev`)}               起 Vite 开发服务器调报告页面
@@ -694,7 +680,6 @@ try {
                 withImages: !has('no-images'),
                 rebuild: has('rebuild'),
                 withFont: !has('no-font'),
-                probe: !has('no-probe'),
               });
               break;
             case 'stats': cmdStats(site); break;

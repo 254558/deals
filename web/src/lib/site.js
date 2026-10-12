@@ -23,16 +23,6 @@ export const DEALS = DATA.deals ?? [];
 export const CATEGORIES = DATA.categories ?? [];
 
 /**
- * 「我的 → 双十一指南」那块数据：人工整理的内容（`content/double11.json`）
- * + 生成报告时探测到的入口可达性 + 抓取新鲜度，由 `core/guide.mjs` 的 buildGuide 组装。
- *
- * `null` 是**正常情况之一**，不是出错：内容 JSON 读不到 / 写坏了，或者压根没跑过
- * buildGuide（老报告）都会是 null，组件那边有一块逐条能照做的兜底。
- * 所以引用它时一律 `GUIDE?.xxx`，别当它一定在。
- */
-export const GUIDE = DATA.guide ?? null;
-
-/**
  * 站点标识。它只做一件事：写进 `<html data-site>`，也就是 styles.css 里
  * `[data-site="…"]` 那些专有作用域的挂钩。
  *
