@@ -947,16 +947,17 @@ body {
 }
 
 /* ══════════════ 「我的 → 双十一指南」 ══════════════
-   2026-10-12 加的第 4 块 tab：一页照着做的行动清单（时间表 / 领券 / 凑满减 / 避坑）。
+   2026-10-12 加的第 4 块 tab：一页照着做的行动清单（往年经验 / 领券 / 凑满减 / 避坑）。
    内容是每天随报告重新生成的，组件在 components/MineDouble11.vue、
    人工整理的那部分在 content/double11.json；这里只管长相 —— 沿用「我的」这套令牌
    （直角、发丝线、墨色，全站无蓝），没有再引入任何新颜色（红只有一个，就是 --red）。
 
-   两处刻意的选择：
-   · **限宽**：榜单那边是整屏宽的卡片网格，但这是一页要逐句读的说明，
-     真铺到 1560px 一行会有七八十个字，眼睛找不着行，所以封在 860px。
-   · 窄屏下时间表**竖过来**：390px 挤「时间 / 发生什么 / 你要做什么」三列，
-     断行之后看不出哪句属于哪一列，改成每行堆成三段、用 data-label 把列名补回来。 */
+   **限宽**是刻意的：榜单那边是整屏宽的卡片网格，但这是一页要逐句读的说明，
+   真铺到 1560px 一行会有七八十个字，眼睛找不着行，所以封在 860px。
+
+   这一页当天晚些动过一刀（用户：「删掉一、今天实况随报告每天更新 / 二、时间表：记住 3 个点就够」）：
+   那两节专用的样式跟着删了 —— 「今天实况」那组（.mine__glive / .mine__gtop*）和
+   时间表那组（.mine__gtable* + 两段窄屏 @media）。下面别再照抄回来，除非那两节真的回来了。 */
 .mine__guide { max-width: 860px; }
 .mine__glead { margin: 0 0 18px; font-size: 13px; line-height: 1.8; color: var(--ink-2); }
 
@@ -964,20 +965,6 @@ body {
 .mine__gsec { padding-top: 18px; margin-top: 18px; border-top: 1px solid var(--rule-soft); }
 .mine__gsec:first-of-type { padding-top: 0; margin-top: 0; border-top: 0; }
 .mine__gh { margin: 0 0 10px; font-size: 14px; font-weight: 700; }
-
-/* 时间表 */
-.mine__gtable { width: 100%; border-collapse: collapse; }
-.mine__gtable th, .mine__gtable td {
-  padding: 9px 14px 9px 0;
-  border-bottom: 1px solid var(--rule-soft);
-  text-align: left;
-  vertical-align: top;
-  font-size: 13px;
-  line-height: 1.7;
-}
-.mine__gtable thead th { font-size: 12px; font-weight: 400; color: var(--ink-3); border-bottom-color: var(--rule); }
-.mine__gtable tbody th { width: 1%; white-space: nowrap; font-weight: 700; }
-.mine__gtable tbody td:last-child { padding-right: 0; }
 
 /* 项目符号自己画一个小方头（默认的圆点在各浏览器里对齐都不一样，
    而这一页是直角风格，圆点也不搭） */
@@ -1047,38 +1034,7 @@ body {
    不换颜色、不加图标 —— 一眼能看出是两个层级就够了，别搞得像报错。 */
 .mine__gbar--ref { border-left-color: var(--ink); color: var(--ink); }
 
-/* 「今天实况」那一句：数字加粗，重点是那几个数 */
-.mine__glive { margin: 0 0 10px; font-size: 13px; line-height: 1.8; }
-.mine__glive b { font-variant-numeric: tabular-nums; }
-
-/* 降得最狠的三件。每行三段：名字（可点）/ 原价→现价 / 省了多少。
-   名字那一列吃掉剩余宽度并允许压缩，价格两列不换行 —— 长商品名宁可省略号，
-   也不能把价格挤到下一行（那样三行的对齐就散了）。 */
-.mine__gtop { margin: 0; padding: 0; list-style: none; counter-reset: gt; }
-.mine__gtop li {
-  display: flex; align-items: baseline; gap: 10px;
-  padding: 7px 0;
-  border-top: 1px solid var(--rule-soft);
-  font-size: 13px;
-}
-.mine__gtop li::before {
-  content: counter(gt); counter-increment: gt;
-  flex: none; width: 14px;
-  font-size: 11px; font-weight: 700; color: var(--ink-4);
-  font-variant-numeric: tabular-nums;
-}
-.mine__gtop-a {
-  flex: 1 1 auto; min-width: 0;
-  color: var(--ink); text-decoration: none;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.mine__gtop-a:hover { text-decoration: underline; }
-.mine__gtop-p { flex: none; color: var(--ink-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
-.mine__gtop-p b { color: var(--ink); }
-/* 省下的钱用红色：和榜单卡片上那句「降 190 元」同一个意思，同一套红 */
-.mine__gtop-s { flex: none; white-space: nowrap; color: var(--red); font-variant-numeric: tabular-nums; }
-
-/* 标题后面那个小标签（「随报告每天更新」「人工整理 · 更新于 X」）：
+/* 标题后面那个小标签（「人工整理 · 未经核实」「入口可达性：生成报告时探测」）：
    说的是这段内容的出处，字号要小到不跟标题抢，但线框要让它看起来是个"注"而不是标题的一部分 */
 .mine__gtag {
   display: inline-block; margin-left: 8px; padding: 1px 6px;
@@ -1116,24 +1072,8 @@ body {
 .mine__glink { font-size: 11px; color: var(--ink-3); text-decoration: underline; text-underline-offset: 2px; }
 .mine__glink:hover { color: var(--ink); }
 
-/* 页脚：哪块是人工整理的、哪块是机器算的、什么时候的 */
+/* 页脚：哪块是人工整理的、哪块是机器探的、什么时候的 */
 .mine__gfoot { margin: 18px 0 0; padding-top: 12px; border-top: 1px solid var(--rule-soft); font-size: 11px; line-height: 1.8; color: var(--ink-3); }
-
-/* 窄屏：降得最狠那三件的名字那一列太窄就失去意义了，改成两行 */
-@media (max-width: 560px) {
-  .mine__gtop li { flex-wrap: wrap; }
-  .mine__gtop-a { flex-basis: 100%; white-space: normal; }
-}
-
-/* 窄屏：时间表竖过来，列名用 data-label 补在值前面 */
-@media (max-width: 760px) {
-  .mine__gtable thead { display: none; }
-  .mine__gtable tbody tr { display: block; padding: 12px 0; border-bottom: 1px solid var(--rule-soft); }
-  .mine__gtable tbody th, .mine__gtable tbody td { display: block; width: auto; padding: 0; border: 0; }
-  .mine__gtable tbody th { white-space: normal; margin-bottom: 4px; }
-  .mine__gtable tbody td { margin-top: 2px; color: var(--ink-2); }
-  .mine__gtable tbody td[data-label]::before { content: attr(data-label) '：'; color: var(--ink-3); }
-}
 
 /* ══════════════ 导航栏里的像素小人 ══════════════
    2026-10-06 用户：「有没有类似开罗或者宝可梦或者星露谷物语的像素人动画，

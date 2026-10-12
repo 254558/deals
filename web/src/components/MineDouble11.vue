@@ -7,44 +7,50 @@
  * 就写清楚让用户自己手动去查……用户一点到这个页面，看一下教程，就明白怎么买最划算了」。
  * 于是它从一页写死的文案改成了现在这样 —— 内容分三层，页面上标出各自的成色：
  *
- *   ① **今天实况**：从报告本来就带着的 `DEALS` 现算（在榜多少件在打折、降得最狠的三件）。
- *      随报告每天自动更新，零新增抓取、零失败风险。标「随报告每天更新」。
- *   ② **领取入口**：生成报告时逐个探测过官网能不能打开，这里按结果挂徽标 ——
+ *   ① **领取入口**：生成报告时逐个探测过官网能不能打开，这里按结果挂徽标 ——
  *      「今天可达」/「今天没抓到，点这里自己去查」/「本次没探测」。
  *      ⚠️ 探测只说明**页面能打开**，不代表券还在发（见下面那句「以官方页为准」：
  *      平台会拿 200 回一个验证页，所以别把可达读成"券还在"）。
- *   ③ **往年经验**（`GUIDE.reference`）：官方口径还没公布时先顶上的参考层 ——
- *      用户 2026-10-12 的原话是「没开始之前，你能先按照往年的经验写一些参考性的建议吗……
+ *   ② **往年经验**（`GUIDE.reference`）：官方口径还没公布时先顶上的参考层 ——
+ *      用户原话是「没开始之前，你能先按照往年的经验写一些参考性的建议吗……
  *      告诉大家等活动开始了、能抓到了，再给大家详细准确的信息」。所以这一块**明确标
  *      「人工整理 · 未经核实」**，页顶还有一条置顶说明（`reference.headline`）讲清
  *      「现在只有往年规律、官方公布后换准确版」。⚠️ 那句"换准确版"是**人工改 JSON**，
  *      不是这边自动抓来的（理由见 core/guide.mjs 文件头那段实测：平台的券页抓不到），
  *      所以文案只能写成「会换成准确版 / 以官方页为准」，不能写成"抓到了就准"。
- *   ④ **时间表 · 券档位 · 凑单 · 避坑**：人工整理，在 `content/double11.json` 里维护
+ *   ③ **券档位 · 凑单 · 避坑**：人工整理，在 `content/double11.json` 里维护
  *      （**不在这个组件里**，改内容不用动代码）。所以这块标「人工整理 · 更新于 X」。
  *
- * ── 三个容易写错的地方 ──────────────────────────────────────────────
+ * ── 用户当天晚些又让删了两节 ────────────────────────────────────────
+ * 原话：「删掉一、今天实况随报告每天更新 / 二、时间表：记住 3 个点就够」。两件事记在下面，
+ * 免得后来的人以为丢了东西：
+ * · **「今天实况」**（在榜多少件在打折 + 降得最狠的三件）整节删掉。它原本是从 `DEALS`
+ *   现算的、零新增抓取，但榜单页本来就在显示这些。
+ *   ⚠️ 连带删掉的还有**页顶那条价格断档 ⚠️**：它说的是「价格数据是 N 小时前的」，
+ *   指的就是这一节 —— 那一节没了，页面上再没有任何价格，这条提示就没有指代对象了。
+ *   （数据新鲜度本身还在 payload 里：`GUIDE.sync`，见 docs/REPORT-CONTRACT.md。）
+ * · **「时间表」**（三列那张表 + 表下两条 timeNotes）整节删掉。「几号开始」现在由导语下面
+ *   那句「下一个节点」+「往年经验」第一条「节奏」来回答。
+ * · 这两个字段 `schedule`（`下一个节点`那句还在用）/ `timeNotes` / `sync` **都还在 payload 里**，
+ *   只是页面上没有对应展示 —— 要把哪一节加回来，内容都是现成的。
+ *
+ * ── 几个容易写错的地方 ──────────────────────────────────────────────
  * · **倒计时必须在前端算**。报告可能是几天前生成的，用 `GUIDE.generatedAt` 那个时刻
  *   算出来的「还有 2 天」，到读的人手里就是错的。core/guide.mjs 只把 `at`（ISO 时间）
  *   原样带过来，这里按**读者自己的时钟**现算，所以每 30 秒重算一次。
  * · **内容层坏了不该把页面搞没**。JSON 读不到 / 写坏了，后端返回 `guide: null`
- *   （见 core/guide.mjs 的 loadContent），这里给一块逐条都能照做的兜底 ——
- *   「今天实况」照常显示，它不依赖那份 JSON。
+ *   （见 core/guide.mjs 的 loadContent），这里给一块逐条都能照做的兜底，
+ *   而不是留一个空白页。
  * · **原文里那些夹在句子中间的数字**（"…直接下单\n2\n12"）是复制过来的**脚注角标**，
  *   不是内容，搬进 JSON 时全部丢掉了 —— 别再照抄回去。
  * · **置顶那条说明得跟着窗口过期一起消失**（用 `!expired` 卡着）：双十一都过完半个月了，
- *   顶上还在说"官方口径还没公布"，比不说还糟。所以过期判定抽成了单独的 `expired`，
- *   页顶那条 ⚠️ 和这条说明共用它。
- *
- * 时间表那三列在手机上放不下（390px 挤三列会断得很难看），所以窄屏下用 CSS 把每行
- * 拆成上下堆叠的三段，用 `data-label` 补回列名（见 styles.css 里那段 @media）。
+ *   顶上还在说"官方口径还没公布"，比不说还糟。
  */
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
-import { CATEGORIES, DEALS, GUIDE, META } from '../lib/site.js';
-import { num } from '../lib/format.js';
+import { GUIDE } from '../lib/site.js';
 
 /**
- * 读者这儿的「现在」。倒计时与「窗口过期了没」都按它算（见上面第一条）。
+ * 读者这儿的「现在」。倒计时与「窗口过期了没」都按它算（见上面那第一条）。
  * 30 秒一跳够了：最小粒度是「N 分钟后」，跳太勤只是白烧电。
  */
 const now = ref(Date.now());
@@ -59,64 +65,11 @@ onBeforeUnmount(() => {
   if (tick) clearInterval(tick);
 });
 
-const sym = META.currency?.sym ?? '¥';
-/** 榜单里那个写法：只留整数（见 lib/format.js 的说明），千分位保留 */
-const money = (v) => `${sym}${num(Math.trunc(Number(v) || 0))}`;
-
-/* ── 一层：今天实况（从 DEALS 现算） ───────────────────────────── */
+/* ── 窗口过期了没 ──────────────────────────────────────────────── */
 
 /**
- * 顶层分类码 → 名字（`1111WOMEN` → 女装）。
- *
- * ⚠️ 这里**不能**用 `d.tags` 去配 `META.tagLabels` —— 那是错的（第一版就这么写的，
- * 结果那一句里的分布永远是空的）：`tags` 里存的是**二层分类码**（`3wfleece` 这种，
- * 见 App.vue 的分类筛选和适配器里那段说明），促销类型（限时特优…）根本不在 payload 里。
- * 要按分类说，只能用 `d.category`（顶层码）+ 菜单那份 `categories` 的名字。
- */
-const catName = new Map(CATEGORIES.filter((c) => c.level === 0).map((c) => [c.code, c.name]));
-
-const live = computed(() => {
-  // `gone` 的是「盯着的、已经不在特价了」的，价是上一轮见到的旧价，不能算进"在打折"
-  const onSale = DEALS.filter((d) => !d.gone && d.rate > 0);
-
-  // 打折的集中在哪几类。名字查不到的（接口没给的码）直接不列 —— 所以这里一个站点名都不出现
-  const counts = new Map();
-  for (const d of onSale) {
-    const name = catName.get(d.category);
-    if (name) counts.set(name, (counts.get(name) ?? 0) + 1);
-  }
-
-  return {
-    count: onSale.length,
-    cats: [...counts]
-      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'zh'))
-      .slice(0, 3)
-      .map(([name, n]) => ({ name, n })),
-    // 按「省了多少钱」排，和榜单卡片上那句「降 190 元」同一个口径 —— 百分比还得自己换算
-    top: [...onSale].sort((a, b) => b.saving - a.saving || b.rate - a.rate).slice(0, 3),
-  };
-});
-
-/* ── 新鲜度：数据多久没更新了、这份指南过期了没 ────────────────── */
-
-/** `12 小时` 这种人话。null 表示从来没过抓成功 */
-function agoText(hours) {
-  if (hours == null) return null;
-  if (hours < 1) return '不到 1 小时';
-  if (hours < 24) return `${Math.round(hours)} 小时`;
-  return `${Math.floor(hours / 24)} 天`;
-}
-
-/** 最后一次抓取是多久以前（用来标明「今天实况」那个数字的时点） */
-const syncText = computed(() => {
-  const s = GUIDE?.sync;
-  const ago = agoText(s?.hoursAgo);
-  return s?.lastAt && ago ? `${ago}前抓的` : '还没抓到过数据';
-});
-
-/**
- * 窗口过去了没。`expiresAt` 是「到这一天为止」，所以那天当天还算数 —— JSON 里是
- * `2026-11-13` 这种纯日期，`new Date()` 按 UTC 零点解析，加一天再比就正好。
+ * `expiresAt` 是「到这一天为止」，所以那天当天还算数 —— JSON 里是 `2026-11-13`
+ * 这种纯日期，`new Date()` 按 UTC 零点解析，加一天再比就正好。
  *
  * 单独抽成一份是因为有两处要用它：页顶那条 ⚠️，和「官方还没公布」那句置顶说明
  * —— 窗口都过完了还在说"还没公布"，是自相矛盾。
@@ -128,31 +81,14 @@ const expired = computed(() => {
   return Number.isFinite(end) && now.value >= end;
 });
 
-/**
- * 页顶那两条提示。都属「这份东西可能不准了」，所以放在最上面，
- * 进页面第一眼就看得到 —— 埋在底下等于没有。
- */
-const warnings = computed(() => {
-  const out = [];
+/** 页顶那条提示：这份指南盯的双十一窗口过完了，里面的档期和券档位都不作数了 */
+const warnings = computed(() =>
+  expired.value
+    ? [`⚠️ 这份指南针对的双十一窗口（到 ${GUIDE.expiresAt}）已经过去了，时间点和券档位都可能变了样，看个思路就行。`]
+    : []
+);
 
-  const s = GUIDE?.sync;
-  if (s?.stale) {
-    const ago = agoText(s.hoursAgo);
-    out.push(
-      ago
-        ? `⚠️ 价格数据是 ${ago}前的 —— 超过 ${s.staleHours} 小时没抓到新的了，下面「今天实况」和入口可达性都可能已经变了，下单前以官网为准。`
-        : `⚠️ 还从来没抓到过价格数据，下面「今天实况」是空的。`
-    );
-  }
-
-  if (expired.value) {
-    out.push(`⚠️ 这份指南针对的双十一窗口（到 ${GUIDE.expiresAt}）已经过去了，时间点和券档位都可能变了样，看个思路就行。`);
-  }
-
-  return out;
-});
-
-/* ── 时间表与倒计时 ────────────────────────────────────────────── */
+/* ── 倒计时 ────────────────────────────────────────────────────── */
 
 /** `at` → 「3 天后」/「5 小时后」/「已过」。没有 at（人工没写）就返回空串，不画那个角标 */
 function until(at) {
@@ -168,7 +104,7 @@ function until(at) {
   return `${Math.floor(h / 24)} 天后`;
 }
 
-/** 下一个还没到的节点 —— 顶上加粗那句「你现在该盯着什么」，就是「几号开始」的答案 */
+/** 下一个还没到的节点 —— 顶上加粗那句，就是「几号开始」的答案（时间表那节删了，这句还在） */
 const next = computed(() => (GUIDE?.schedule ?? []).find((s) => s.at && new Date(s.at).getTime() > now.value) ?? null);
 
 /* ── 领取入口的三种成色 ────────────────────────────────────────── */
@@ -193,7 +129,7 @@ function probeTitle(s) {
   return s.probe.error ? `没打通：${s.probe.error}` : `HTTP ${s.probe.status}`;
 }
 
-/** 这份报告是什么时候生成的（页脚要标「机器算的那部分是哪一刻的」） */
+/** 这份报告是什么时候生成的（页脚要标「机器探的那部分是哪一刻的」） */
 const genText = computed(() => (GUIDE?.generatedAt ? new Date(GUIDE.generatedAt).toLocaleString('zh-CN') : '—'));
 
 /* ── 章节序号 ──────────────────────────────────────────────────── */
@@ -203,7 +139,7 @@ const hasRef = computed(() => !!GUIDE?.reference);
 
 /**
  * 序号取哪个字。**参考层不在的时候，后面三段要往前挪一位** —— 序号是写死在模板里的，
- * 漏了这处页面上就会出现「二、… 四、…」这种跳号（改内容的人不该被这种坑绊到：
+ * 漏了这处页面上就会出现「一、… 三、…」这种跳号（改内容的人不该被这种坑绊到：
  * 他删的是 JSON 里一段，不该顺手把页面改坏）。
  */
 const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
@@ -212,15 +148,14 @@ const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
 <template>
   <div class="mine__pane mine__guide">
     <!-- 置顶说明：官方口径还没出来，这一页整体是「参考版」。单独一条、用 --ref 的样子，
-         和下面那两条 ⚠️（数据断了 / 窗口过了）区分开 —— 那两条是"出问题了"，
-         这条是"本来就只能这样"，别让人误以为哪里坏了。 -->
+         和下面那条 ⚠️（窗口过了）区分开 —— 那条是"出问题了"，这条是"本来就只能这样"，
+         别让人误以为哪里坏了。 -->
     <p v-if="!expired && GUIDE?.reference?.headline" class="mine__gbar mine__gbar--ref">{{ GUIDE.reference.headline }}</p>
 
-    <!-- 数据断档 / 窗口过期：两种「这份东西可能不准了」 -->
+    <!-- 窗口过期：这份东西可能不准了 -->
     <p v-for="w in warnings" :key="w" class="mine__gbar">{{ w }}</p>
 
-    <!-- 导语 + 「下一个节点」：用户点进来第一眼要的答案就是这两句
-         （「几号开始」），所以排在「今天实况」前面 —— 实况是佐证，不是开场白。 -->
+    <!-- 导语 + 「下一个节点」：用户点进来第一眼要的答案就是这两句（「几号开始」） -->
     <template v-if="GUIDE">
       <p class="mine__glead">{{ GUIDE.intro }}</p>
       <p v-if="next" class="mine__gnext">
@@ -228,31 +163,9 @@ const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
       </p>
     </template>
 
-    <!-- ① 今天实况：这一块不依赖人工那份 JSON，JSON 坏了它照样在 -->
-    <section class="mine__gsec">
-      <h3 class="mine__gh">一、今天实况<span class="mine__gtag">随报告每天更新</span></h3>
-      <template v-if="live.count">
-        <p class="mine__glive">
-          榜单上现在有 <b>{{ live.count }}</b> 件在打折（{{ syncText }}）<template v-if="live.cats.length">，打折最集中的三类是 <template
-              v-for="(c, i) in live.cats"
-              :key="c.name"
-            >{{ c.name }} <b>{{ c.n }}</b> 件<span v-if="i < live.cats.length - 1">、</span></template></template>。
-        </p>
-        <ol class="mine__gtop">
-          <li v-for="d in live.top" :key="d.id">
-            <a class="mine__gtop-a" :href="d.url" target="_blank" rel="noreferrer">{{ d.name }}</a>
-            <span class="mine__gtop-p">{{ money(d.launchPrice) }} → <b>{{ money(d.price) }}</b></span>
-            <span class="mine__gtop-s">降 {{ num(Math.round(d.saving)) }} 元</span>
-          </li>
-        </ol>
-        <p class="mine__gnote-sm">按省下的钱排的前三件。想按分类挑，回榜单页用上面的菜单筛。</p>
-      </template>
-      <p v-else class="mine__glive">现在榜单上没有在打折的商品（或者还没抓到数据）。</p>
-    </section>
-
-    <!-- ② 人工整理的那份内容没读到时的兜底：逐条都能照做，不留下一个空白页 -->
+    <!-- 人工整理的那份内容没读到时的兜底：逐条都能照做，不留下一个空白页 -->
     <section v-if="!GUIDE" class="mine__gsec">
-      <h3 class="mine__gh">二、双十一怎么买（这次没能自动生成，照这三条走）</h3>
+      <h3 class="mine__gh">一、双十一怎么买（这次没能自动生成，照这三条走）</h3>
       <p class="mine__glead">报告里那份人工整理的双十一内容这次没读到（生成时已经跳过，不影响榜单本身）。要买的话，按下面三条自己来：</p>
       <ol class="mine__glist">
         <li><b>几号开始</b>：双十一就是「10 月中下旬开始、11 月 11 日收尾」，预售、开门红、巅峰场各有各的整点。具体的几点，以淘宝 / 天猫 / 京东 APP 首页那个双十一会场里写的时间为准 —— 每年都变。</li>
@@ -262,38 +175,11 @@ const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
     </section>
 
     <template v-else>
-      <section class="mine__gsec">
-        <h3 class="mine__gh">二、时间表：记住 3 个点就够</h3>
-        <table class="mine__gtable">
-          <thead>
-            <tr>
-              <th scope="col">时间</th>
-              <th scope="col">发生什么</th>
-              <th scope="col">你要做什么</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in GUIDE.schedule" :key="r.when">
-              <th scope="row">
-                {{ r.when }}
-                <span v-if="until(r.at)" class="mine__gcd">{{ until(r.at) }}</span>
-              </th>
-              <td data-label="发生什么">{{ r.what }}</td>
-              <td data-label="你要做什么">{{ r.todo }}</td>
-            </tr>
-          </tbody>
-        </table>
-        <ul v-if="GUIDE.timeNotes.length" class="mine__gnotes">
-          <li v-for="n in GUIDE.timeNotes" :key="n">{{ n }}</li>
-        </ul>
-      </section>
-
-      <!-- ③ 往年经验：上面那份时间表按往年规律写的，这一段讲清"为什么只能这样写"
-           + 往年到底什么规律。标「未经核实」，不和官方说法混在一起。
+      <!-- 往年经验：官方口径没公布时先顶上的参考层。标「未经核实」，不和官方说法混在一起。
            内容可以为空（JSON 里没写 / 写空了）—— 那就整段不渲染，而不是渲染半页。 -->
       <section v-if="GUIDE.reference" class="mine__gsec">
         <h3 class="mine__gh">
-          三、往年经验（只能当参考）
+          一、往年经验（只能当参考）
           <span class="mine__gtag">人工整理 · 未经核实</span>
         </h3>
         <dl class="mine__gdl">
@@ -307,7 +193,7 @@ const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
 
       <section class="mine__gsec">
         <h3 class="mine__gh">
-          {{ secNo('四', '三') }}、优惠券在哪领（按优先级，从省事到费劲）
+          {{ secNo('二', '一') }}、优惠券在哪领（按优先级，从省事到费劲）
           <span v-if="GUIDE.probedAt" class="mine__gtag">入口可达性：生成报告时探测</span>
           <span v-else class="mine__gtag">本次生成没联网探测</span>
         </h3>
@@ -327,7 +213,7 @@ const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
       </section>
 
       <section class="mine__gsec">
-        <h3 class="mine__gh">{{ secNo('五', '四') }}、怎么凑满减：一条公式 + 三个品类打法</h3>
+        <h3 class="mine__gh">{{ secNo('三', '二') }}、怎么凑满减：一条公式 + 三个品类打法</h3>
         <p v-if="GUIDE.formula" class="mine__gformula"><b>核心公式</b>：{{ GUIDE.formula }}</p>
         <ul v-if="GUIDE.formulaTips.length" class="mine__gnotes">
           <li v-for="t in GUIDE.formulaTips" :key="t">{{ t }}</li>
@@ -348,7 +234,7 @@ const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
       </section>
 
       <section class="mine__gsec">
-        <h3 class="mine__gh">{{ secNo('六', '五') }}、三个别踩的坑</h3>
+        <h3 class="mine__gh">{{ secNo('四', '三') }}、三个别踩的坑</h3>
         <dl v-if="GUIDE.pitfalls.length" class="mine__gdl">
           <template v-for="p in GUIDE.pitfalls" :key="p.t">
             <dt>{{ p.t }}</dt>
@@ -360,11 +246,11 @@ const secNo = (withRef, withoutRef) => (hasRef.value ? withRef : withoutRef);
       <p v-if="GUIDE.summary" class="mine__gsum">{{ GUIDE.summary }}</p>
 
       <p class="mine__gfoot">
-        时间表、<template v-if="GUIDE.reference">往年经验、</template>券档位、凑单和避坑这几块是人工整理的<template
+        <template v-if="GUIDE.reference">往年经验、</template>券档位、凑单和避坑这几块是人工整理的<template
           v-if="GUIDE.reference"
         >（其中「往年经验」未经核实，只能当参考）</template>，更新于 {{ GUIDE.updatedAt }}，有效期到 {{ GUIDE.expiresAt || '—' }}；官方随时会改档期和面额，以官方页为准。<template
           v-if="GUIDE.probedAt"
-        >上面「今天实况」和入口可达性都是这份报告生成时（{{ genText }}）机器算的。</template><template v-else>上面「今天实况」是这份报告生成时（{{ genText }}）从榜单里算的；入口可达性这次没探测。</template>
+        >上面那排入口徽标是这份报告生成时（{{ genText }}）机器探的。</template><template v-else>入口可达性这次没探测。</template>
       </p>
     </template>
   </div>
